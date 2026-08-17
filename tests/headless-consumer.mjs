@@ -1224,6 +1224,10 @@ try {
   )
   assert.equal(nativeFullRequests[1].system, nativeFullRequests[0].system)
   assert.equal(sha256(nativeFullRequests[1].tools), sha256(nativeFullRequests[0].tools))
+  assert.equal(
+    JSON.stringify(nativeFullRequests[1].tools[0] ?? null),
+    JSON.stringify(nativeFullRequests[0].tools[0] ?? null),
+  )
   const nativeEmptyRequests = requestsFor(nativeEmpty)
   assert.deepEqual(
     nativeEmptyRequests.slice(0, 2).map(request => request.tools.map(schema => schema.name)),
@@ -1266,9 +1270,17 @@ try {
   assert.deepEqual(codeNextRequest.tools.map(schema => schema.name), ['run_code'])
   assert.equal(codeNextRequest.system, codeRequest.system)
   assert.equal(sha256(codeNextRequest.tools), sha256(codeRequest.tools))
+  assert.equal(
+    JSON.stringify(codeNextRequest.tools[0] ?? null),
+    JSON.stringify(codeRequest.tools[0] ?? null),
+  )
   const codeMapRequests = requestsFor(codeMapAgent)
   assert.equal(codeMapRequests[1].system, codeMapRequests[0].system)
   assert.equal(sha256(codeMapRequests[1].tools), sha256(codeMapRequests[0].tools))
+  assert.equal(
+    JSON.stringify(codeMapRequests[1].tools[0] ?? null),
+    JSON.stringify(codeMapRequests[0].tools[0] ?? null),
+  )
 
   const onlySearchRequest = requestsFor(onlySearchAgent)[0]
   const noSearchRequest = requestsFor(noSearchAgent)[0]

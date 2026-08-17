@@ -17,7 +17,10 @@ import {
 } from '@deepseek-ai/dsh-tools'
 
 import type { ToolDiscoveryMode } from '../config.js'
-import { throwIfAborted } from '../provider-runtime/index.js'
+import {
+  throwIfAborted,
+  utf8ByteLength,
+} from '../provider-runtime/index.js'
 import {
   CAPABILITY_GROUPS,
   DEFERRED_OPERATION_NAMES,
@@ -45,6 +48,26 @@ interface DeferredOperationRecord {
   readonly manifest: DeferredOperationManifest
 }
 
+/** A single operation schema must stay small enough to disclose as one value. */
+export const DEFERRED_OPERATION_SCHEMA_MAX_BYTES = 16 * 1024
+/** A complete operation manifest is bounded independently of the all-groups result. */
+export const DEFERRED_OPERATION_MANIFEST_MAX_BYTES = 32 * 1024
+/** A complete capability notice stays within the discovery result budget. */
+export const DEFERRED_CAPABILITY_NOTICE_MAX_BYTES = 64 * 1024
+/** The source auto-disclosure tail has a smaller bound than ordinary discovery output. */
+export const SEARCH_SOURCE_OPERATION_NOTICE_MAX_BYTES = 4 * 1024
+
+function assertUtf8Limit(value: string, maximumBytes: number, label: string): void {
+  const actualBytes = utf8ByteLength(value)
+  if (actualBytes > maximumBytes) {
+    throw new TypeError(`${label} exceeds its ${maximumBytes}-byte UTF-8 limit`)
+  }
+}
+
+function assertJsonLimit(value: JsonValue, maximumBytes: number, label: string): void {
+  assertUtf8Limit(JSON.stringify(value), maximumBytes, label)
+}
+
 function snapshotSchema(value: unknown, label: string): JsonValue {
   try {
     const snapshot = snapshotJsonValue(value)
@@ -66,6 +89,31 @@ function snapshotOperationOutput(operation: string, value: unknown): JsonValue {
     if (error instanceof ToolOutputError) throw error
     throw new ToolOutputError(operation, ['value snapshot failed'])
   }
+}
+
+function snapshotOperationArguments(
+  operation: string,
+  value: unknown,
+  schema: ToolDefinition['parameters'],
+): Readonly<Record<string, JsonValue>> {
+  let snapshot: JsonValue | undefined
+  try {
+    const candidate = snapshotJsonValue(value)
+    snapshot = candidate === undefined ? undefined : candidate as JsonValue
+  } catch {
+    throw new ToolArgsError([`operation "${operation}" arguments must be lossless JSON`])
+  }
+  if (
+    snapshot === undefined
+    || snapshot === null
+    || typeof snapshot !== 'object'
+    || Array.isArray(snapshot)
+  ) {
+    throw new ToolArgsError([`operation "${operation}" arguments must be a JSON object`])
+  }
+  const violations = validateJsonSchemaValue(schema, snapshot, 'arguments')
+  if (violations.length > 0) throw new ToolArgsError(violations)
+  return deepFreeze(snapshot) as Readonly<Record<string, JsonValue>>
 }
 
 function operationRunContext(
@@ -93,9 +141,12 @@ class SearchOperationUnavailableError extends HarnessError {
 }
 
 /**
- * Fiber-local definitions for operations that never enter ctx.tools. The
- * constructor snapshots the exact schemas used by manifests and rejects an
- * incomplete or ambiguous operation set at plugin load time.
+ * Fiber-local definitions for operations that never enter ctx.tools. The fixed
+ * search_call wrapper is their sole public ToolRuntime boundary; invoke calls
+ * one internal body after its own schema boundary rather than creating a
+ * second dispatch or session event. The constructor snapshots the exact
+ * schemas used by manifests and rejects an incomplete or ambiguous operation
+ * set at plugin load time.
  */
 export class DeferredOperationRegistry {
   private readonly records = new Map<string, DeferredOperationRecord>()
@@ -123,11 +174,24 @@ export class DeferredOperationRegistry {
       if (source.finalizeContent !== undefined) {
         throw new TypeError(`deferred search operation "${name}" cannot define finalizeContent`)
       }
+      if (source.timeoutMs !== undefined) {
+        throw new TypeError(`deferred search operation "${name}" cannot define timeoutMs`)
+      }
       if (typeof source.description !== 'string' || source.description.trim().length === 0) {
         throw new TypeError(`deferred search operation "${name}" requires a description`)
       }
       const parameters = snapshotSchema(source.parameters, `${name} parameters`)
       const outputSchema = snapshotSchema(source.output.schema, `${name} output schema`)
+      assertJsonLimit(
+        parameters,
+        DEFERRED_OPERATION_SCHEMA_MAX_BYTES,
+        `${name} parameters schema`,
+      )
+      assertJsonLimit(
+        outputSchema,
+        DEFERRED_OPERATION_SCHEMA_MAX_BYTES,
+        `${name} output schema`,
+      )
       assertObjectJsonSchema(parameters)
       assertSupportedJsonSchema(outputSchema)
       const capability = capabilityGroupForOperation(name)
@@ -147,6 +211,11 @@ export class DeferredOperationRegistry {
         output_schema: outputSchema,
         call: { tool: 'search_call' as const, operation: name },
       })
+      assertJsonLimit(
+        manifest as JsonValue,
+        DEFERRED_OPERATION_MANIFEST_MAX_BYTES,
+        `${name} operation manifest`,
+      )
       this.records.set(name, { capability, definition, manifest })
     }
   }
@@ -165,10 +234,18 @@ export class DeferredOperationRegistry {
       gateway: 'search_call',
       operations: this.manifestsForGroups([group]),
     }
-    return [
+    const notice = [
       JSON.stringify(manifest),
       `Capability "${group}" is active for this Agent. Invoke only the manifested deferred operations through search_call.`,
     ].join('\n')
+    assertUtf8Limit(
+      notice,
+      group === 'sources'
+        ? SEARCH_SOURCE_OPERATION_NOTICE_MAX_BYTES
+        : DEFERRED_CAPABILITY_NOTICE_MAX_BYTES,
+      `${group} capability disclosure`,
+    )
+    return notice
   }
 
   async invoke(
@@ -179,9 +256,14 @@ export class DeferredOperationRegistry {
   ): Promise<JsonValue> {
     const record = this.requireActive(operation, activeGroups)
     throwIfAborted(exec.signal)
-    const value = await record.definition.execute(
+    const canonicalArgs = snapshotOperationArguments(
+      operation,
       args,
-      operationRunContext(exec, operation, args),
+      record.definition.parameters,
+    )
+    const value = await record.definition.execute(
+      canonicalArgs,
+      operationRunContext(exec, operation, canonicalArgs),
     )
     throwIfAborted(exec.signal)
     return this.validateOutput(record, snapshotOperationOutput(operation, value))
@@ -236,10 +318,14 @@ export class DeferredOperationRegistry {
   }
 
   isConcurrencySafe(operation: string, args: Readonly<Record<string, JsonValue>>): boolean {
-    const record = this.records.get(operation)
-    if (record?.definition.isConcurrencySafe === undefined) return false
-    if (validateJsonSchemaValue(record.definition.parameters, args, '').length > 0) return false
-    return record.definition.isConcurrencySafe(args) === true
+    try {
+      const record = this.records.get(operation)
+      if (record?.definition.isConcurrencySafe === undefined) return false
+      if (validateJsonSchemaValue(record.definition.parameters, args, '').length > 0) return false
+      return record.definition.isConcurrencySafe(args) === true
+    } catch {
+      return false
+    }
   }
 
   private requireKnown(operation: string): DeferredOperationRecord {

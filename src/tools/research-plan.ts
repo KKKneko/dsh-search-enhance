@@ -29,7 +29,7 @@ import {
 export interface ResearchPlanToolDependencies {
   /** Read one resolved Settings snapshot for this pure operation. */
   readonly getConfig: () => Config
-  /** Resolve whether web_map is active through the fixed gateway for this Agent. */
+  /** Resolve whether web_map is active through the fixed gateway; absent means unavailable. */
   readonly isWebMapAvailable?: (agent: ToolRunContext['agent']) => boolean
   readonly operations: ForegroundOperationScope
 }
@@ -57,7 +57,7 @@ async function executeResearchPlan(
     args,
     plannerOptions(
       config,
-      dependencies.isWebMapAvailable?.(agent) ?? true,
+      dependencies.isWebMapAvailable?.(agent) ?? false,
     ),
   )
   throwIfAborted(signal)

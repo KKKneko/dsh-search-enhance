@@ -197,7 +197,12 @@ async function disposeAgent(value: TestAgent): Promise<void> {
   await value.scope.dispose()
 }
 
-function appendDisclosure(session: Session, capability: string, step: number): void {
+function appendDisclosure(
+  session: Session,
+  capability: string,
+  step: number,
+  complete = true,
+): void {
   session.append('step/start', { turn: 1, step })
   const callId = CallId(`disclose-${step}`)
   const call = session.append('tool/call', {
@@ -216,7 +221,7 @@ function appendDisclosure(session: Session, capability: string, step: number): v
       isError: false,
     }),
   }, { sourceEventSeqs: [call.seq], surfaceOp: 'append' })
-  session.append('step/end', { turn: 1, step })
+  if (complete) session.append('step/end', { turn: 1, step })
 }
 
 function appendNativeSource(session: Session, step: number): void {
@@ -250,6 +255,8 @@ function assemblySnapshot(value: PromptAssembly) {
   return {
     prompt: renderPrompt(value),
     tools: JSON.stringify(value.tools),
+    sdk: value.sections.find(section => section.name === 'tools:sdk')?.text ?? '',
+    topLevelSchema: JSON.stringify(value.tools[0] ?? null),
   }
 }
 
@@ -301,6 +308,17 @@ describe('fixed progressive-disclosure surface', () => {
         error: { info: { code: 'SEARCH_OPERATION_UNAVAILABLE' } },
       })
       expect(assemblySnapshot(await assembly(harness.ctx, agentA.agent))).toEqual(initial)
+
+      appendDisclosure(agentB.session, 'site_map', 1, false)
+      const sameStep = await execute(harness.runtime, agentB.agent, 'search_call', {
+        operation: 'web_map',
+        arguments: { value: 'same-step' },
+      })
+      expect(sameStep).toMatchObject({
+        isError: true,
+        error: { info: { code: 'SEARCH_OPERATION_UNAVAILABLE' } },
+      })
+      expect(assemblySnapshot(await assembly(harness.ctx, agentB.agent))).toEqual(initial)
 
       appendDisclosure(agentA.session, 'site_map', 1)
       expect(assemblySnapshot(await assembly(harness.ctx, agentA.agent))).toEqual(initial)
@@ -380,6 +398,50 @@ describe('fixed progressive-disclosure surface', () => {
       await harness.ctx.fiber.dispose()
     }
   })
+
+  it('applies the public policy pipeline once at the fixed gateway', async () => {
+    const harness = await createHarness()
+    const stages: string[] = []
+    const policyFiber = harness.ctx.plugin((pluginCtx: Context) => {
+      pluginCtx.on('tools/pre-execute', async (exec, next) => {
+        stages.push(`pre:${exec.name}`)
+        return next()
+      })
+      pluginCtx.on('tools/execute', async (exec, next) => {
+        stages.push(`execute:${exec.name}`)
+        return next()
+      })
+      pluginCtx.on('tools/post-execute', async (exec, _result, next) => {
+        stages.push(`post:${exec.name}`)
+        return next()
+      })
+      pluginCtx.on('tools/result', (exec) => {
+        stages.push(`result:${exec.name}`)
+      })
+    })
+    await policyFiber.await()
+    const agent = await createAgent(harness.ctx, 'gateway-policy')
+    try {
+      appendDisclosure(agent.session, 'site_map', 1)
+      const result = await execute(harness.runtime, agent.agent, 'search_call', {
+        operation: 'web_map',
+        arguments: { value: 'policy' },
+      })
+      expect(result).toMatchObject({ isError: false, value: 'policy' })
+      expect(stages).toEqual([
+        'pre:search_call',
+        'execute:search_call',
+        'post:search_call',
+        'result:search_call',
+      ])
+    } finally {
+      await disposeAgent(agent)
+      await policyFiber.dispose()
+      await harness.pluginFiber.dispose()
+      await harness.baseFiber.dispose()
+      await harness.ctx.fiber.dispose()
+    }
+  })
 })
 
 describe('Agent lifecycle and source recovery bridge', () => {
@@ -391,11 +453,13 @@ describe('Agent lifecycle and source recovery bridge', () => {
       expect(harness.runtime.schemas(agent.agent).map(tool => tool.name).sort()).toEqual(
         [...RESIDENT_TOOL_NAMES].sort(),
       )
+      const beforeHmr = assemblySnapshot(await assembly(harness.ctx, agent.agent))
       await harness.pluginFiber.restart()
       expect(harness.runtime.get('web_search', agent.agent)).toBe(RICH_WEB_SEARCH)
       expect(harness.runtime.schemas(agent.agent).map(tool => tool.name).sort()).toEqual(
         [...RESIDENT_TOOL_NAMES].sort(),
       )
+      expect(assemblySnapshot(await assembly(harness.ctx, agent.agent))).toEqual(beforeHmr)
       await harness.pluginFiber.dispose()
       expect(harness.runtime.get('web_search', agent.agent)).toBe(BASE_WEB_SEARCH)
       expect(harness.runtime.schemas(agent.agent).map(tool => tool.name)).toEqual(['web_search'])

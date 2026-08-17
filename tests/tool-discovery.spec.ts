@@ -34,9 +34,13 @@ import { createContext7Tools } from '../src/tools/context7.js'
 import { ForegroundOperationScope } from '../src/tools/operations.js'
 import { createResearchPlanTool } from '../src/tools/research-plan.js'
 import {
+  DEFERRED_CAPABILITY_NOTICE_MAX_BYTES,
+  DEFERRED_OPERATION_MANIFEST_MAX_BYTES,
+  DEFERRED_OPERATION_SCHEMA_MAX_BYTES,
   DeferredOperationRegistry,
   SEARCH_CALL_OUTPUT_SCHEMA,
   SEARCH_CALL_PARAMETERS,
+  SEARCH_SOURCE_OPERATION_NOTICE_MAX_BYTES,
   createSearchCallTool,
 } from '../src/tools/search-call.js'
 import {
@@ -292,6 +296,10 @@ describe('progressive capability definitions and folding', () => {
       ...codeEvent,
       data: { ...codeEvent.data, content: [{ type: 'text', text: 'source_ref=fake' }] },
     }]).activeGroups).toEqual([])
+    expect(foldToolDisclosureEvents([{
+      ...codeEvent,
+      data: { ...codeEvent.data, isError: true },
+    }]).activeGroups).toEqual([])
   })
 })
 
@@ -358,12 +366,66 @@ describe('search_tools operation manifest', () => {
       const value = projectSearchToolsOutput(CAPABILITY_GROUPS, [], production.registry)
       expect(value.groups.flatMap(group => group.operations.map(operation => operation.name)))
         .toEqual(DEFERRED_OPERATION_NAMES)
+      expect(value.groups.flatMap(group => group.operations).every(operation => (
+        Buffer.byteLength(JSON.stringify(operation), 'utf8')
+        <= DEFERRED_OPERATION_MANIFEST_MAX_BYTES
+      ))).toBe(true)
+      expect(Buffer.byteLength(
+        production.registry.renderCapabilityDisclosure('context7'),
+        'utf8',
+      )).toBeLessThanOrEqual(DEFERRED_CAPABILITY_NOTICE_MAX_BYTES)
       expect(() => boundSearchToolsOutput(value)).not.toThrow()
       expect(Buffer.byteLength(JSON.stringify(value), 'utf8'))
         .toBeLessThanOrEqual(SEARCH_TOOLS_CANONICAL_MAX_BYTES)
     } finally {
       await production.operations.stop()
     }
+  })
+
+  it('rejects oversized operation schemas and source notices before disclosure', () => {
+    const operationWithOutputDescription = (description: string): ToolDefinition => defineTool({
+      name: 'web_map',
+      description: 'bounded output schema',
+      parameters: { value: { type: 'string', required: true } },
+      output: {
+        schema: {
+          type: 'object',
+          description,
+          properties: { value: { type: 'string', required: true } },
+          additionalProperties: false,
+        },
+        render: (_args, value) => [{ type: 'text', text: value.value }],
+      },
+      async execute(args) { return { value: args.value } },
+    })
+    const emptyDescription = operationWithOutputDescription('')
+    const emptySchemaBytes = Buffer.byteLength(
+      JSON.stringify(emptyDescription.output.schema),
+      'utf8',
+    )
+    const exactDescription = 'x'.repeat(
+      DEFERRED_OPERATION_SCHEMA_MAX_BYTES - emptySchemaBytes,
+    )
+    expect(() => operationRegistry(new Map([
+      ['web_map', operationWithOutputDescription(exactDescription)],
+    ]))).not.toThrow()
+    expect(() => operationRegistry(new Map([
+      ['web_map', operationWithOutputDescription(`${exactDescription}界`)],
+    ]))).toThrow(/web_map output schema.*UTF-8 limit/i)
+
+    const oversizedNotice = defineTool({
+      name: 'search_sources',
+      description: 'x'.repeat(5_000),
+      parameters: { value: { type: 'string', required: true } },
+      output: {
+        schema: { type: 'string' },
+        render: (_args, value) => [{ type: 'text', text: value }],
+      },
+      async execute(args) { return args.value },
+    })
+    const registry = operationRegistry(new Map([['search_sources', oversizedNotice]]))
+    expect(() => registry.renderCapabilityDisclosure('sources'))
+      .toThrow(/sources capability disclosure.*UTF-8 limit/i)
   })
 
   it('returns manifests again for already-active groups and honors all mode', async () => {
@@ -399,8 +461,10 @@ describe('search_tools operation manifest', () => {
         ? { ...group, description: `界🙂${group.description}` }
         : group),
     }
-    const complete = renderSearchToolsText(multibyte, 1024 * 1024)
-    const over = renderSearchToolsText(multibyte, Buffer.byteLength(complete, 'utf8') - 1)
+    const complete = renderSearchToolsText(multibyte)
+    expect(JSON.parse(complete)).toEqual(multibyte)
+    const compactBytes = Buffer.byteLength(JSON.stringify(multibyte), 'utf8')
+    const over = renderSearchToolsText(multibyte, compactBytes - 1)
     expect(over).toContain('[search_tools model text truncated]')
     expect(Buffer.from(over, 'utf8').toString('utf8')).toBe(over)
   })
@@ -461,6 +525,22 @@ describe('search_call gateway', () => {
         arguments: { library_id: '/acme/sdk', query: 'docs' },
       })).toBe(false)
       expect(tool.isConcurrencySafe?.({ operation: 'web_map', arguments: {} })).toBe(false)
+
+      const throwing = operationRegistry(new Map([[
+        'web_map',
+        defineTool({
+          name: 'web_map',
+          description: 'throwing classifier',
+          parameters: { value: { type: 'string', required: true } },
+          output: { schema: { type: 'string' }, render: (_args, value) => [{ type: 'text', text: value }] },
+          async execute() { return 'ok' },
+          isConcurrencySafe() { throw new Error('classifier failed') },
+        }),
+      ]]))
+      expect(createSearchCallTool({ mode: 'all', registry: throwing }).isConcurrencySafe?.({
+        operation: 'web_map',
+        arguments: { value: 'x' },
+      })).toBe(false)
     } finally {
       await production.operations.stop()
     }
@@ -481,6 +561,53 @@ describe('search_call gateway', () => {
       args,
       runContext('search_call', args, agentWithEvents(unfinished)),
     )).rejects.toMatchObject({ code: 'SEARCH_OPERATION_UNAVAILABLE' })
+  })
+
+  it('revalidates raw operation arguments before the body and snapshots them canonically', async () => {
+    let calls = 0
+    let observedArgs: unknown
+    const rawOperation: ToolDefinition = {
+      name: 'web_map',
+      description: 'raw operation definition',
+      parameters: {
+        type: 'object',
+        properties: { value: { type: 'string' } },
+        required: ['value'],
+        additionalProperties: false,
+      },
+      output: {
+        schema: {
+          type: 'object',
+          properties: { value: { type: 'string' } },
+          required: ['value'],
+          additionalProperties: false,
+        },
+        render: (_args, value) => [{
+          type: 'text',
+          text: (value as { value: string }).value,
+        }],
+      },
+      async execute(args) {
+        calls += 1
+        observedArgs = args
+        return { value: (args as { value: string }).value }
+      },
+    }
+    const registry = operationRegistry(new Map([['web_map', rawOperation]]))
+    const tool = createSearchCallTool({ mode: 'progressive', registry })
+    const activeAgent = agentWithEvents(completedDisclosureEvents(['site_map']))
+    const invalid = { operation: 'web_map', arguments: {} }
+    await expect(tool.execute(invalid, runContext('search_call', invalid, activeAgent)))
+      .rejects.toMatchObject({ code: 'INVALID_ARGS' })
+    expect(calls).toBe(0)
+
+    const input = { value: 'canonical' }
+    const valid = { operation: 'web_map', arguments: input }
+    await expect(tool.execute(valid, runContext('search_call', valid, activeAgent)))
+      .resolves.toEqual({ value: 'canonical' })
+    expect(calls).toBe(1)
+    expect(observedArgs).not.toBe(input)
+    expect(Object.isFrozen(observedArgs)).toBe(true)
   })
 
   it('validates the real operation arguments and output after capability checks', async () => {
@@ -577,7 +704,7 @@ describe('source-produced operation notice', () => {
   it('appends the real search_sources manifest within both resident result bounds', async () => {
     const production = productionOperationRegistry()
     const notice = production.registry.renderCapabilityDisclosure('sources')
-    expect(Buffer.byteLength(notice, 'utf8')).toBeLessThanOrEqual(4096)
+    expect(Buffer.byteLength(notice, 'utf8')).toBeLessThanOrEqual(SEARCH_SOURCE_OPERATION_NOTICE_MAX_BYTES)
     expect(notice).toContain('"gateway":"search_call"')
     expect(notice).toContain('"operation":"search_sources"')
     expect(notice).toContain('"parameters"')
@@ -616,6 +743,12 @@ describe('source-produced operation notice', () => {
       ...web,
       model_text_max_bytes: 3,
     }, multibyteNotice), 'utf8')).toBeLessThanOrEqual(3)
+    const tiny = renderWebSearchText({
+      ...web,
+      model_text_max_bytes: 96,
+    }, notice)
+    expect(tiny).toContain('Source reference:')
+    expect(tiny).not.toContain('"gateway":"search_call"')
 
     const docs: DocsSearchOutput = {
       state: 'complete',

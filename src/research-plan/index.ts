@@ -40,7 +40,7 @@ export interface ResearchPlanBuildOptions {
 
 const RESEARCH_PLAN_MAX_STEPS = 10
 const PLAN_BOUNDARY = 'Stay within this sub-question and do not infer unsupported claims.'
-const PREFLIGHT_RULE = 'Planning is offline. A listed tool is an execution instruction, not an automatic call or claim verification.'
+const PREFLIGHT_RULE = 'Planning is offline. A listed operation is an execution instruction, not an automatic call or claim verification.'
 const GAP_RULE = 'Discovery candidates are not claim evidence; fetch selected key pages, inspect route and truncation facts, and mark unresolved claims as unverified.'
 const PLANNING_BOUNDARY = 'Offline plan only: this call does not search, fetch pages, access credentials, verify claims, or write session/storage state.'
 const EXECUTION_BOUNDARY = 'Call listed resident operations directly. Invoke only deferred web_map steps through search_call after the site_map capability is active.'

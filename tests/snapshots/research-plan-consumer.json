@@ -132,7 +132,7 @@
         "gaps": [
           "s1 is discovery evidence; select key URLs and fetch them with web_extract before claims."
         ],
-        "rule": "Planning is offline. A listed tool is an execution instruction, not an automatic call or claim verification."
+        "rule": "Planning is offline. A listed operation is an execution instruction, not an automatic call or claim verification."
       },
       "steps": [
         {
@@ -253,7 +253,7 @@
         "gaps": [
           "s1 is discovery evidence; select key URLs and fetch them with web_extract before claims."
         ],
-        "rule": "Planning is offline. A listed tool is an execution instruction, not an automatic call or claim verification."
+        "rule": "Planning is offline. A listed operation is an execution instruction, not an automatic call or claim verification."
       },
       "steps": [
         {
@@ -531,7 +531,7 @@
         "gaps": [
           "s1 is discovery evidence; select key URLs and fetch them with web_extract before claims."
         ],
-        "rule": "Planning is offline. A listed tool is an execution instruction, not an automatic call or claim verification."
+        "rule": "Planning is offline. A listed operation is an execution instruction, not an automatic call or claim verification."
       },
       "steps": [
         {
@@ -648,7 +648,7 @@
           "gaps": [
             "s1 is discovery evidence; select key URLs and fetch them with web_extract before claims."
           ],
-          "rule": "Planning is offline. A listed tool is an execution instruction, not an automatic call or claim verification."
+          "rule": "Planning is offline. A listed operation is an execution instruction, not an automatic call or claim verification."
         },
         "steps": [
           {

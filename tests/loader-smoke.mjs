@@ -72,12 +72,19 @@ const sha256 = value => createHash('sha256')
 async function modelSurface(ctx, systemPromptModule, agent) {
   const assembly = await ctx.systemPrompt.assemble({ scope: agent, agent })
   const sdkText = assembly.sections.find(section => section.name === 'tools:sdk')?.text ?? ''
+  const systemText = systemPromptModule.renderPrompt(assembly)
+  const wireJson = JSON.stringify(assembly.tools)
+  const topLevelSchemaJson = JSON.stringify(assembly.tools[0] ?? null)
   return {
-    systemHash: sha256(systemPromptModule.renderPrompt(assembly)),
+    systemHash: sha256(systemText),
     wireNames: assembly.tools.map(schema => schema.name),
-    wireHash: sha256(assembly.tools),
+    wireHash: sha256(wireJson),
     sdkHash: sha256(sdkText),
-    topLevelSchemaHash: sha256(assembly.tools[0] ?? null),
+    topLevelSchemaHash: sha256(topLevelSchemaJson),
+    systemText,
+    wireJson,
+    sdkText,
+    topLevelSchemaJson,
   }
 }
 

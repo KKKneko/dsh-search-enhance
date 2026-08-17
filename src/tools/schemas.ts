@@ -672,7 +672,7 @@ const researchPlanSubQuerySchema = {
     tool: {
       type: 'string',
       enum: RESEARCH_PLAN_TOOLS,
-      description: 'Optional explicit plugin tool; deferred tools must be disclosed before execution.',
+      description: 'Optional explicit Search Enhance operation; deferred web_map runs through search_call after site_map disclosure.',
     },
     query: {
       type: 'string',
@@ -794,6 +794,7 @@ const researchPlanCapabilitySchema = {
       type: 'array',
       items: { type: 'string', enum: RESEARCH_PLAN_TOOLS },
       required: true,
+      description: 'Resident tool names or deferred operation names; web_map is invoked through search_call.',
     },
     reason: { type: 'string', required: true },
   },

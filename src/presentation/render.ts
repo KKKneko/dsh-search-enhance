@@ -24,6 +24,7 @@ function renderWithBoundedNotice(
   text: string,
   notice: string | undefined,
   maximumBytes: number,
+  fallbackNotice?: string,
 ): string {
   if (notice === undefined || notice.length === 0) {
     return truncateUtf8(text, maximumBytes).text
@@ -32,7 +33,11 @@ function renderWithBoundedNotice(
   const complete = `${text}${separator}${notice}`
   if (utf8ByteLength(complete) <= maximumBytes) return complete
   const noticeBytes = utf8ByteLength(notice)
-  if (noticeBytes >= maximumBytes) return truncateUtf8(notice, maximumBytes).text
+  if (noticeBytes > maximumBytes) {
+    // Never expose a partial JSON capability manifest. A short plain-text
+    // fallback can still point the model at the durable source reference.
+    return truncateUtf8(fallbackNotice ?? notice, maximumBytes).text
+  }
   const prefixBudget = maximumBytes - noticeBytes - utf8ByteLength(separator)
   if (prefixBudget <= 0) return notice
   const prefix = truncateUtf8(text, prefixBudget).text
@@ -48,6 +53,10 @@ function sourceDisclosureTail(
     `Source reference: ${sourceRef}`,
     operationNotice,
   ].filter((line): line is string => line !== undefined && line.length > 0).join('\n\n')
+}
+
+function sourceDisclosureFallback(sourceRef: string): string {
+  return `Source reference: ${sourceRef}\n\nCall search_tools({ capabilities: ["sources"] }) to retrieve the search_sources manifest.`
 }
 
 function warningText(warning: WebSearchWarning): string {
@@ -142,6 +151,7 @@ export function renderWebSearchText(
     complete,
     sourceDisclosureTail(value.source_ref, sourceOperationNotice),
     maximumBytes,
+    value.source_ref === undefined ? undefined : sourceDisclosureFallback(value.source_ref),
   )
 }
 
@@ -266,6 +276,7 @@ export function renderDocsSearchText(
     complete,
     sourceDisclosureTail(value.source_ref, sourceOperationNotice),
     maximumBytes,
+    value.source_ref === undefined ? undefined : sourceDisclosureFallback(value.source_ref),
   )
 }
 

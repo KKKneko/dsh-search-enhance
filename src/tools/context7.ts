@@ -1247,7 +1247,7 @@ function closeDefinition(
   return Object.freeze({ ...definition, parameters })
 }
 
-/** Build the four global definitions hidden behind the context7 capability group. */
+/** Build the four internal definitions hidden behind the context7 capability group. */
 export function createContext7Tools(
   dependencies: Context7ToolsDependencies,
 ): readonly ToolDefinition[] {

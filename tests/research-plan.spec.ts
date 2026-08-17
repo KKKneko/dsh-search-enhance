@@ -90,7 +90,7 @@ const baseArgs = {
 }
 
 describe('research_plan schema and deterministic planner', () => {
-  it('exposes only bounded task intent and actual plugin tools', () => {
+  it('exposes only bounded task intent and actual Search Enhance operations', () => {
     const schema = parameterSchemaSpecToJsonSchema(RESEARCH_PLAN_PARAMETERS)
     expect(Object.keys(schema.properties)).toEqual([
       'question',
@@ -192,6 +192,17 @@ describe('research_plan schema and deterministic planner', () => {
       max_breadth: 4,
       limit: 4,
     })
+  })
+
+  it('fails closed when no Agent capability resolver is supplied', async () => {
+    const { operations, tool } = toolWith()
+    const args = { question: 'Plan a bounded comparison' }
+    try {
+      const value = await tool.execute(args, runContext(args)) as ResearchPlanOutput
+      expect(value.research_plan.preflight.web_map_available).toBe(false)
+    } finally {
+      await operations.stop()
+    }
   })
 
   it('rejects extra arguments, empty strings, invalid enums, URL/userinfo/count/string boundaries', async () => {

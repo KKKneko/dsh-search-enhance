@@ -204,6 +204,12 @@ export function renderSearchToolsText(
 ): string {
   const complete = JSON.stringify(value, null, 2)
   if (utf8ByteLength(complete) <= maximumBytes) return complete
+
+  // The canonical value is already bounded. Fall back to its compact form
+  // before truncating so a disclosed operation manifest remains parseable.
+  const compact = JSON.stringify(value)
+  if (utf8ByteLength(compact) <= maximumBytes) return compact
+
   const suffix = `\n${TRUNCATION_MARKER}`
   const suffixBytes = utf8ByteLength(suffix)
   if (suffixBytes <= maximumBytes) {
