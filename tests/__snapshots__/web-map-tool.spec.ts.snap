@@ -1,0 +1,62 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`web_map output, render, and replayable card bounds > projects one WebSource per URL and replays the official Web search card exactly 1`] = `
+{
+  "live": {
+    "card": "web",
+    "kind": "search",
+    "sources": [
+      {
+        "url": "https://docs.example.test/start",
+      },
+      {
+        "url": "https://docs.example.test/界🙂",
+      },
+    ],
+    "title": "Site map: https://docs.example.test/",
+    "truncated": true,
+  },
+  "meta": {
+    "sources": [
+      {
+        "url": "https://docs.example.test/start",
+      },
+      {
+        "url": "https://docs.example.test/界🙂",
+      },
+    ],
+    "truncated": true,
+    "type": "web_map",
+    "version": 1,
+  },
+  "model_text": [
+    {
+      "text": "Website map discovery
+Requested URL: https://docs.example.test/
+Provide
+
+[Model text truncated by model_text_max_bytes.]",
+      "type": "text",
+    },
+  ],
+  "pending": {
+    "card": "generic",
+    "kind": "search",
+    "title": "Map https://docs.example.test/",
+  },
+  "replay": {
+    "card": "web",
+    "kind": "search",
+    "sources": [
+      {
+        "url": "https://docs.example.test/start",
+      },
+      {
+        "url": "https://docs.example.test/界🙂",
+      },
+    ],
+    "title": "Site map: https://docs.example.test/",
+    "truncated": true,
+  },
+}
+`;

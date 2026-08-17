@@ -1,0 +1,271 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Search API profile and depth policy > pins the complete academic Search API policy 1`] = `
+"# Core Instruction
+
+1. Infer the user's intent from the query, but do not broaden the task unless necessary.
+2. Verify factual claims with authoritative sources before answering.
+3. Prefer official documentation, academic databases, reputable media, and primary sources.
+4. Cite sources at paragraph or table-row level. Do not cite every sentence.
+5. Be concise and stay within the output budget.
+
+# Output Style
+
+1. Lead with the most probable answer or solution.
+2. Use polished Markdown.
+3. Define technical terms only when they are necessary for understanding.
+4. State limitations when evidence is incomplete or conflicting.
+
+# Search Profile: Academic Research
+
+Goal:
+Find accurate, citeable research material.
+
+Source priority:
+1. Peer-reviewed papers
+2. Academic databases
+3. Official reports or white papers
+4. Books or institutional publications
+5. Reputable secondary sources only as context
+
+Output:
+- Author, year, title, and venue if available
+- DOI or stable URL if available
+- Main claim, method, and evidence
+- Limitations
+- Conflicting findings if present
+- Separate confirmed facts from uncertain claims
+
+Avoid:
+- Single-source conclusions
+- Blog-style summaries as primary evidence
+- Missing citation metadata when available
+
+# Search Budget
+
+Mode: normal. Return a complete but bounded answer with concise evidence and sources.
+Keep the answer under 18000 characters.
+Return at most 100 source links in the final source/reference block.
+"
+`;
+
+exports[`Search API profile and depth policy > pins the complete auto Search API policy 1`] = `
+"# Core Instruction
+
+1. Infer the user's intent from the query, but do not broaden the task unless necessary.
+2. Verify factual claims with authoritative sources before answering.
+3. Prefer official documentation, academic databases, reputable media, and primary sources.
+4. Cite sources at paragraph or table-row level. Do not cite every sentence.
+5. Be concise and stay within the output budget.
+
+# Output Style
+
+1. Lead with the most probable answer or solution.
+2. Use polished Markdown.
+3. Define technical terms only when they are necessary for understanding.
+4. State limitations when evidence is incomplete or conflicting.
+
+# Search Profile: Auto
+
+Infer the best search strategy from the query.
+If it is about programming, prefer official docs and GitHub.
+If it is about academic or research material, prioritize papers, reports, and multi-source evidence.
+If it is about factual claims, verify with independent sources.
+Keep the result compact unless the query explicitly asks for depth.
+
+# Search Budget
+
+Mode: normal. Return a complete but bounded answer with concise evidence and sources.
+Keep the answer under 12000 characters.
+Return at most 100 source links in the final source/reference block.
+"
+`;
+
+exports[`Search API profile and depth policy > pins the complete code_examples Search API policy 1`] = `
+"# Core Instruction
+
+1. Infer the user's intent from the query, but do not broaden the task unless necessary.
+2. Verify factual claims with authoritative sources before answering.
+3. Prefer official documentation, academic databases, reputable media, and primary sources.
+4. Cite sources at paragraph or table-row level. Do not cite every sentence.
+5. Be concise and stay within the output budget.
+
+# Output Style
+
+1. Lead with the most probable answer or solution.
+2. Use polished Markdown.
+3. Define technical terms only when they are necessary for understanding.
+4. State limitations when evidence is incomplete or conflicting.
+
+# Search Profile: Code Examples
+
+Goal:
+Find real-world code examples or official sample implementations.
+
+Source priority:
+1. Official example repositories
+2. Framework or library GitHub repos
+3. Well-known open-source projects
+4. Gists or blogs only as fallback
+
+Output:
+- Repository name
+- File path or direct URL when possible
+- Short reason why the example is relevant
+- Small snippet or usage summary
+- License caution if the user may copy code
+
+Avoid:
+- Large code dumps
+- Toy examples unless official
+- Sources without clear file paths
+
+# Search Budget
+
+Mode: normal. Return a complete but bounded answer with concise evidence and sources.
+Keep the answer under 8000 characters.
+Return at most 100 source links in the final source/reference block.
+"
+`;
+
+exports[`Search API profile and depth policy > pins the complete coding_docs Search API policy 1`] = `
+"# Core Instruction
+
+1. Infer the user's intent from the query, but do not broaden the task unless necessary.
+2. Verify factual claims with authoritative sources before answering.
+3. Prefer official documentation, academic databases, reputable media, and primary sources.
+4. Cite sources at paragraph or table-row level. Do not cite every sentence.
+5. Be concise and stay within the output budget.
+
+# Output Style
+
+1. Lead with the most probable answer or solution.
+2. Use polished Markdown.
+3. Define technical terms only when they are necessary for understanding.
+4. State limitations when evidence is incomplete or conflicting.
+
+# Search Profile: Coding Docs
+
+Goal:
+Find precise technical documentation for programming tasks.
+
+Source priority:
+1. Official documentation
+2. Versioned API reference
+3. Official examples
+4. GitHub README, release notes, or changelog
+5. High-quality community articles only as fallback
+
+Output:
+- Direct answer first
+- API names, function signatures, config keys, and version notes when relevant
+- Minimal example if useful
+- Mention whether the source is official
+- Return only the most relevant links
+
+Avoid:
+- Long background explanations
+- Blog-first answers when official docs exist
+- Unverified snippets
+
+# Search Budget
+
+Mode: normal. Return a complete but bounded answer with concise evidence and sources.
+Keep the answer under 7000 characters.
+Return at most 100 source links in the final source/reference block.
+"
+`;
+
+exports[`Search API profile and depth policy > pins the complete fact_check Search API policy 1`] = `
+"# Core Instruction
+
+1. Infer the user's intent from the query, but do not broaden the task unless necessary.
+2. Verify factual claims with authoritative sources before answering.
+3. Prefer official documentation, academic databases, reputable media, and primary sources.
+4. Cite sources at paragraph or table-row level. Do not cite every sentence.
+5. Be concise and stay within the output budget.
+
+# Output Style
+
+1. Lead with the most probable answer or solution.
+2. Use polished Markdown.
+3. Define technical terms only when they are necessary for understanding.
+4. State limitations when evidence is incomplete or conflicting.
+
+# Search Profile: Fact Check
+
+Goal:
+Verify factual claims using independent and timely sources.
+
+Source priority:
+1. Primary sources
+2. Official announcements or public records
+3. Reputable media
+4. Independent expert analysis
+5. Wikipedia only as background, not primary proof
+
+Output:
+- Verdict first: likely true, likely false, mixed, or unresolved
+- Evidence for and against
+- Source freshness
+- Known uncertainty
+- Confidence level
+- If a key numeric claim lacks sufficient independent support, label that number \`unverified\` or \`unresolved\`.
+
+Avoid:
+- Treating repeated syndicated reports as independent sources
+- Hiding conflicting evidence
+
+# Search Budget
+
+Mode: normal. Return a complete but bounded answer with concise evidence and sources.
+Keep the answer under 12000 characters.
+Return at most 100 source links in the final source/reference block.
+"
+`;
+
+exports[`Search API profile and depth policy > pins the complete project_research Search API policy 1`] = `
+"# Core Instruction
+
+1. Infer the user's intent from the query, but do not broaden the task unless necessary.
+2. Verify factual claims with authoritative sources before answering.
+3. Prefer official documentation, academic databases, reputable media, and primary sources.
+4. Cite sources at paragraph or table-row level. Do not cite every sentence.
+5. Be concise and stay within the output budget.
+
+# Output Style
+
+1. Lead with the most probable answer or solution.
+2. Use polished Markdown.
+3. Define technical terms only when they are necessary for understanding.
+4. State limitations when evidence is incomplete or conflicting.
+
+# Search Profile: Project Research
+
+Goal:
+Research a project, library, framework, tool, or ecosystem.
+
+Source priority:
+1. Official website or docs
+2. GitHub README
+3. Release notes or changelog
+4. Issues or discussions
+5. Reputable comparisons or articles
+
+Output:
+- What it is
+- Current state and maintenance signal
+- Strengths and limitations
+- Relevant links
+- Mention stale or uncertain information
+
+Avoid:
+- Overclaiming popularity or stability without evidence
+
+# Search Budget
+
+Mode: normal. Return a complete but bounded answer with concise evidence and sources.
+Keep the answer under 12000 characters.
+Return at most 100 source links in the final source/reference block.
+"
+`;

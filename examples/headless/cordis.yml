@@ -1,0 +1,35 @@
+# Keyless Loader composition used by tests/loader-smoke.mjs.
+# It mounts the official Session, Agent, tool, Credentials, Settings, and
+# JSON-backed storage/domain services. The root plugin registers every current
+# search definition globally; progressive mode applies per-Agent restrictions.
+# Context7 granular Consumers are added by the next implementation stage.
+- id: storage
+  name: '@deepseek-ai/dsh-storage'
+- id: storage-json
+  name: '@deepseek-ai/dsh-storage-json'
+  config:
+    root: !!js process.env.DSH_HOME + '/search-enhance-storage'
+- id: storage-domain
+  name: '@deepseek-ai/dsh-storage-domain'
+  config:
+    backend: json
+- id: sessions
+  name: '@deepseek-ai/dsh-session'
+- id: agents
+  name: '@deepseek-ai/dsh-agent'
+- id: system-prompt
+  name: '@deepseek-ai/dsh-system-prompt'
+- id: tools
+  name: '@deepseek-ai/dsh-tools'
+  config:
+    mode: native
+- id: settings
+  name: '@deepseek-ai/dsh-settings-file'
+  config:
+    watch: false
+- id: credentials
+  name: '@deepseek-ai/dsh-credentials-local'
+  config:
+    watch: false
+- id: search-enhance
+  name: dsh-search-enhance

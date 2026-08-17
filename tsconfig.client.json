@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "types": ["node", "react", "react-dom", "vitest/globals"]
+  },
+  "include": [
+    "src/client/**/*.ts",
+    "src/client/**/*.tsx",
+    "src/web-config/contracts.ts",
+    "tests/**/*.client.spec.tsx"
+  ],
+  "exclude": ["lib", "client", "node_modules"]
+}

@@ -1,0 +1,184 @@
+{
+  "name": "dsh-search-enhance",
+  "version": "0.1.0",
+  "description": "Bounded search, documentation, extraction, progressively disclosed site mapping/research planning, and read-only diagnostics for DeepSeek Harness",
+  "type": "module",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./config": {
+      "types": "./lib/config.d.ts",
+      "default": "./lib/config.js"
+    },
+    "./contracts": {
+      "types": "./lib/contracts/index.d.ts",
+      "default": "./lib/contracts/index.js"
+    },
+    "./provider-runtime": {
+      "types": "./lib/provider-runtime/index.d.ts",
+      "default": "./lib/provider-runtime/index.js"
+    },
+    "./providers/search-api": {
+      "types": "./lib/providers/search-api.d.ts",
+      "default": "./lib/providers/search-api.js"
+    },
+    "./providers": {
+      "types": "./lib/providers/index.d.ts",
+      "default": "./lib/providers/index.js"
+    },
+    "./orchestration": {
+      "types": "./lib/orchestration/index.d.ts",
+      "default": "./lib/orchestration/index.js"
+    },
+    "./documentation": {
+      "types": "./lib/documentation/index.d.ts",
+      "default": "./lib/documentation/index.js"
+    },
+    "./source-storage": {
+      "types": "./lib/source-storage/index.d.ts",
+      "default": "./lib/source-storage/index.js"
+    },
+    "./research-plan": {
+      "types": "./lib/research-plan/index.d.ts",
+      "default": "./lib/research-plan/index.js"
+    },
+    "./search": {
+      "types": "./lib/search/index.d.ts",
+      "default": "./lib/search/index.js"
+    },
+    "./site-map": {
+      "types": "./lib/site-map/index.d.ts",
+      "default": "./lib/site-map/index.js"
+    },
+    "./web-extract": {
+      "types": "./lib/web-extract/index.d.ts",
+      "default": "./lib/web-extract/index.js"
+    },
+    "./client": {
+      "types": "./client/types/client/index.d.ts",
+      "default": "./client/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "client/client.js",
+    "client/types/**/*.d.ts",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "sideEffects": ["./client/client.js"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && tsdown && tsc -p tsconfig.client.build.json",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.client.json",
+    "test": "npm run test:unit && npm run test:loader && npm run test:headless",
+    "test:unit": "vitest run",
+    "test:acceptance": "vitest run tests/user-scenarios.acceptance.spec.ts",
+    "test:loader": "npm run build && node tests/module-loading-smoke.mjs && node tests/agent-preset-shadowing.mjs && node tests/context7-cache-loader.mjs && node tests/web-config-loader.mjs",
+    "test:headless": "npm run build && node tests/headless-consumer.mjs && node tests/session-recovery-consumer.mjs && node tests/docs-consumer.mjs && node tests/web-extract-consumer.mjs && node tests/web-map-consumer.mjs && node tests/research-plan-consumer.mjs && node tests/diagnostics-consumer.mjs",
+    "test:e2e": "npm run test:e2e:providers && npm run test:e2e:web-extract && npm run test:e2e:web-map && npm run test:e2e:diagnostics",
+    "test:e2e:providers": "npm run build && node tests/real-search-providers.mjs",
+    "test:e2e:web-extract": "npm run build && node tests/real-web-extract.mjs",
+    "test:e2e:web-map": "npm run build && node tests/real-web-map.mjs",
+    "test:e2e:diagnostics": "npm run build && node tests/real-diagnostics.mjs",
+    "test:install": "node tests/install-bundle.mjs",
+    "prepare": "npm run build"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings-plugins"
+      ],
+      "platform": "web"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-agent": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-locale": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-runtime": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-ui-primitives": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-ui-settings-plugins": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-ui-slots": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-credentials": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-host-webserver": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-llm": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-session": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-settings": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-storage-domain": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-system-prompt": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-tools": "^0.1.0-rc.6",
+    "react": "^18.2.0"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-client-locale": { "optional": true },
+    "@deepseek-ai/dsh-client-runtime": { "optional": true },
+    "@deepseek-ai/dsh-client-ui-primitives": { "optional": true },
+    "@deepseek-ai/dsh-client-ui-settings-plugins": { "optional": true },
+    "@deepseek-ai/dsh-client-ui-slots": { "optional": true },
+    "@deepseek-ai/dsh-host-webserver": { "optional": true },
+    "react": { "optional": true }
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "^3.18.1",
+    "defuddle": "0.18.1",
+    "linkedom": "0.18.12",
+    "wreq-js": "2.3.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/cordis-plugin-loader": "^1.0.2",
+    "@deepseek-ai/dsh-agent": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-agent-loop": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-agent-presets": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-app-boot": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-locale": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-modules": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-runtime": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-ui-primitives": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-ui-settings-plugins": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-ui-slots": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-code-runtime-worker-thread": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-credentials": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-credentials-local": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-host-webserver": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-invariants": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-llm": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-output-retention": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-scope": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-session": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-session-persistence": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-session-persistence-jsonl": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-settings": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-settings-file": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-spill": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-spill-local": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-spill-policy": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-storage": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-storage-domain": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-storage-json": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-system-prompt": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-tools": "^0.1.0-rc.6",
+    "@testing-library/react": "16.3.2",
+    "@types/node": "^24.0.0",
+    "@types/react": "18.3.28",
+    "@types/react-dom": "18.3.7",
+    "jsdom": "29.1.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "tsdown": "0.22.14",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.0"
+  }
+}

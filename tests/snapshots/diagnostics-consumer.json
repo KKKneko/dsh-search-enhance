@@ -1,0 +1,1370 @@
+{
+  "global_definitions": [
+    "docs_search",
+    "web_extract",
+    "search_tools",
+    "search_sources",
+    "web_map",
+    "research_plan",
+    "search_diagnostics",
+    "context7_resolve_library_id",
+    "context7_query_docs",
+    "context7_get_library_docs",
+    "context7_get_cached_doc_raw"
+  ],
+  "deprecated_optional_tools_ignored": [
+    "docs_search",
+    "web_extract",
+    "search_tools",
+    "search_sources",
+    "web_map",
+    "research_plan",
+    "search_diagnostics",
+    "context7_resolve_library_id",
+    "context7_query_docs",
+    "context7_get_library_docs",
+    "context7_get_cached_doc_raw"
+  ],
+  "diagnostics_schema": {
+    "name": "search_diagnostics",
+    "description": "Read-only masked search capability/config status. show is network-free. Use test only when the user explicitly requests connection diagnostics; test runs bounded fixed Provider health probes. API keys are never parameters or output, config writes happen only through DSH Settings/UI, and ordinary searches should not call this tool.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "description": "Use show for network-free masked capability/config status. Use test only after the user explicitly requests bounded connection diagnostics.",
+          "enum": [
+            "show",
+            "test"
+          ]
+        }
+      },
+      "required": [
+        "action"
+      ]
+    }
+  },
+  "direct_show": {
+    "tested": false,
+    "action": "show",
+    "capability_status": [
+      {
+        "capability": "main_search",
+        "available": true,
+        "required": true,
+        "providers": [
+          {
+            "provider": "search_api",
+            "state": "configured"
+          },
+          {
+            "provider": "tavily_search",
+            "state": "configured"
+          },
+          {
+            "provider": "firecrawl_search",
+            "state": "configured"
+          }
+        ]
+      },
+      {
+        "capability": "docs_search",
+        "available": true,
+        "required": true,
+        "providers": [
+          {
+            "provider": "context7",
+            "state": "configured"
+          },
+          {
+            "provider": "exa",
+            "state": "configured"
+          }
+        ]
+      },
+      {
+        "capability": "web_extract",
+        "available": true,
+        "required": true,
+        "providers": [
+          {
+            "provider": "tavily_extract",
+            "state": "configured"
+          },
+          {
+            "provider": "firecrawl_scrape",
+            "state": "configured"
+          },
+          {
+            "provider": "smart_direct",
+            "state": "configured"
+          },
+          {
+            "provider": "direct",
+            "state": "configured"
+          }
+        ]
+      },
+      {
+        "capability": "site_map",
+        "available": true,
+        "required": false,
+        "providers": [
+          {
+            "provider": "tavily_map",
+            "state": "configured"
+          }
+        ]
+      }
+    ],
+    "provider_attempts": [],
+    "providers_used": [],
+    "fallback_used": false,
+    "minimum_profile": {
+      "profile": "standard",
+      "satisfied": true
+    },
+    "configuration": {
+      "default_profile": "auto",
+      "default_depth": "compact",
+      "search_api_protocol": "completions",
+      "search_model_configured": true,
+      "thinking_level": "off",
+      "fallback_mode": "auto",
+      "web_map_enabled": true,
+      "research_plan_enabled": true,
+      "diagnostics_enabled": true,
+      "tavily_search_enabled": true,
+      "firecrawl_search_enabled": true,
+      "tavily_extract_enabled": true,
+      "firecrawl_scrape_enabled": true,
+      "smart_direct_enabled": true,
+      "direct_enabled": true
+    },
+    "warnings": [],
+    "limitations": [
+      "Capability availability reflects configuration and route enablement, not live connectivity.",
+      "show performs no Provider request and uses only DSH Credentials describe for credential status."
+    ],
+    "canonical_output_truncated": false,
+    "model_text_max_bytes": 16384
+  },
+  "native_wire_tools": [
+    "context7_get_cached_doc_raw",
+    "context7_get_library_docs",
+    "context7_query_docs",
+    "context7_resolve_library_id",
+    "docs_search",
+    "research_plan",
+    "search_diagnostics",
+    "search_sources",
+    "search_tools",
+    "web_extract",
+    "web_map"
+  ],
+  "code_wire_tools": [
+    "run_code"
+  ],
+  "code_system_has_diagnostics": true,
+  "native_show": {
+    "tested": false,
+    "action": "show",
+    "capability_status": [
+      {
+        "capability": "main_search",
+        "available": true,
+        "required": true,
+        "providers": [
+          {
+            "provider": "search_api",
+            "state": "configured"
+          },
+          {
+            "provider": "tavily_search",
+            "state": "configured"
+          },
+          {
+            "provider": "firecrawl_search",
+            "state": "configured"
+          }
+        ]
+      },
+      {
+        "capability": "docs_search",
+        "available": true,
+        "required": true,
+        "providers": [
+          {
+            "provider": "context7",
+            "state": "configured"
+          },
+          {
+            "provider": "exa",
+            "state": "configured"
+          }
+        ]
+      },
+      {
+        "capability": "web_extract",
+        "available": true,
+        "required": true,
+        "providers": [
+          {
+            "provider": "tavily_extract",
+            "state": "configured"
+          },
+          {
+            "provider": "firecrawl_scrape",
+            "state": "configured"
+          },
+          {
+            "provider": "smart_direct",
+            "state": "configured"
+          },
+          {
+            "provider": "direct",
+            "state": "configured"
+          }
+        ]
+      },
+      {
+        "capability": "site_map",
+        "available": true,
+        "required": false,
+        "providers": [
+          {
+            "provider": "tavily_map",
+            "state": "configured"
+          }
+        ]
+      }
+    ],
+    "provider_attempts": [],
+    "providers_used": [],
+    "fallback_used": false,
+    "minimum_profile": {
+      "profile": "standard",
+      "satisfied": true
+    },
+    "configuration": {
+      "default_profile": "auto",
+      "default_depth": "compact",
+      "search_api_protocol": "completions",
+      "search_model_configured": true,
+      "thinking_level": "off",
+      "fallback_mode": "auto",
+      "web_map_enabled": true,
+      "research_plan_enabled": true,
+      "diagnostics_enabled": true,
+      "tavily_search_enabled": true,
+      "firecrawl_search_enabled": true,
+      "tavily_extract_enabled": true,
+      "firecrawl_scrape_enabled": true,
+      "smart_direct_enabled": true,
+      "direct_enabled": true
+    },
+    "warnings": [],
+    "limitations": [
+      "Capability availability reflects configuration and route enablement, not live connectivity.",
+      "show performs no Provider request and uses only DSH Credentials describe for credential status."
+    ],
+    "canonical_output_truncated": false,
+    "model_text_max_bytes": 16384
+  },
+  "code_show": {
+    "tested": false,
+    "action": "show",
+    "capability_status": [
+      {
+        "capability": "main_search",
+        "available": true,
+        "required": true,
+        "providers": [
+          {
+            "provider": "search_api",
+            "state": "configured"
+          },
+          {
+            "provider": "tavily_search",
+            "state": "configured"
+          },
+          {
+            "provider": "firecrawl_search",
+            "state": "configured"
+          }
+        ]
+      },
+      {
+        "capability": "docs_search",
+        "available": true,
+        "required": true,
+        "providers": [
+          {
+            "provider": "context7",
+            "state": "configured"
+          },
+          {
+            "provider": "exa",
+            "state": "configured"
+          }
+        ]
+      },
+      {
+        "capability": "web_extract",
+        "available": true,
+        "required": true,
+        "providers": [
+          {
+            "provider": "tavily_extract",
+            "state": "configured"
+          },
+          {
+            "provider": "firecrawl_scrape",
+            "state": "configured"
+          },
+          {
+            "provider": "smart_direct",
+            "state": "configured"
+          },
+          {
+            "provider": "direct",
+            "state": "configured"
+          }
+        ]
+      },
+      {
+        "capability": "site_map",
+        "available": true,
+        "required": false,
+        "providers": [
+          {
+            "provider": "tavily_map",
+            "state": "configured"
+          }
+        ]
+      }
+    ],
+    "provider_attempts": [],
+    "providers_used": [],
+    "fallback_used": false,
+    "minimum_profile": {
+      "profile": "standard",
+      "satisfied": true
+    },
+    "configuration": {
+      "default_profile": "auto",
+      "default_depth": "compact",
+      "search_api_protocol": "completions",
+      "search_model_configured": true,
+      "thinking_level": "off",
+      "fallback_mode": "auto",
+      "web_map_enabled": true,
+      "research_plan_enabled": true,
+      "diagnostics_enabled": true,
+      "tavily_search_enabled": true,
+      "firecrawl_search_enabled": true,
+      "tavily_extract_enabled": true,
+      "firecrawl_scrape_enabled": true,
+      "smart_direct_enabled": true,
+      "direct_enabled": true
+    },
+    "warnings": [],
+    "limitations": [
+      "Capability availability reflects configuration and route enablement, not live connectivity.",
+      "show performs no Provider request and uses only DSH Credentials describe for credential status."
+    ],
+    "canonical_output_truncated": false,
+    "model_text_max_bytes": 16384
+  },
+  "native_test": {
+    "tested": true,
+    "action": "test",
+    "capability_status": [
+      {
+        "capability": "main_search",
+        "available": true,
+        "required": true,
+        "providers": [
+          {
+            "provider": "search_api",
+            "state": "configured"
+          },
+          {
+            "provider": "tavily_search",
+            "state": "configured"
+          },
+          {
+            "provider": "firecrawl_search",
+            "state": "configured"
+          }
+        ]
+      },
+      {
+        "capability": "docs_search",
+        "available": true,
+        "required": true,
+        "providers": [
+          {
+            "provider": "context7",
+            "state": "configured"
+          },
+          {
+            "provider": "exa",
+            "state": "configured"
+          }
+        ]
+      },
+      {
+        "capability": "web_extract",
+        "available": true,
+        "required": true,
+        "providers": [
+          {
+            "provider": "tavily_extract",
+            "state": "configured"
+          },
+          {
+            "provider": "firecrawl_scrape",
+            "state": "configured"
+          },
+          {
+            "provider": "smart_direct",
+            "state": "configured"
+          },
+          {
+            "provider": "direct",
+            "state": "configured"
+          }
+        ]
+      },
+      {
+        "capability": "site_map",
+        "available": true,
+        "required": false,
+        "providers": [
+          {
+            "provider": "tavily_map",
+            "state": "configured"
+          }
+        ]
+      }
+    ],
+    "provider_attempts": [
+      {
+        "capability": "main_search",
+        "provider": "search_api",
+        "outcome": "success",
+        "duration_ms": "<duration-ms>",
+        "attempts": 1
+      },
+      {
+        "capability": "main_search",
+        "provider": "tavily_search",
+        "outcome": "success",
+        "duration_ms": "<duration-ms>",
+        "attempts": 1
+      },
+      {
+        "capability": "main_search",
+        "provider": "firecrawl_search",
+        "outcome": "success",
+        "duration_ms": "<duration-ms>",
+        "attempts": 1
+      },
+      {
+        "capability": "docs_search",
+        "provider": "context7",
+        "outcome": "success",
+        "duration_ms": "<duration-ms>",
+        "attempts": 1
+      },
+      {
+        "capability": "docs_search",
+        "provider": "exa",
+        "outcome": "success",
+        "duration_ms": "<duration-ms>",
+        "attempts": 1
+      },
+      {
+        "capability": "web_extract",
+        "provider": "tavily_extract",
+        "outcome": "unsupported",
+        "duration_ms": "<duration-ms>",
+        "attempts": 0
+      },
+      {
+        "capability": "web_extract",
+        "provider": "firecrawl_scrape",
+        "outcome": "unsupported",
+        "duration_ms": "<duration-ms>",
+        "attempts": 0
+      },
+      {
+        "capability": "web_extract",
+        "provider": "smart_direct",
+        "outcome": "unsupported",
+        "duration_ms": "<duration-ms>",
+        "attempts": 0
+      },
+      {
+        "capability": "web_extract",
+        "provider": "direct",
+        "outcome": "unsupported",
+        "duration_ms": "<duration-ms>",
+        "attempts": 0
+      },
+      {
+        "capability": "site_map",
+        "provider": "tavily_map",
+        "outcome": "unsupported",
+        "duration_ms": "<duration-ms>",
+        "attempts": 0
+      }
+    ],
+    "providers_used": [
+      "search_api",
+      "tavily_search",
+      "firecrawl_search",
+      "context7",
+      "exa"
+    ],
+    "fallback_used": false,
+    "minimum_profile": {
+      "profile": "standard",
+      "satisfied": true
+    },
+    "configuration": {
+      "default_profile": "auto",
+      "default_depth": "compact",
+      "search_api_protocol": "completions",
+      "search_model_configured": true,
+      "thinking_level": "off",
+      "fallback_mode": "auto",
+      "web_map_enabled": true,
+      "research_plan_enabled": true,
+      "diagnostics_enabled": true,
+      "tavily_search_enabled": true,
+      "firecrawl_search_enabled": true,
+      "tavily_extract_enabled": true,
+      "firecrawl_scrape_enabled": true,
+      "smart_direct_enabled": true,
+      "direct_enabled": true
+    },
+    "warnings": [
+      {
+        "code": "unsupported",
+        "count": 5
+      }
+    ],
+    "limitations": [
+      "Capability availability reflects configuration and route enablement; only provider_attempts describes this test.",
+      "Connectivity probes are bounded point-in-time checks and do not guarantee complete third-party service health.",
+      "Tavily Extract, Firecrawl Scrape, Tavily Map, smart_direct, and direct are not network-probed; local routes report enabled state only.",
+      "The test does not call Search API main search or write session events, source records, or Provider response caches."
+    ],
+    "canonical_output_truncated": false,
+    "model_text_max_bytes": 16384
+  },
+  "code_test": {
+    "tested": true,
+    "action": "test",
+    "capability_status": [
+      {
+        "capability": "main_search",
+        "available": true,
+        "required": true,
+        "providers": [
+          {
+            "provider": "search_api",
+            "state": "configured"
+          },
+          {
+            "provider": "tavily_search",
+            "state": "configured"
+          },
+          {
+            "provider": "firecrawl_search",
+            "state": "configured"
+          }
+        ]
+      },
+      {
+        "capability": "docs_search",
+        "available": true,
+        "required": true,
+        "providers": [
+          {
+            "provider": "context7",
+            "state": "configured"
+          },
+          {
+            "provider": "exa",
+            "state": "configured"
+          }
+        ]
+      },
+      {
+        "capability": "web_extract",
+        "available": true,
+        "required": true,
+        "providers": [
+          {
+            "provider": "tavily_extract",
+            "state": "configured"
+          },
+          {
+            "provider": "firecrawl_scrape",
+            "state": "configured"
+          },
+          {
+            "provider": "smart_direct",
+            "state": "configured"
+          },
+          {
+            "provider": "direct",
+            "state": "configured"
+          }
+        ]
+      },
+      {
+        "capability": "site_map",
+        "available": true,
+        "required": false,
+        "providers": [
+          {
+            "provider": "tavily_map",
+            "state": "configured"
+          }
+        ]
+      }
+    ],
+    "provider_attempts": [
+      {
+        "capability": "main_search",
+        "provider": "search_api",
+        "outcome": "success",
+        "duration_ms": "<duration-ms>",
+        "attempts": 1
+      },
+      {
+        "capability": "main_search",
+        "provider": "tavily_search",
+        "outcome": "success",
+        "duration_ms": "<duration-ms>",
+        "attempts": 1
+      },
+      {
+        "capability": "main_search",
+        "provider": "firecrawl_search",
+        "outcome": "success",
+        "duration_ms": "<duration-ms>",
+        "attempts": 1
+      },
+      {
+        "capability": "docs_search",
+        "provider": "context7",
+        "outcome": "success",
+        "duration_ms": "<duration-ms>",
+        "attempts": 1
+      },
+      {
+        "capability": "docs_search",
+        "provider": "exa",
+        "outcome": "success",
+        "duration_ms": "<duration-ms>",
+        "attempts": 1
+      },
+      {
+        "capability": "web_extract",
+        "provider": "tavily_extract",
+        "outcome": "unsupported",
+        "duration_ms": "<duration-ms>",
+        "attempts": 0
+      },
+      {
+        "capability": "web_extract",
+        "provider": "firecrawl_scrape",
+        "outcome": "unsupported",
+        "duration_ms": "<duration-ms>",
+        "attempts": 0
+      },
+      {
+        "capability": "web_extract",
+        "provider": "smart_direct",
+        "outcome": "unsupported",
+        "duration_ms": "<duration-ms>",
+        "attempts": 0
+      },
+      {
+        "capability": "web_extract",
+        "provider": "direct",
+        "outcome": "unsupported",
+        "duration_ms": "<duration-ms>",
+        "attempts": 0
+      },
+      {
+        "capability": "site_map",
+        "provider": "tavily_map",
+        "outcome": "unsupported",
+        "duration_ms": "<duration-ms>",
+        "attempts": 0
+      }
+    ],
+    "providers_used": [
+      "search_api",
+      "tavily_search",
+      "firecrawl_search",
+      "context7",
+      "exa"
+    ],
+    "fallback_used": false,
+    "minimum_profile": {
+      "profile": "standard",
+      "satisfied": true
+    },
+    "configuration": {
+      "default_profile": "auto",
+      "default_depth": "compact",
+      "search_api_protocol": "completions",
+      "search_model_configured": true,
+      "thinking_level": "off",
+      "fallback_mode": "auto",
+      "web_map_enabled": true,
+      "research_plan_enabled": true,
+      "diagnostics_enabled": true,
+      "tavily_search_enabled": true,
+      "firecrawl_search_enabled": true,
+      "tavily_extract_enabled": true,
+      "firecrawl_scrape_enabled": true,
+      "smart_direct_enabled": true,
+      "direct_enabled": true
+    },
+    "warnings": [
+      {
+        "code": "unsupported",
+        "count": 5
+      }
+    ],
+    "limitations": [
+      "Capability availability reflects configuration and route enablement; only provider_attempts describes this test.",
+      "Connectivity probes are bounded point-in-time checks and do not guarantee complete third-party service health.",
+      "Tavily Extract, Firecrawl Scrape, Tavily Map, smart_direct, and direct are not network-probed; local routes report enabled state only.",
+      "The test does not call Search API main search or write session events, source records, or Provider response caches."
+    ],
+    "canonical_output_truncated": false,
+    "model_text_max_bytes": 16384
+  },
+  "native_cards": {
+    "show": {
+      "live": {
+        "card": "generic",
+        "title": "Search capability status (standard, satisfied)"
+      },
+      "replay": {
+        "card": "generic",
+        "title": "Search capability status (standard, satisfied)"
+      },
+      "metadata": {
+        "version": 1,
+        "type": "search_diagnostics",
+        "action": "show",
+        "tested": false,
+        "capability_count": 4,
+        "attempt_count": 0,
+        "successful_count": 0,
+        "warning_count": 0,
+        "fallback_used": false,
+        "minimum_profile": "standard",
+        "minimum_satisfied": true,
+        "canonical_output_truncated": false,
+        "model_text_truncated": false
+      }
+    },
+    "test": {
+      "live": {
+        "card": "generic",
+        "title": "Search connectivity test (5/5 dispatched probes succeeded)"
+      },
+      "replay": {
+        "card": "generic",
+        "title": "Search connectivity test (5/5 dispatched probes succeeded)"
+      },
+      "metadata": {
+        "version": 1,
+        "type": "search_diagnostics",
+        "action": "test",
+        "tested": true,
+        "capability_count": 4,
+        "attempt_count": 5,
+        "successful_count": 5,
+        "warning_count": 1,
+        "fallback_used": false,
+        "minimum_profile": "standard",
+        "minimum_satisfied": true,
+        "canonical_output_truncated": false,
+        "model_text_truncated": false
+      }
+    }
+  },
+  "native_events": [
+    {
+      "type": "tool/call",
+      "callId": "native-diagnostics-show",
+      "name": "search_diagnostics",
+      "arguments": {
+        "action": "show"
+      }
+    },
+    {
+      "type": "tool/result",
+      "callId": "native-diagnostics-show",
+      "isError": false,
+      "content": [
+        {
+          "type": "text",
+          "text": "Search diagnostics\nAction: show\nLive probes run: no\nMinimum profile: standard (satisfied=true)\nProduct fallback used by diagnostics: false\n\nCapability availability (configuration only)\n- main_search: available=true, required=true, providers=search_api:configured, tavily_search:configured, firecrawl_search:configured\n- docs_search: available=true, required=true, providers=context7:configured, exa:configured\n- web_extract: available=true, required=true, providers=tavily_extract:configured, firecrawl_scrape:configured, smart_direct:configured, direct:configured\n- site_map: available=true, required=false, providers=tavily_map:configured\n\nThis-test Provider outcomes\nNo network probes were run by show.\n\nSafe configuration status\nDefault profile/depth: auto/compact\nSearch API protocol: completions\nSearch model configured: true\nThinking/fallback: off/auto\nPlugin definitions: web_map=true, research_plan=true, diagnostics=true (final Agent visibility may be further restricted)\nSearch routes enabled: tavily=true, firecrawl=true\nExtract routes enabled: tavily=true, firecrawl=true, smart_direct=true, direct=true\n\nWarnings\nNone.\n\nLimitations\n- Capability availability reflects configuration and route enablement, not live connectivity.\n- show performs no Provider request and uses only DSH Credentials describe for credential status."
+        }
+      ],
+      "meta": {
+        "version": 1,
+        "type": "search_diagnostics",
+        "action": "show",
+        "tested": false,
+        "capability_count": 4,
+        "attempt_count": 0,
+        "successful_count": 0,
+        "warning_count": 0,
+        "fallback_used": false,
+        "minimum_profile": "standard",
+        "minimum_satisfied": true,
+        "canonical_output_truncated": false,
+        "model_text_truncated": false
+      }
+    },
+    {
+      "type": "tool/call",
+      "callId": "native-diagnostics-test",
+      "name": "search_diagnostics",
+      "arguments": {
+        "action": "test"
+      }
+    },
+    {
+      "type": "tool/result",
+      "callId": "native-diagnostics-test",
+      "isError": false,
+      "content": [
+        {
+          "type": "text",
+          "text": "Search diagnostics\nAction: test\nLive probes run: yes\nMinimum profile: standard (satisfied=true)\nProduct fallback used by diagnostics: false\n\nCapability availability (configuration only)\n- main_search: available=true, required=true, providers=search_api:configured, tavily_search:configured, firecrawl_search:configured\n- docs_search: available=true, required=true, providers=context7:configured, exa:configured\n- web_extract: available=true, required=true, providers=tavily_extract:configured, firecrawl_scrape:configured, smart_direct:configured, direct:configured\n- site_map: available=true, required=false, providers=tavily_map:configured\n\nThis-test Provider outcomes\n- main_search/search_api: outcome=success, attempts=1, duration_ms=<duration-ms>\n- main_search/tavily_search: outcome=success, attempts=1, duration_ms=<duration-ms>\n- main_search/firecrawl_search: outcome=success, attempts=1, duration_ms=<duration-ms>\n- docs_search/context7: outcome=success, attempts=1, duration_ms=<duration-ms>\n- docs_search/exa: outcome=success, attempts=1, duration_ms=<duration-ms>\n- web_extract/tavily_extract: outcome=unsupported, attempts=0, duration_ms=<duration-ms>\n- web_extract/firecrawl_scrape: outcome=unsupported, attempts=0, duration_ms=<duration-ms>\n- web_extract/smart_direct: outcome=unsupported, attempts=0, duration_ms=<duration-ms>\n- web_extract/direct: outcome=unsupported, attempts=0, duration_ms=<duration-ms>\n- site_map/tavily_map: outcome=unsupported, attempts=0, duration_ms=<duration-ms>\n\nSafe configuration status\nDefault profile/depth: auto/compact\nSearch API protocol: completions\nSearch model configured: true\nThinking/fallback: off/auto\nPlugin definitions: web_map=true, research_plan=true, diagnostics=true (final Agent visibility may be further restricted)\nSearch routes enabled: tavily=true, firecrawl=true\nExtract routes enabled: tavily=true, firecrawl=true, smart_direct=true, direct=true\n\nWarnings\n- Configured routes have no compliant network probe (5).\n\nLimitations\n- Capability availability reflects configuration and route enablement; only provider_attempts describes this test.\n- Connectivity probes are bounded point-in-time checks and do not guarantee complete third-party service health.\n- Tavily Extract, Firecrawl Scrape, Tavily Map, smart_direct, and direct are not network-probed; local routes report enabled state only.\n- The test does not call Search API main search or write session events, source records, or Provider response caches."
+        }
+      ],
+      "meta": {
+        "version": 1,
+        "type": "search_diagnostics",
+        "action": "test",
+        "tested": true,
+        "capability_count": 4,
+        "attempt_count": 5,
+        "successful_count": 5,
+        "warning_count": 1,
+        "fallback_used": false,
+        "minimum_profile": "standard",
+        "minimum_satisfied": true,
+        "canonical_output_truncated": false,
+        "model_text_truncated": false
+      }
+    }
+  ],
+  "code_events": [
+    {
+      "type": "tool/code-dispatch-start",
+      "data": {
+        "rootCallId": "code-diagnostics-show",
+        "parentCallId": "code-diagnostics-show",
+        "subCallId": "code-diagnostics-show:code:1",
+        "name": "search_diagnostics",
+        "arguments": {
+          "action": "show"
+        }
+      }
+    },
+    {
+      "type": "tool/code-dispatch",
+      "data": {
+        "rootCallId": "code-diagnostics-show",
+        "parentCallId": "code-diagnostics-show",
+        "subCallId": "code-diagnostics-show:code:1",
+        "name": "search_diagnostics",
+        "arguments": {
+          "action": "show"
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Search diagnostics\nAction: show\nLive probes run: no\nMinimum profile: standard (satisfied=true)\nProduct fallback used by diagnostics: false\n\nCapability availability (configuration only)\n- main_search: available=true, required=true, providers=search_api:configured, tavily_search:configured, firecrawl_search:configured\n- docs_search: available=true, required=true, providers=context7:configured, exa:configured\n- web_extract: available=true, required=true, providers=tavily_extract:configured, firecrawl_scrape:configured, smart_direct:configured, direct:configured\n- site_map: available=true, required=false, providers=tavily_map:configured\n\nThis-test Provider outcomes\nNo network probes were run by show.\n\nSafe configuration status\nDefault profile/depth: auto/compact\nSearch API protocol: completions\nSearch model configured: true\nThinking/fallback: off/auto\nPlugin definitions: web_map=true, research_plan=true, diagnostics=true (final Agent visibility may be further restricted)\nSearch routes enabled: tavily=true, firecrawl=true\nExtract routes enabled: tavily=true, firecrawl=true, smart_direct=true, direct=true\n\nWarnings\nNone.\n\nLimitations\n- Capability availability reflects configuration and route enablement, not live connectivity.\n- show performs no Provider request and uses only DSH Credentials describe for credential status."
+          }
+        ]
+      }
+    },
+    {
+      "type": "tool/code-dispatch-start",
+      "data": {
+        "rootCallId": "code-diagnostics-test",
+        "parentCallId": "code-diagnostics-test",
+        "subCallId": "code-diagnostics-test:code:1",
+        "name": "search_diagnostics",
+        "arguments": {
+          "action": "test"
+        }
+      }
+    },
+    {
+      "type": "tool/code-dispatch",
+      "data": {
+        "rootCallId": "code-diagnostics-test",
+        "parentCallId": "code-diagnostics-test",
+        "subCallId": "code-diagnostics-test:code:1",
+        "name": "search_diagnostics",
+        "arguments": {
+          "action": "test"
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Search diagnostics\nAction: test\nLive probes run: yes\nMinimum profile: standard (satisfied=true)\nProduct fallback used by diagnostics: false\n\nCapability availability (configuration only)\n- main_search: available=true, required=true, providers=search_api:configured, tavily_search:configured, firecrawl_search:configured\n- docs_search: available=true, required=true, providers=context7:configured, exa:configured\n- web_extract: available=true, required=true, providers=tavily_extract:configured, firecrawl_scrape:configured, smart_direct:configured, direct:configured\n- site_map: available=true, required=false, providers=tavily_map:configured\n\nThis-test Provider outcomes\n- main_search/search_api: outcome=success, attempts=1, duration_ms=<duration-ms>\n- main_search/tavily_search: outcome=success, attempts=1, duration_ms=<duration-ms>\n- main_search/firecrawl_search: outcome=success, attempts=1, duration_ms=<duration-ms>\n- docs_search/context7: outcome=success, attempts=1, duration_ms=<duration-ms>\n- docs_search/exa: outcome=success, attempts=1, duration_ms=<duration-ms>\n- web_extract/tavily_extract: outcome=unsupported, attempts=0, duration_ms=<duration-ms>\n- web_extract/firecrawl_scrape: outcome=unsupported, attempts=0, duration_ms=<duration-ms>\n- web_extract/smart_direct: outcome=unsupported, attempts=0, duration_ms=<duration-ms>\n- web_extract/direct: outcome=unsupported, attempts=0, duration_ms=<duration-ms>\n- site_map/tavily_map: outcome=unsupported, attempts=0, duration_ms=<duration-ms>\n\nSafe configuration status\nDefault profile/depth: auto/compact\nSearch API protocol: completions\nSearch model configured: true\nThinking/fallback: off/auto\nPlugin definitions: web_map=true, research_plan=true, diagnostics=true (final Agent visibility may be further restricted)\nSearch routes enabled: tavily=true, firecrawl=true\nExtract routes enabled: tavily=true, firecrawl=true, smart_direct=true, direct=true\n\nWarnings\n- Configured routes have no compliant network probe (5).\n\nLimitations\n- Capability availability reflects configuration and route enablement; only provider_attempts describes this test.\n- Connectivity probes are bounded point-in-time checks and do not guarantee complete third-party service health.\n- Tavily Extract, Firecrawl Scrape, Tavily Map, smart_direct, and direct are not network-probed; local routes report enabled state only.\n- The test does not call Search API main search or write session events, source records, or Provider response caches."
+          }
+        ]
+      }
+    }
+  ],
+  "fixed_probe_requests": [
+    {
+      "method": "GET",
+      "path": "/context7/api/v2/search",
+      "query": {
+        "query": "react documentation"
+      },
+      "authorization": true,
+      "api_key": false
+    },
+    {
+      "method": "GET",
+      "path": "/context7/api/v2/search",
+      "query": {
+        "query": "react documentation"
+      },
+      "authorization": true,
+      "api_key": false
+    },
+    {
+      "method": "GET",
+      "path": "/context7/api/v2/search",
+      "query": {
+        "query": "react documentation"
+      },
+      "authorization": true,
+      "api_key": false
+    },
+    {
+      "method": "GET",
+      "path": "/search/v1/models",
+      "query": {},
+      "authorization": true,
+      "api_key": false
+    },
+    {
+      "method": "GET",
+      "path": "/search/v1/models",
+      "query": {},
+      "authorization": true,
+      "api_key": false
+    },
+    {
+      "method": "GET",
+      "path": "/search/v1/models",
+      "query": {},
+      "authorization": true,
+      "api_key": false
+    },
+    {
+      "method": "POST",
+      "path": "/exa/search",
+      "query": {},
+      "body": {
+        "contents": {
+          "highlights": true
+        },
+        "numResults": 1,
+        "query": "search-enhance fixed connectivity diagnostic",
+        "type": "neural",
+        "useAutoprompt": true
+      },
+      "authorization": false,
+      "api_key": true
+    },
+    {
+      "method": "POST",
+      "path": "/exa/search",
+      "query": {},
+      "body": {
+        "contents": {
+          "highlights": true
+        },
+        "numResults": 1,
+        "query": "search-enhance fixed connectivity diagnostic",
+        "type": "neural",
+        "useAutoprompt": true
+      },
+      "authorization": false,
+      "api_key": true
+    },
+    {
+      "method": "POST",
+      "path": "/exa/search",
+      "query": {},
+      "body": {
+        "contents": {
+          "highlights": true
+        },
+        "numResults": 1,
+        "query": "search-enhance fixed connectivity diagnostic",
+        "type": "neural",
+        "useAutoprompt": true
+      },
+      "authorization": false,
+      "api_key": true
+    },
+    {
+      "method": "POST",
+      "path": "/firecrawl/search",
+      "query": {},
+      "body": {
+        "limit": 1,
+        "query": "search-enhance fixed connectivity diagnostic"
+      },
+      "authorization": true,
+      "api_key": false
+    },
+    {
+      "method": "POST",
+      "path": "/firecrawl/search",
+      "query": {},
+      "body": {
+        "limit": 1,
+        "query": "search-enhance fixed connectivity diagnostic"
+      },
+      "authorization": true,
+      "api_key": false
+    },
+    {
+      "method": "POST",
+      "path": "/firecrawl/search",
+      "query": {},
+      "body": {
+        "limit": 1,
+        "query": "search-enhance fixed connectivity diagnostic"
+      },
+      "authorization": true,
+      "api_key": false
+    },
+    {
+      "method": "POST",
+      "path": "/tavily/search",
+      "query": {},
+      "body": {
+        "include_answer": false,
+        "include_raw_content": false,
+        "max_results": 1,
+        "query": "search-enhance fixed connectivity diagnostic",
+        "search_depth": "advanced"
+      },
+      "authorization": true,
+      "api_key": false
+    },
+    {
+      "method": "POST",
+      "path": "/tavily/search",
+      "query": {},
+      "body": {
+        "include_answer": false,
+        "include_raw_content": false,
+        "max_results": 1,
+        "query": "search-enhance fixed connectivity diagnostic",
+        "search_depth": "advanced"
+      },
+      "authorization": true,
+      "api_key": false
+    },
+    {
+      "method": "POST",
+      "path": "/tavily/search",
+      "query": {},
+      "body": {
+        "include_answer": false,
+        "include_raw_content": false,
+        "max_results": 1,
+        "query": "search-enhance fixed connectivity diagnostic",
+        "search_depth": "advanced"
+      },
+      "authorization": true,
+      "api_key": false
+    }
+  ],
+  "restart": {
+    "stopped_test": {
+      "isError": true,
+      "error": {
+        "message": "search-enhance foreground operation aborted",
+        "info": {
+          "name": "AbortError",
+          "code": "ABORTED"
+        }
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: search-enhance foreground operation aborted"
+        }
+      ]
+    },
+    "post_restart_show": {
+      "tested": false,
+      "action": "show",
+      "capability_status": [
+        {
+          "capability": "main_search",
+          "available": true,
+          "required": true,
+          "providers": [
+            {
+              "provider": "search_api",
+              "state": "configured"
+            },
+            {
+              "provider": "tavily_search",
+              "state": "configured"
+            },
+            {
+              "provider": "firecrawl_search",
+              "state": "configured"
+            }
+          ]
+        },
+        {
+          "capability": "docs_search",
+          "available": true,
+          "required": true,
+          "providers": [
+            {
+              "provider": "context7",
+              "state": "configured"
+            },
+            {
+              "provider": "exa",
+              "state": "configured"
+            }
+          ]
+        },
+        {
+          "capability": "web_extract",
+          "available": true,
+          "required": true,
+          "providers": [
+            {
+              "provider": "tavily_extract",
+              "state": "configured"
+            },
+            {
+              "provider": "firecrawl_scrape",
+              "state": "configured"
+            },
+            {
+              "provider": "smart_direct",
+              "state": "configured"
+            },
+            {
+              "provider": "direct",
+              "state": "configured"
+            }
+          ]
+        },
+        {
+          "capability": "site_map",
+          "available": true,
+          "required": false,
+          "providers": [
+            {
+              "provider": "tavily_map",
+              "state": "configured"
+            }
+          ]
+        }
+      ],
+      "provider_attempts": [],
+      "providers_used": [],
+      "fallback_used": false,
+      "minimum_profile": {
+        "profile": "standard",
+        "satisfied": true
+      },
+      "configuration": {
+        "default_profile": "auto",
+        "default_depth": "compact",
+        "search_api_protocol": "completions",
+        "search_model_configured": true,
+        "thinking_level": "off",
+        "fallback_mode": "auto",
+        "web_map_enabled": true,
+        "research_plan_enabled": true,
+        "diagnostics_enabled": true,
+        "tavily_search_enabled": true,
+        "firecrawl_search_enabled": true,
+        "tavily_extract_enabled": true,
+        "firecrawl_scrape_enabled": true,
+        "smart_direct_enabled": true,
+        "direct_enabled": true
+      },
+      "warnings": [],
+      "limitations": [
+        "Capability availability reflects configuration and route enablement, not live connectivity.",
+        "show performs no Provider request and uses only DSH Credentials describe for credential status."
+      ],
+      "canonical_output_truncated": false,
+      "model_text_max_bytes": 16384
+    },
+    "http_count_after_show": 15
+  },
+  "compatibility_call": {
+    "isError": false,
+    "content": [
+      {
+        "type": "text",
+        "text": "Search diagnostics\nAction: show\nLive probes run: no\nMinimum profile: standard (satisfied=true)\nProduct fallback used by diagnostics: false\n\nCapability availability (configuration only)\n- main_search: available=true, required=true, providers=search_api:configured, tavily_search:configured, firecrawl_search:configured\n- docs_search: available=true, required=true, providers=context7:configured, exa:configured\n- web_extract: available=true, required=true, providers=tavily_extract:configured, firecrawl_scrape:configured, smart_direct:configured, direct:configured\n- site_map: available=true, required=false, providers=tavily_map:configured\n\nThis-test Provider outcomes\nNo network probes were run by show.\n\nSafe configuration status\nDefault profile/depth: auto/compact\nSearch API protocol: completions\nSearch model configured: true\nThinking/fallback: off/auto\nPlugin definitions: web_map=true, research_plan=true, diagnostics=true (final Agent visibility may be further restricted)\nSearch routes enabled: tavily=true, firecrawl=true\nExtract routes enabled: tavily=true, firecrawl=true, smart_direct=true, direct=true\n\nWarnings\nNone.\n\nLimitations\n- Capability availability reflects configuration and route enablement, not live connectivity.\n- show performs no Provider request and uses only DSH Credentials describe for credential status."
+      }
+    ],
+    "meta": {
+      "version": 1,
+      "type": "search_diagnostics",
+      "action": "show",
+      "tested": false,
+      "capability_count": 4,
+      "attempt_count": 0,
+      "successful_count": 0,
+      "warning_count": 0,
+      "fallback_used": false,
+      "minimum_profile": "standard",
+      "minimum_satisfied": true,
+      "canonical_output_truncated": false,
+      "model_text_truncated": false
+    },
+    "value": {
+      "tested": false,
+      "action": "show",
+      "capability_status": [
+        {
+          "capability": "main_search",
+          "available": true,
+          "required": true,
+          "providers": [
+            {
+              "provider": "search_api",
+              "state": "configured"
+            },
+            {
+              "provider": "tavily_search",
+              "state": "configured"
+            },
+            {
+              "provider": "firecrawl_search",
+              "state": "configured"
+            }
+          ]
+        },
+        {
+          "capability": "docs_search",
+          "available": true,
+          "required": true,
+          "providers": [
+            {
+              "provider": "context7",
+              "state": "configured"
+            },
+            {
+              "provider": "exa",
+              "state": "configured"
+            }
+          ]
+        },
+        {
+          "capability": "web_extract",
+          "available": true,
+          "required": true,
+          "providers": [
+            {
+              "provider": "tavily_extract",
+              "state": "configured"
+            },
+            {
+              "provider": "firecrawl_scrape",
+              "state": "configured"
+            },
+            {
+              "provider": "smart_direct",
+              "state": "configured"
+            },
+            {
+              "provider": "direct",
+              "state": "configured"
+            }
+          ]
+        },
+        {
+          "capability": "site_map",
+          "available": true,
+          "required": false,
+          "providers": [
+            {
+              "provider": "tavily_map",
+              "state": "configured"
+            }
+          ]
+        }
+      ],
+      "provider_attempts": [],
+      "providers_used": [],
+      "fallback_used": false,
+      "minimum_profile": {
+        "profile": "standard",
+        "satisfied": true
+      },
+      "configuration": {
+        "default_profile": "auto",
+        "default_depth": "compact",
+        "search_api_protocol": "completions",
+        "search_model_configured": true,
+        "thinking_level": "off",
+        "fallback_mode": "auto",
+        "web_map_enabled": true,
+        "research_plan_enabled": true,
+        "diagnostics_enabled": true,
+        "tavily_search_enabled": true,
+        "firecrawl_search_enabled": true,
+        "tavily_extract_enabled": true,
+        "firecrawl_scrape_enabled": true,
+        "smart_direct_enabled": true,
+        "direct_enabled": true
+      },
+      "warnings": [],
+      "limitations": [
+        "Capability availability reflects configuration and route enablement, not live connectivity.",
+        "show performs no Provider request and uses only DSH Credentials describe for credential status."
+      ],
+      "canonical_output_truncated": false,
+      "model_text_max_bytes": 16384
+    }
+  }
+}

@@ -1,0 +1,878 @@
+{
+  "native_schema": [
+    {
+      "name": "docs_search",
+      "description": "High-level SDK/API/framework/README/release documentation search. Routes Context7 first and optionally Exa, returns discovery snippets and durable source_ref pagination; common documentation tasks do not need granular Context7 tools.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "A non-empty SDK, API, framework, README, release, or documentation question."
+          },
+          "provider": {
+            "type": "string",
+            "description": "auto (default), Context7, Exa, or both documentation discovery routes.",
+            "enum": [
+              "auto",
+              "context7",
+              "exa",
+              "all"
+            ]
+          },
+          "library_id": {
+            "type": "string",
+            "description": "Optional exact Context7 /org/project or /org/project/version id; valid ids skip resolve."
+          },
+          "max_results": {
+            "type": "integer",
+            "description": "Maximum results (1-20); defaults to 6 and may be lowered by Settings.",
+            "default": 6,
+            "enum": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20
+            ]
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "description": "Bypass fresh Context7 cache entries and request current Provider data."
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    {
+      "name": "search_tools",
+      "description": "Disclose one or more deferred search capability groups for the current Agent. Use only when the resident search tools cannot complete the task; do not activate every group preemptively. A successful call takes effect on the next model step and does not bypass restrictions from other Presets.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "capabilities": {
+            "type": "array",
+            "description": "One to five deferred search capability groups to disclose for this Agent.",
+            "items": {
+              "type": "string",
+              "enum": [
+                "context7",
+                "sources",
+                "site_map",
+                "planning",
+                "diagnostics"
+              ]
+            }
+          }
+        },
+        "required": [
+          "capabilities"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "web_extract",
+      "description": "Read a specific HTTP(S) URL through independent extraction/direct routes. No JavaScript or login; host-reachable addresses may be accessed, and evidence differs by route.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "A non-empty concrete HTTP(S) URL to read."
+          },
+          "format": {
+            "type": "string",
+            "description": "Output format; defaults to markdown.",
+            "default": "markdown",
+            "enum": [
+              "markdown",
+              "text",
+              "html",
+              "json",
+              "raw"
+            ]
+          }
+        },
+        "required": [
+          "url"
+        ]
+      }
+    },
+    {
+      "name": "web_fetch",
+      "description": "Test-only independent native web fetch stub.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ]
+      }
+    }
+  ],
+  "route_values": {
+    "tavily": {
+      "requested_url": "<fixture-origin>/target/tavily",
+      "final_url": "<fixture-origin>/target/tavily",
+      "content": "Tavily third-party extracted content.",
+      "format": "markdown",
+      "title": "Tavily extracted fixture",
+      "retrieval_route": "tavily_extract",
+      "evidence_level": "extracted_content",
+      "truncated": false,
+      "attempts": [
+        {
+          "route": "tavily_extract",
+          "outcome": "success",
+          "count": 1,
+          "duration_ms": "<duration-ms>",
+          "fallback": false
+        }
+      ],
+      "model_text_max_bytes": 4096
+    },
+    "firecrawl": {
+      "requested_url": "<fixture-origin>/target/firecrawl",
+      "final_url": "<fixture-origin>/target/firecrawl",
+      "content": "Firecrawl fallback extracted content.",
+      "format": "markdown",
+      "title": "Firecrawl extracted fixture",
+      "retrieval_route": "firecrawl_scrape",
+      "evidence_level": "extracted_content",
+      "truncated": false,
+      "attempts": [
+        {
+          "route": "tavily_extract",
+          "outcome": "failed",
+          "count": 1,
+          "duration_ms": "<duration-ms>",
+          "fallback": false,
+          "error_kind": "unavailable",
+          "retryable": false
+        },
+        {
+          "route": "firecrawl_scrape",
+          "outcome": "success",
+          "count": 1,
+          "duration_ms": "<duration-ms>",
+          "fallback": true
+        }
+      ],
+      "model_text_max_bytes": 4096
+    },
+    "smart": {
+      "requested_url": "<fixture-origin>/target/smart",
+      "final_url": "<fixture-origin>/target/smart",
+      "content": "## Smart direct fixture\n\nThis stable local HTML has enough meaningful words for Defuddle to select readable content without JavaScript or a login session.\n\nA second paragraph keeps the deterministic extraction path non-empty and replayable.",
+      "format": "markdown",
+      "title": "Smart fixture",
+      "author": "Ada Smart",
+      "canonical_url": "<fixture-origin>/target/smart",
+      "content_type": "text/html; charset=utf-8",
+      "content_length": 453,
+      "status_code": 200,
+      "encoded_bytes": 453,
+      "decompressed_bytes": 453,
+      "retrieval_route": "smart_direct",
+      "evidence_level": "extracted_content",
+      "truncated": false,
+      "attempts": [
+        {
+          "route": "tavily_extract",
+          "outcome": "failed",
+          "count": 1,
+          "duration_ms": "<duration-ms>",
+          "fallback": false,
+          "error_kind": "unavailable",
+          "retryable": false
+        },
+        {
+          "route": "firecrawl_scrape",
+          "outcome": "failed",
+          "count": 1,
+          "duration_ms": "<duration-ms>",
+          "fallback": true,
+          "error_kind": "unavailable",
+          "retryable": false
+        },
+        {
+          "route": "smart_direct",
+          "outcome": "success",
+          "count": 1,
+          "duration_ms": "<duration-ms>",
+          "fallback": true
+        }
+      ],
+      "model_text_max_bytes": 4096
+    },
+    "direct_json": {
+      "requested_url": "<fixture-origin>/target/direct-json",
+      "final_url": "<fixture-origin>/target/direct-json",
+      "content": "{\n  \"fixture\": \"direct-json\",\n  \"unicode\": \"界🙂\"\n}",
+      "format": "json",
+      "content_type": "application/json",
+      "content_length": 45,
+      "status_code": 200,
+      "encoded_bytes": 45,
+      "decompressed_bytes": 45,
+      "content_transform": "json_pretty",
+      "retrieval_route": "direct",
+      "evidence_level": "direct_http_content",
+      "truncated": false,
+      "attempts": [
+        {
+          "route": "tavily_extract",
+          "outcome": "skipped",
+          "count": 0,
+          "duration_ms": "<duration-ms>",
+          "fallback": false,
+          "skip_reason": "format_unsupported"
+        },
+        {
+          "route": "firecrawl_scrape",
+          "outcome": "skipped",
+          "count": 0,
+          "duration_ms": "<duration-ms>",
+          "fallback": false,
+          "skip_reason": "format_unsupported"
+        },
+        {
+          "route": "smart_direct",
+          "outcome": "skipped",
+          "count": 0,
+          "duration_ms": "<duration-ms>",
+          "fallback": false,
+          "skip_reason": "format_unsupported"
+        },
+        {
+          "route": "direct",
+          "outcome": "success",
+          "count": 1,
+          "duration_ms": "<duration-ms>",
+          "fallback": false
+        }
+      ],
+      "model_text_max_bytes": 4096
+    },
+    "direct_raw": {
+      "requested_url": "<fixture-origin>/target/direct-raw",
+      "final_url": "<fixture-origin>/target/direct-raw",
+      "content": "raw direct fixture <tag>preserved</tag>",
+      "format": "raw",
+      "content_type": "text/plain; charset=utf-8",
+      "content_length": 39,
+      "status_code": 200,
+      "encoded_bytes": 39,
+      "decompressed_bytes": 39,
+      "retrieval_route": "direct",
+      "evidence_level": "direct_http_content",
+      "truncated": false,
+      "attempts": [
+        {
+          "route": "tavily_extract",
+          "outcome": "skipped",
+          "count": 0,
+          "duration_ms": "<duration-ms>",
+          "fallback": false,
+          "skip_reason": "format_unsupported"
+        },
+        {
+          "route": "firecrawl_scrape",
+          "outcome": "failed",
+          "count": 1,
+          "duration_ms": "<duration-ms>",
+          "fallback": false,
+          "error_kind": "unavailable",
+          "retryable": false
+        },
+        {
+          "route": "smart_direct",
+          "outcome": "skipped",
+          "count": 0,
+          "duration_ms": "<duration-ms>",
+          "fallback": false,
+          "skip_reason": "format_unsupported"
+        },
+        {
+          "route": "direct",
+          "outcome": "success",
+          "count": 1,
+          "duration_ms": "<duration-ms>",
+          "fallback": true
+        }
+      ],
+      "model_text_max_bytes": 4096
+    },
+    "metadata_only": {
+      "requested_url": "<fixture-origin>/target/metadata-only",
+      "final_url": "<fixture-origin>/target/metadata-only",
+      "content": "[Direct fetch metadata only: the response declares an attachment, so its body was not injected.]",
+      "format": "raw",
+      "content_type": "application/octet-stream",
+      "content_length": 6,
+      "content_disposition": "attachment; filename=\"fixture.bin\"",
+      "status_code": 200,
+      "encoded_bytes": 0,
+      "decompressed_bytes": 0,
+      "metadata_only_reason": "attachment",
+      "retrieval_route": "direct",
+      "evidence_level": "direct_http_content",
+      "truncated": true,
+      "attempts": [
+        {
+          "route": "tavily_extract",
+          "outcome": "skipped",
+          "count": 0,
+          "duration_ms": "<duration-ms>",
+          "fallback": false,
+          "skip_reason": "format_unsupported"
+        },
+        {
+          "route": "firecrawl_scrape",
+          "outcome": "failed",
+          "count": 1,
+          "duration_ms": "<duration-ms>",
+          "fallback": false,
+          "error_kind": "unavailable",
+          "retryable": false
+        },
+        {
+          "route": "smart_direct",
+          "outcome": "skipped",
+          "count": 0,
+          "duration_ms": "<duration-ms>",
+          "fallback": false,
+          "skip_reason": "format_unsupported"
+        },
+        {
+          "route": "direct",
+          "outcome": "success",
+          "count": 1,
+          "duration_ms": "<duration-ms>",
+          "fallback": true
+        }
+      ],
+      "model_text_max_bytes": 4096
+    },
+    "spill": {
+      "requested_url": "<fixture-origin>/target/spill",
+      "final_url": "<fixture-origin>/target/spill",
+      "content": "<long-content:5240>",
+      "format": "markdown",
+      "title": "Long Tavily spill fixture",
+      "retrieval_route": "tavily_extract",
+      "evidence_level": "extracted_content",
+      "truncated": false,
+      "attempts": [
+        {
+          "route": "tavily_extract",
+          "outcome": "success",
+          "count": 1,
+          "duration_ms": "<duration-ms>",
+          "fallback": false
+        }
+      ],
+      "model_text_max_bytes": 4096
+    }
+  },
+  "route_model_text": {
+    "tavily": [
+      {
+        "type": "text",
+        "text": "Requested URL: <fixture-origin>/target/tavily\nFinal URL: <fixture-origin>/target/tavily\nRetrieval route: tavily_extract\nEvidence level: extracted_content\nFormat: markdown\nTruncated: no\nTitle: Tavily extracted fixture\nPath limitation: third-party extracted content may be abridged or reordered; no target HTTP status is inferred when the Provider did not supply one.\n\nContent\nTavily third-party extracted content.\n\nRoute attempts\n- tavily_extract: outcome=success, count=1, duration_ms=<duration-ms>, fallback=false"
+      }
+    ],
+    "firecrawl": [
+      {
+        "type": "text",
+        "text": "Requested URL: <fixture-origin>/target/firecrawl\nFinal URL: <fixture-origin>/target/firecrawl\nRetrieval route: firecrawl_scrape\nEvidence level: extracted_content\nFormat: markdown\nTruncated: no\nTitle: Firecrawl extracted fixture\nPath limitation: third-party extracted content may be abridged or reordered; no target HTTP status is inferred when the Provider did not supply one.\n\nContent\nFirecrawl fallback extracted content.\n\nRoute attempts\n- tavily_extract: outcome=failed, count=1, duration_ms=<duration-ms>, fallback=false, error_kind=unavailable, retryable=false\n- firecrawl_scrape: outcome=success, count=1, duration_ms=<duration-ms>, fallback=true"
+      }
+    ],
+    "smart": [
+      {
+        "type": "text",
+        "text": "Requested URL: <fixture-origin>/target/smart\nFinal URL: <fixture-origin>/target/smart\nRetrieval route: smart_direct\nEvidence level: extracted_content\nHTTP status: 200\nContent-Type: text/html; charset=utf-8\nFormat: markdown\nTruncated: no\nTitle: Smart fixture\nAuthor: Ada Smart\nCanonical URL: <fixture-origin>/target/smart\nContent-Length: 453\nEncoded bytes observed: 453\nDecompressed bytes observed: 453\nPath limitation: the host made a fingerprinted static HTTP request, but Defuddle may select, abridge, or reorder content; no JavaScript or login session was used.\n\nContent\n## Smart direct fixture\n\nThis stable local HTML has enough meaningful words for Defuddle to select readable content without JavaScript or a login session.\n\nA second paragraph keeps the deterministic extraction path non-empty and replayable.\n\nRoute attempts\n- tavily_extract: outcome=failed, count=1, duration_ms=<duration-ms>, fallback=false, error_kind=unavailable, retryable=false\n- firecrawl_scrape: outcome=failed, count=1, duration_ms=<duration-ms>, fallback=true, error_kind=unavailable, retryable=false\n- smart_direct: outcome=success, count=1, duration_ms=<duration-ms>, fallback=true"
+      }
+    ],
+    "direct_json": [
+      {
+        "type": "text",
+        "text": "Requested URL: <fixture-origin>/target/direct-json\nFinal URL: <fixture-origin>/target/direct-json\nRetrieval route: direct\nEvidence level: direct_http_content\nHTTP status: 200\nContent-Type: application/json\nFormat: json\nTruncated: no\nContent-Length: 45\nEncoded bytes observed: 45\nDecompressed bytes observed: 45\nContent transform: json_pretty\nPath limitation: direct host HTTP used no JavaScript or login session; content may be transformed or truncated, as reported below.\n\nContent\n{\n  \"fixture\": \"direct-json\",\n  \"unicode\": \"界🙂\"\n}\n\nRoute attempts\n- tavily_extract: outcome=skipped, count=0, duration_ms=<duration-ms>, fallback=false, skip_reason=format_unsupported\n- firecrawl_scrape: outcome=skipped, count=0, duration_ms=<duration-ms>, fallback=false, skip_reason=format_unsupported\n- smart_direct: outcome=skipped, count=0, duration_ms=<duration-ms>, fallback=false, skip_reason=format_unsupported\n- direct: outcome=success, count=1, duration_ms=<duration-ms>, fallback=false"
+      }
+    ],
+    "direct_raw": [
+      {
+        "type": "text",
+        "text": "Requested URL: <fixture-origin>/target/direct-raw\nFinal URL: <fixture-origin>/target/direct-raw\nRetrieval route: direct\nEvidence level: direct_http_content\nHTTP status: 200\nContent-Type: text/plain; charset=utf-8\nFormat: raw\nTruncated: no\nContent-Length: 39\nEncoded bytes observed: 39\nDecompressed bytes observed: 39\nPath limitation: direct host HTTP used no JavaScript or login session; content may be transformed or truncated, as reported below.\n\nContent\nraw direct fixture <tag>preserved</tag>\n\nRoute attempts\n- tavily_extract: outcome=skipped, count=0, duration_ms=<duration-ms>, fallback=false, skip_reason=format_unsupported\n- firecrawl_scrape: outcome=failed, count=1, duration_ms=<duration-ms>, fallback=false, error_kind=unavailable, retryable=false\n- smart_direct: outcome=skipped, count=0, duration_ms=<duration-ms>, fallback=false, skip_reason=format_unsupported\n- direct: outcome=success, count=1, duration_ms=<duration-ms>, fallback=true"
+      }
+    ],
+    "metadata_only": [
+      {
+        "type": "text",
+        "text": "Requested URL: <fixture-origin>/target/metadata-only\nFinal URL: <fixture-origin>/target/metadata-only\nRetrieval route: direct\nEvidence level: direct_http_content\nHTTP status: 200\nContent-Type: application/octet-stream\nFormat: raw\nTruncated: yes\nContent-Length: 6\nContent-Disposition: attachment; filename=\"fixture.bin\"\nEncoded bytes observed: 0\nDecompressed bytes observed: 0\nMetadata-only reason: attachment\nPath limitation: direct host HTTP used no JavaScript or login session; content may be transformed or truncated, as reported below.\n\nContent\n[Direct fetch metadata only: the response declares an attachment, so its body was not injected.]\n\nRoute attempts\n- tavily_extract: outcome=skipped, count=0, duration_ms=<duration-ms>, fallback=false, skip_reason=format_unsupported\n- firecrawl_scrape: outcome=failed, count=1, duration_ms=<duration-ms>, fallback=false, error_kind=unavailable, retryable=false\n- smart_direct: outcome=skipped, count=0, duration_ms=<duration-ms>, fallback=false, skip_reason=format_unsupported\n- direct: outcome=success, count=1, duration_ms=<duration-ms>, fallback=true"
+      }
+    ],
+    "spill": [
+      {
+        "type": "text",
+        "text": "Requested URL: <fixture-origin>/target/spill\nFinal URL: <fixture-origin>/target/spill\nRetrieval route: tavily_extract\nEvidence level: extracted_content\nFormat: markdown\nTruncated: no\nTitle: Long Tavily spill fixture\nPath limitation: third-party extracted content may be abridged or reordered; no target HTTP status is inferred when the Provider did not supply one.\n\nContent\nHEAD-<A-run><B-run>\n\nRoute attempts\n- tavily_extract: outcome=success, count=1, duration_ms=<duration-ms>, fallback=false\n\n[Model text truncated by model_text_max_bytes.]\n\n(Omitted <bytes> bytes. Full formatted result stored at: <spill-locator> Use read with offset/limit, or grep this path to search within it.)"
+      }
+    ]
+  },
+  "cards": {
+    "tavily": {
+      "card": "generic",
+      "title": "Extracted via tavily_extract (extracted_content)"
+    },
+    "firecrawl": {
+      "card": "generic",
+      "title": "Extracted via firecrawl_scrape (extracted_content)"
+    },
+    "smart_live": {
+      "card": "web",
+      "kind": "fetch",
+      "url": "<fixture-origin>/target/smart",
+      "statusCode": 200,
+      "truncated": false
+    },
+    "smart_replay": {
+      "card": "web",
+      "kind": "fetch",
+      "url": "<fixture-origin>/target/smart",
+      "statusCode": 200,
+      "truncated": false
+    },
+    "smart_disk_replay": {
+      "card": "web",
+      "kind": "fetch",
+      "url": "<fixture-origin>/target/smart",
+      "statusCode": 200,
+      "truncated": false
+    },
+    "direct_json": {
+      "card": "web",
+      "kind": "fetch",
+      "url": "<fixture-origin>/target/direct-json",
+      "statusCode": 200,
+      "truncated": false
+    },
+    "metadata_only": {
+      "card": "web",
+      "kind": "fetch",
+      "url": "<fixture-origin>/target/metadata-only",
+      "statusCode": 200,
+      "truncated": true
+    },
+    "all_fail": {
+      "card": {
+        "card": "generic",
+        "title": "Web extraction failed"
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "Error: SEARCH_WEB_EXTRACT_FAILED: tavily_extract[outcome=failed,count=1,duration_ms=<duration-ms>,fallback=false,error_kind=unavailable,retryable=false]; firecrawl_scrape[outcome=failed,count=1,duration_ms=<duration-ms>,fallback=true,error_kind=unavailable,retryable=false]; smart_direct[outcome=failed,count=1,duration_ms=<duration-ms>,fallback=true,error_kind=network,retryable=true]; direct[outcome=failed,count=1,duration_ms=<duration-ms>,fallback=true,error_kind=network,retryable=true]"
+        }
+      ],
+      "error_info": {
+        "name": "WebExtractToolError",
+        "code": "SEARCH_WEB_EXTRACT_FAILED"
+      }
+    }
+  },
+  "code": {
+    "nested_value": {
+      "requested_url": "<fixture-origin>/target/spill",
+      "final_url": "<fixture-origin>/target/spill",
+      "content": "<long-content:5240>",
+      "format": "markdown",
+      "title": "Long Tavily spill fixture",
+      "retrieval_route": "tavily_extract",
+      "evidence_level": "extracted_content",
+      "truncated": false,
+      "attempts": [
+        {
+          "route": "tavily_extract",
+          "outcome": "success",
+          "count": 1,
+          "duration_ms": "<duration-ms>",
+          "fallback": false
+        }
+      ],
+      "model_text_max_bytes": 4096
+    },
+    "outer_value": {
+      "logs": [],
+      "result": {
+        "requested_url": "<fixture-origin>/target/spill",
+        "final_url": "<fixture-origin>/target/spill",
+        "content": "<long-content:5240>",
+        "format": "markdown",
+        "title": "Long Tavily spill fixture",
+        "retrieval_route": "tavily_extract",
+        "evidence_level": "extracted_content",
+        "truncated": false,
+        "attempts": [
+          {
+            "route": "tavily_extract",
+            "outcome": "success",
+            "count": 1,
+            "duration_ms": "<duration-ms>",
+            "fallback": false
+          }
+        ],
+        "model_text_max_bytes": 4096
+      }
+    },
+    "outer_content": [
+      {
+        "type": "text",
+        "text": "{\n  \"requested_url\": \"<fixture-origin>/target/spill\",\n  \"final_url\": \"<fixture-origin>/target/spill\",\n  \"content\": \"HEAD-<A-run><B-run>-TAIL\",\n  \"format\": \"markdown\",\n  \"title\": \"Long Tavily spill fixture\",\n  \"retrieval_route\": \"tavily_extract\",\n  \"evidence_level\": \"extracted_content\",\n  \"truncated\": false,\n  \"attempts\": [\n    {\n      \"route\": \"tavily_extract\",\n      \"outcome\": \"success\",\n      \"count\": 1,\n      \"duration_ms\": <duration-ms>,\n      \"fallback\": false\n    }\n  ],\n  \"model_text_max_bytes\": 4096\n}\n\n(Omitted <bytes> bytes. Full formatted result stored at: <spill-locator> Use read with offset/limit, or grep this path to search within it.)"
+      }
+    ],
+    "dispatches": [
+      {
+        "rootCallId": "code-spill",
+        "parentCallId": "code-spill",
+        "subCallId": "code-spill:code:1",
+        "name": "web_extract",
+        "arguments": {
+          "url": "<fixture-origin>/target/spill",
+          "format": "markdown"
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Requested URL: <fixture-origin>/target/spill\nFinal URL: <fixture-origin>/target/spill\nRetrieval route: tavily_extract\nEvidence level: extracted_content\nFormat: markdown\nTruncated: no\nTitle: Long Tavily spill fixture\nPath limitation: third-party extracted content may be abridged or reordered; no target HTTP status is inferred when the Provider did not supply one.\n\nContent\nHEAD-<A-run><B-run>\n\nRoute attempts\n- tavily_extract: outcome=success, count=1, duration_ms=<duration-ms>, fallback=false\n\n[Model text truncated by model_text_max_bytes.]\n\n(Omitted <bytes> bytes. Full formatted result stored at: <spill-locator> Use read with offset/limit, or grep this path to search within it.)"
+          }
+        ]
+      }
+    ]
+  },
+  "persisted_events": [
+    {
+      "type": "tool/call",
+      "callId": "native-spill",
+      "name": "web_extract",
+      "arguments": {
+        "url": "<fixture-origin>/target/spill",
+        "format": "markdown"
+      }
+    },
+    {
+      "type": "tool/result",
+      "callId": "native-spill",
+      "isError": false,
+      "content": [
+        {
+          "type": "text",
+          "text": "Requested URL: <fixture-origin>/target/spill\nFinal URL: <fixture-origin>/target/spill\nRetrieval route: tavily_extract\nEvidence level: extracted_content\nFormat: markdown\nTruncated: no\nTitle: Long Tavily spill fixture\nPath limitation: third-party extracted content may be abridged or reordered; no target HTTP status is inferred when the Provider did not supply one.\n\nContent\nHEAD-<A-run><B-run>\n\nRoute attempts\n- tavily_extract: outcome=success, count=1, duration_ms=<duration-ms>, fallback=false\n\n[Model text truncated by model_text_max_bytes.]\n\n(Omitted <bytes> bytes. Full formatted result stored at: <spill-locator> Use read with offset/limit, or grep this path to search within it.)"
+        }
+      ],
+      "meta": {
+        "version": 1,
+        "type": "web_extract",
+        "retrieval_route": "tavily_extract",
+        "evidence_level": "extracted_content",
+        "final_url": "<fixture-origin>/target/spill",
+        "truncated": true
+      }
+    },
+    {
+      "type": "tool/call",
+      "callId": "code-spill",
+      "name": "run_code",
+      "arguments": {
+        "code": "return await tools.web_extract({ url: \"<fixture-origin>/target/spill\", format: 'markdown' });",
+        "description": "Read the long fixture through web_extract"
+      }
+    },
+    {
+      "type": "tool/code-dispatch-start",
+      "rootCallId": "code-spill",
+      "parentCallId": "code-spill",
+      "subCallId": "code-spill:code:1",
+      "name": "web_extract",
+      "arguments": {
+        "url": "<fixture-origin>/target/spill",
+        "format": "markdown"
+      }
+    },
+    {
+      "type": "tool/code-dispatch",
+      "rootCallId": "code-spill",
+      "parentCallId": "code-spill",
+      "subCallId": "code-spill:code:1",
+      "name": "web_extract",
+      "arguments": {
+        "url": "<fixture-origin>/target/spill",
+        "format": "markdown"
+      },
+      "isError": false,
+      "content": [
+        {
+          "type": "text",
+          "text": "Requested URL: <fixture-origin>/target/spill\nFinal URL: <fixture-origin>/target/spill\nRetrieval route: tavily_extract\nEvidence level: extracted_content\nFormat: markdown\nTruncated: no\nTitle: Long Tavily spill fixture\nPath limitation: third-party extracted content may be abridged or reordered; no target HTTP status is inferred when the Provider did not supply one.\n\nContent\nHEAD-<A-run><B-run>\n\nRoute attempts\n- tavily_extract: outcome=success, count=1, duration_ms=<duration-ms>, fallback=false\n\n[Model text truncated by model_text_max_bytes.]\n\n(Omitted <bytes> bytes. Full formatted result stored at: <spill-locator> Use read with offset/limit, or grep this path to search within it.)"
+        }
+      ]
+    },
+    {
+      "type": "tool/result",
+      "callId": "code-spill",
+      "isError": false,
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"requested_url\": \"<fixture-origin>/target/spill\",\n  \"final_url\": \"<fixture-origin>/target/spill\",\n  \"content\": \"HEAD-<A-run><B-run>-TAIL\",\n  \"format\": \"markdown\",\n  \"title\": \"Long Tavily spill fixture\",\n  \"retrieval_route\": \"tavily_extract\",\n  \"evidence_level\": \"extracted_content\",\n  \"truncated\": false,\n  \"attempts\": [\n    {\n      \"route\": \"tavily_extract\",\n      \"outcome\": \"success\",\n      \"count\": 1,\n      \"duration_ms\": <duration-ms>,\n      \"fallback\": false\n    }\n  ],\n  \"model_text_max_bytes\": 4096\n}\n\n(Omitted <bytes> bytes. Full formatted result stored at: <spill-locator> Use read with offset/limit, or grep this path to search within it.)"
+        }
+      ]
+    }
+  ],
+  "spill_artifacts": [
+    {
+      "bytes": "<bytes>",
+      "kind": "web_extract_render",
+      "has_full_middle": true,
+      "has_attempts": true
+    },
+    {
+      "bytes": "<bytes>",
+      "kind": "web_extract_render",
+      "has_full_middle": true,
+      "has_attempts": true
+    },
+    {
+      "bytes": "<bytes>",
+      "kind": "run_code_render",
+      "has_full_middle": true,
+      "has_attempts": false
+    }
+  ],
+  "post_restart_value": {
+    "requested_url": "<fixture-origin>/target/direct-json",
+    "final_url": "<fixture-origin>/target/direct-json",
+    "content": "{\n  \"fixture\": \"direct-json\",\n  \"unicode\": \"界🙂\"\n}",
+    "format": "json",
+    "content_type": "application/json",
+    "content_length": 45,
+    "status_code": 200,
+    "encoded_bytes": 45,
+    "decompressed_bytes": 45,
+    "content_transform": "json_pretty",
+    "retrieval_route": "direct",
+    "evidence_level": "direct_http_content",
+    "truncated": false,
+    "attempts": [
+      {
+        "route": "tavily_extract",
+        "outcome": "skipped",
+        "count": 0,
+        "duration_ms": "<duration-ms>",
+        "fallback": false,
+        "skip_reason": "format_unsupported"
+      },
+      {
+        "route": "firecrawl_scrape",
+        "outcome": "skipped",
+        "count": 0,
+        "duration_ms": "<duration-ms>",
+        "fallback": false,
+        "skip_reason": "format_unsupported"
+      },
+      {
+        "route": "smart_direct",
+        "outcome": "skipped",
+        "count": 0,
+        "duration_ms": "<duration-ms>",
+        "fallback": false,
+        "skip_reason": "format_unsupported"
+      },
+      {
+        "route": "direct",
+        "outcome": "success",
+        "count": 1,
+        "duration_ms": "<duration-ms>",
+        "fallback": false
+      }
+    ],
+    "model_text_max_bytes": 4096
+  },
+  "independence": {
+    "with_stub_tools": [
+      "context7_get_cached_doc_raw",
+      "context7_get_library_docs",
+      "context7_query_docs",
+      "context7_resolve_library_id",
+      "docs_search",
+      "research_plan",
+      "search_diagnostics",
+      "search_sources",
+      "search_tools",
+      "web_extract",
+      "web_fetch",
+      "web_map"
+    ],
+    "without_stub_tools": [
+      "context7_get_cached_doc_raw",
+      "context7_get_library_docs",
+      "context7_query_docs",
+      "context7_resolve_library_id",
+      "docs_search",
+      "research_plan",
+      "search_diagnostics",
+      "search_sources",
+      "search_tools",
+      "web_extract",
+      "web_map"
+    ],
+    "direct_canonical_equal": true,
+    "stub_calls": 0,
+    "without_spill": {
+      "model_text_bytes": 4096,
+      "canonical_content_complete": true,
+      "has_model_text_limit_marker": true,
+      "has_spill_locator": false
+    }
+  },
+  "http_requests": [
+    {
+      "method": "POST",
+      "url": "/tavily/extract",
+      "authorization": "<redacted>",
+      "target": "/target/tavily",
+      "format": "markdown"
+    },
+    {
+      "method": "POST",
+      "url": "/tavily/extract",
+      "authorization": "<redacted>",
+      "target": "/target/firecrawl",
+      "format": "markdown"
+    },
+    {
+      "method": "POST",
+      "url": "/firecrawl/v2/scrape",
+      "authorization": "<redacted>",
+      "target": "/target/firecrawl",
+      "format": "markdown"
+    },
+    {
+      "method": "POST",
+      "url": "/tavily/extract",
+      "authorization": "<redacted>",
+      "target": "/target/smart",
+      "format": "markdown"
+    },
+    {
+      "method": "POST",
+      "url": "/firecrawl/v2/scrape",
+      "authorization": "<redacted>",
+      "target": "/target/smart",
+      "format": "markdown"
+    },
+    {
+      "method": "GET",
+      "url": "/target/smart"
+    },
+    {
+      "method": "GET",
+      "url": "/target/direct-json"
+    },
+    {
+      "method": "POST",
+      "url": "/firecrawl/v2/scrape",
+      "authorization": "<redacted>",
+      "target": "/target/direct-raw",
+      "format": "rawHtml"
+    },
+    {
+      "method": "GET",
+      "url": "/target/direct-raw"
+    },
+    {
+      "method": "POST",
+      "url": "/firecrawl/v2/scrape",
+      "authorization": "<redacted>",
+      "target": "/target/metadata-only",
+      "format": "rawHtml"
+    },
+    {
+      "method": "GET",
+      "url": "/target/metadata-only"
+    },
+    {
+      "method": "POST",
+      "url": "/tavily/extract",
+      "authorization": "<redacted>",
+      "target": "/target/all-fail",
+      "format": "markdown"
+    },
+    {
+      "method": "POST",
+      "url": "/firecrawl/v2/scrape",
+      "authorization": "<redacted>",
+      "target": "/target/all-fail",
+      "format": "markdown"
+    },
+    {
+      "method": "GET",
+      "url": "/target/all-fail"
+    },
+    {
+      "method": "GET",
+      "url": "/target/all-fail"
+    },
+    {
+      "method": "POST",
+      "url": "/tavily/extract",
+      "authorization": "<redacted>",
+      "target": "/target/spill",
+      "format": "markdown"
+    },
+    {
+      "method": "POST",
+      "url": "/tavily/extract",
+      "authorization": "<redacted>",
+      "target": "/target/spill",
+      "format": "markdown"
+    },
+    {
+      "method": "GET",
+      "url": "/target/direct-json"
+    },
+    {
+      "method": "GET",
+      "url": "/target/direct-json"
+    },
+    {
+      "method": "POST",
+      "url": "/tavily/extract",
+      "authorization": "<redacted>",
+      "target": "/target/spill",
+      "format": "markdown"
+    }
+  ]
+}

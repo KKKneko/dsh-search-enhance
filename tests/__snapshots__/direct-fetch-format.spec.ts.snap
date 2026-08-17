@@ -1,0 +1,61 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`DirectFetchProvider redirects, formats, and adapter integration > pins the production direct canonical evidence and metadata contract keylessly 1`] = `
+{
+  "attempts": [
+    {
+      "attempts": 0,
+      "capability": "web_extract",
+      "durationMs": 0,
+      "outcome": "skipped",
+      "participatedInFallback": false,
+      "provider": "tavily_extract",
+      "skipReason": "not_configured",
+    },
+    {
+      "attempts": 0,
+      "capability": "web_extract",
+      "durationMs": 0,
+      "outcome": "skipped",
+      "participatedInFallback": false,
+      "provider": "firecrawl_scrape",
+      "skipReason": "not_configured",
+    },
+    {
+      "attempts": 0,
+      "capability": "web_extract",
+      "durationMs": 0,
+      "outcome": "skipped",
+      "participatedInFallback": false,
+      "provider": "smart_direct",
+      "skipReason": "not_configured",
+    },
+    {
+      "attempts": 1,
+      "capability": "web_extract",
+      "durationMs": 0,
+      "outcome": "success",
+      "participatedInFallback": false,
+      "provider": "direct",
+    },
+  ],
+  "author": "Ada",
+  "canonicalUrl": "http://direct.fixture.test/canonical",
+  "content": "# Snapshot title
+
+Snapshot body",
+  "contentLength": 162,
+  "contentTransform": "html_to_markdown",
+  "contentType": "text/html; charset=utf-8",
+  "decompressedBytes": 162,
+  "encodedBytes": 162,
+  "evidenceLevel": "direct_http_content",
+  "finalUrl": "http://direct.fixture.test/snapshot",
+  "format": "markdown",
+  "requestedUrl": "http://direct.fixture.test/snapshot",
+  "retrievalRoute": "direct",
+  "statusCode": 200,
+  "title": "Snapshot title",
+  "truncated": false,
+}
+`;

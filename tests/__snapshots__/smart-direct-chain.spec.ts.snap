@@ -1,0 +1,52 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`production four-route web extraction chain > pins the production smart_direct canonical route and evidence keylessly 1`] = `
+{
+  "attempts": [
+    {
+      "attempts": 0,
+      "capability": "web_extract",
+      "durationMs": 0,
+      "outcome": "skipped",
+      "participatedInFallback": false,
+      "provider": "tavily_extract",
+      "skipReason": "not_configured",
+    },
+    {
+      "attempts": 0,
+      "capability": "web_extract",
+      "durationMs": 0,
+      "outcome": "skipped",
+      "participatedInFallback": false,
+      "provider": "firecrawl_scrape",
+      "skipReason": "not_configured",
+    },
+    {
+      "attempts": 1,
+      "capability": "web_extract",
+      "durationMs": 0,
+      "outcome": "success",
+      "participatedInFallback": false,
+      "provider": "smart_direct",
+    },
+  ],
+  "author": "Ada",
+  "canonicalUrl": "http://smart.fixture.test/canonical",
+  "content": "The production smart route extracts this deterministic article with enough useful words for Defuddle.
+
+A second paragraph keeps the result stable and readable.",
+  "contentLength": 437,
+  "contentType": "text/html; charset=utf-8",
+  "decompressedBytes": 437,
+  "encodedBytes": 437,
+  "evidenceLevel": "extracted_content",
+  "finalUrl": "http://smart.fixture.test/snapshot",
+  "format": "markdown",
+  "publishedAt": "2026-08-15",
+  "requestedUrl": "http://smart.fixture.test/snapshot",
+  "retrievalRoute": "smart_direct",
+  "statusCode": 200,
+  "title": "Smart chain title",
+  "truncated": false,
+}
+`;

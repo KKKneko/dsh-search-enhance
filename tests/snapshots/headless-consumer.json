@@ -1,0 +1,1898 @@
+{
+  "native_schema": [
+    {
+      "name": "docs_search",
+      "description": "High-level SDK/API/framework/README/release documentation search. Routes Context7 first and optionally Exa, returns discovery snippets and durable source_ref pagination; common documentation tasks do not need granular Context7 tools.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "A non-empty SDK, API, framework, README, release, or documentation question."
+          },
+          "provider": {
+            "type": "string",
+            "description": "auto (default), Context7, Exa, or both documentation discovery routes.",
+            "enum": [
+              "auto",
+              "context7",
+              "exa",
+              "all"
+            ]
+          },
+          "library_id": {
+            "type": "string",
+            "description": "Optional exact Context7 /org/project or /org/project/version id; valid ids skip resolve."
+          },
+          "max_results": {
+            "type": "integer",
+            "description": "Maximum results (1-20); defaults to 6 and may be lowered by Settings.",
+            "default": 6,
+            "enum": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20
+            ]
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "description": "Bypass fresh Context7 cache entries and request current Provider data."
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    {
+      "name": "search_tools",
+      "description": "Disclose one or more deferred search capability groups for the current Agent. Use only when the resident search tools cannot complete the task; do not activate every group preemptively. A successful call takes effect on the next model step and does not bypass restrictions from other Presets.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "capabilities": {
+            "type": "array",
+            "description": "One to five deferred search capability groups to disclose for this Agent.",
+            "items": {
+              "type": "string",
+              "enum": [
+                "context7",
+                "sources",
+                "site_map",
+                "planning",
+                "diagnostics"
+              ]
+            }
+          }
+        },
+        "required": [
+          "capabilities"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "web_extract",
+      "description": "Read a specific HTTP(S) URL through independent extraction/direct routes. No JavaScript or login; host-reachable addresses may be accessed, and evidence differs by route.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "A non-empty concrete HTTP(S) URL to read."
+          },
+          "format": {
+            "type": "string",
+            "description": "Output format; defaults to markdown.",
+            "default": "markdown",
+            "enum": [
+              "markdown",
+              "text",
+              "html",
+              "json",
+              "raw"
+            ]
+          }
+        },
+        "required": [
+          "url"
+        ]
+      }
+    },
+    {
+      "name": "web_fetch",
+      "description": "Test-only independent native web fetch stub.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ]
+      }
+    },
+    {
+      "name": "web_search",
+      "description": "Recommended entry point for ordinary search. Returns a bounded answer and discovery-level source metadata; snippets are not verified webpage-body evidence.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "A non-empty, self-contained natural-language search question."
+          },
+          "profile": {
+            "type": "string",
+            "description": "Optional search strategy; omitted uses the user setting.",
+            "enum": [
+              "auto",
+              "coding_docs",
+              "code_examples",
+              "project_research",
+              "academic",
+              "fact_check"
+            ]
+          },
+          "depth": {
+            "type": "string",
+            "description": "Optional result depth; omitted uses the user setting.",
+            "enum": [
+              "compact",
+              "normal",
+              "deep"
+            ]
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    }
+  ],
+  "progressive_disclosure": {
+    "globally_registered_plugin_tools": [
+      "docs_search",
+      "web_extract",
+      "search_tools",
+      "search_sources",
+      "web_map",
+      "research_plan",
+      "search_diagnostics",
+      "context7_resolve_library_id",
+      "context7_query_docs",
+      "context7_get_library_docs",
+      "context7_get_cached_doc_raw"
+    ],
+    "fresh_plugin_tools": [
+      "docs_search",
+      "search_tools",
+      "web_extract",
+      "web_search"
+    ],
+    "source_auto_disclosure": {
+      "search_success": [
+        [
+          "docs_search",
+          "search_tools",
+          "web_extract",
+          "web_search"
+        ],
+        [
+          "docs_search",
+          "search_sources",
+          "search_tools",
+          "web_extract",
+          "web_search"
+        ]
+      ],
+      "search_empty": [
+        [
+          "docs_search",
+          "search_tools",
+          "web_extract",
+          "web_search"
+        ],
+        [
+          "docs_search",
+          "search_tools",
+          "web_extract",
+          "web_search"
+        ]
+      ],
+      "docs_success": [
+        [
+          "docs_search",
+          "search_tools",
+          "web_extract",
+          "web_search"
+        ],
+        [
+          "docs_search",
+          "search_sources",
+          "search_tools",
+          "web_extract",
+          "web_search"
+        ]
+      ],
+      "docs_failure": [
+        [
+          "docs_search",
+          "search_tools",
+          "web_extract",
+          "web_search"
+        ],
+        [
+          "docs_search",
+          "search_tools",
+          "web_extract",
+          "web_search"
+        ]
+      ],
+      "malformed_provider": [
+        [
+          "docs_search",
+          "search_tools",
+          "web_extract",
+          "web_search"
+        ],
+        [
+          "docs_search",
+          "search_tools",
+          "web_extract",
+          "web_search"
+        ]
+      ]
+    },
+    "same_batch_error": "UNKNOWN_TOOL",
+    "first_activation": {
+      "requested_groups": [
+        "site_map",
+        "planning"
+      ],
+      "added_groups": [
+        "site_map",
+        "planning"
+      ],
+      "active_groups": [
+        "site_map",
+        "planning"
+      ],
+      "groups": [
+        {
+          "group": "site_map",
+          "description": "Discover bounded candidate URLs under a known website.",
+          "tools": [
+            "web_map"
+          ]
+        },
+        {
+          "group": "planning",
+          "description": "Create an offline research plan for explicit deep-research work.",
+          "tools": [
+            "research_plan"
+          ]
+        }
+      ],
+      "added_tools": [
+        "web_map",
+        "research_plan"
+      ],
+      "disclosed_tools": [
+        "web_map",
+        "research_plan"
+      ],
+      "takes_effect": "next_step"
+    },
+    "repeated_activation": {
+      "requested_groups": [
+        "site_map",
+        "context7"
+      ],
+      "added_groups": [
+        "context7"
+      ],
+      "active_groups": [
+        "context7",
+        "site_map",
+        "planning"
+      ],
+      "groups": [
+        {
+          "group": "site_map",
+          "description": "Discover bounded candidate URLs under a known website.",
+          "tools": [
+            "web_map"
+          ]
+        },
+        {
+          "group": "context7",
+          "description": "Granular Context7 library resolution, documentation lookup, and cached-document access.",
+          "tools": [
+            "context7_resolve_library_id",
+            "context7_query_docs",
+            "context7_get_library_docs",
+            "context7_get_cached_doc_raw"
+          ]
+        }
+      ],
+      "added_tools": [
+        "context7_resolve_library_id",
+        "context7_query_docs",
+        "context7_get_library_docs",
+        "context7_get_cached_doc_raw"
+      ],
+      "disclosed_tools": [
+        "context7_resolve_library_id",
+        "context7_query_docs",
+        "context7_get_library_docs",
+        "context7_get_cached_doc_raw",
+        "web_map",
+        "research_plan"
+      ],
+      "takes_effect": "next_step"
+    },
+    "isolated_source_read": {
+      "state": "not_found",
+      "code": "SOURCE_REF_NOT_FOUND"
+    },
+    "preset_tools": [
+      "docs_search",
+      "search_tools",
+      "web_extract",
+      "web_search"
+    ],
+    "all_mode_tools": [
+      "context7_get_cached_doc_raw",
+      "context7_get_library_docs",
+      "context7_query_docs",
+      "context7_resolve_library_id",
+      "docs_search",
+      "research_plan",
+      "search_diagnostics",
+      "search_sources",
+      "search_tools",
+      "web_extract",
+      "web_map",
+      "web_search"
+    ],
+    "progressive_after_restart": {
+      "fresh": [
+        "docs_search",
+        "search_tools",
+        "web_extract",
+        "web_search"
+      ],
+      "source_restored": [
+        "docs_search",
+        "search_sources",
+        "search_tools",
+        "web_extract",
+        "web_search"
+      ],
+      "groups_restored": [
+        "context7_get_cached_doc_raw",
+        "context7_get_library_docs",
+        "context7_query_docs",
+        "context7_resolve_library_id",
+        "docs_search",
+        "research_plan",
+        "search_tools",
+        "web_extract",
+        "web_map",
+        "web_search"
+      ],
+      "preset_capped": [
+        "docs_search",
+        "search_tools",
+        "web_extract",
+        "web_search"
+      ]
+    }
+  },
+  "model_prompts": {
+    "native_initial": "You are an AI agent powered by DeepSeek Harness.\n\nAdditional Search Enhance capabilities are deferred for this Agent: context7, sources, site_map, planning, diagnostics.\nUse search_tools only when web_search, docs_search, and web_extract cannot complete the task; do not activate every group preemptively.\nActivate planning only for explicit deep research, multi-source verification, or complex comparison. Activate diagnostics only when the user asks about Provider configuration or connectivity.\nA successful disclosure applies on the next model step and cannot bypass another Preset restriction. In Code Mode, call search_tools through the current run_code SDK and wait for the next step before using newly disclosed bindings.\nSuccessful source-producing searches disclose sources automatically, so do not request it again when already active.\n\nFor current or external factual questions, start with one focused web_search (use docs_search for SDK/API documentation); do not inspect local files, settings, sessions, or credentials unless the user explicitly asks about local state.\nTreat web_search/docs_search answers, snippets, and source metadata as discovery, not claim-level evidence.\nBefore asserting decisive factual or causal conclusions, inspect selected authoritative URLs with web_extract; never present an inferred mechanism as source-stated fact, and label unestablished mechanisms as inference or unconfirmed.",
+    "code_initial": "You are an AI agent powered by DeepSeek Harness.\n\n`run_code` is the only tool you can call directly — a tool call naming any other tool fails. Reach every tool the SDK declares below from inside the program.\n\nAdditional Search Enhance capabilities are deferred for this Agent: context7, sources, site_map, planning, diagnostics.\nUse search_tools only when web_search, docs_search, and web_extract cannot complete the task; do not activate every group preemptively.\nActivate planning only for explicit deep research, multi-source verification, or complex comparison. Activate diagnostics only when the user asks about Provider configuration or connectivity.\nA successful disclosure applies on the next model step and cannot bypass another Preset restriction. In Code Mode, call search_tools through the current run_code SDK and wait for the next step before using newly disclosed bindings.\nSuccessful source-producing searches disclose sources automatically, so do not request it again when already active.\n\nFor current or external factual questions, start with one focused web_search (use docs_search for SDK/API documentation); do not inspect local files, settings, sessions, or credentials unless the user explicitly asks about local state.\nTreat web_search/docs_search answers, snippets, and source metadata as discovery, not claim-level evidence.\nBefore asserting decisive factual or causal conclusions, inspect selected authoritative URLs with web_extract; never present an inferred mechanism as source-stated fact, and label unestablished mechanisms as inference or unconfirmed.\n\n## Writing code for run_code\n\n`run_code` takes two required arguments: `code` — the body of an async TypeScript function (erasable syntax only — no `enum` or namespaces; type annotations are advisory, the code runs type-stripped) — and `description`, a short summary of what the program does. Inside the program:\n\n- Call tools as `await tools.name(args)` — quoted access for exotic names: `tools[\"my-tool\"](args)`. Every call resolves to the tool's typed canonical JSON value. Tool arguments must be lossless JSON.\n- A FAILED tool call rejects with `ToolCallError`, whose `toolName` identifies the failed tool and whose `message` is human-readable — `try/catch` it to handle and continue.\n- Independent read-only calls MAY overlap under `Promise.all` (safe calls run concurrently; mutating calls run alone, in submission order). Sequence dependent work with `await`.\n- Emit results with `return` and/or `console.log(...)`. ONLY what you print or return comes back to you — intermediate tool results never enter the conversation, so extract just what you need.\n\nThe available tools:\n\n```ts\ntype JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }\n\ninterface ToolArgsMap {\n  /** High-level SDK/API/framework/README/release documentation search. Routes Context7 first and optionally Exa, returns discovery snippets and durable source_ref pagination; common documentation tasks do not need granular Context7 tools. */\n  docs_search: {\n    /** A non-empty SDK, API, framework, README, release, or documentation question. */\n    query: string;\n    /** auto (default), Context7, Exa, or both documentation discovery routes. */\n    provider?: \"auto\" | \"context7\" | \"exa\" | \"all\";\n    /** Optional exact Context7 /org/project or /org/project/version id; valid ids skip resolve. */\n    library_id?: string;\n    /** Maximum results (1-20); defaults to 6 and may be lowered by Settings. */\n    max_results?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20;\n    /** Bypass fresh Context7 cache entries and request current Provider data. */\n    force_refresh?: boolean;\n  } & Record<string, JsonValue>;\n  /** Disclose one or more deferred search capability groups for the current Agent. Use only when the resident search tools cannot complete the task; do not activate every group preemptively. A successful call takes effect on the next model step and does not bypass restrictions from other Presets. */\n  search_tools: {\n    /** One to five deferred search capability groups to disclose for this Agent. */\n    capabilities: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n  };\n  /** Read a specific HTTP(S) URL through independent extraction/direct routes. No JavaScript or login; host-reachable addresses may be accessed, and evidence differs by route. */\n  web_extract: {\n    /** A non-empty concrete HTTP(S) URL to read. */\n    url: string;\n    /** Output format; defaults to markdown. */\n    format?: \"markdown\" | \"text\" | \"html\" | \"json\" | \"raw\";\n  } & Record<string, JsonValue>;\n  /** Test-only independent native web fetch stub. */\n  web_fetch: {\n    url: string;\n  } & Record<string, JsonValue>;\n  /** Recommended entry point for ordinary search. Returns a bounded answer and discovery-level source metadata; snippets are not verified webpage-body evidence. */\n  web_search: {\n    /** A non-empty, self-contained natural-language search question. */\n    query: string;\n    /** Optional search strategy; omitted uses the user setting. */\n    profile?: \"auto\" | \"coding_docs\" | \"code_examples\" | \"project_research\" | \"academic\" | \"fact_check\";\n    /** Optional result depth; omitted uses the user setting. */\n    depth?: \"compact\" | \"normal\" | \"deep\";\n  } & Record<string, JsonValue>;\n}\n\ninterface ToolOutputMap {\n  docs_search: {\n    state: \"complete\" | \"partial\";\n    provider: \"auto\" | \"context7\" | \"exa\" | \"all\";\n    providers: ({\n      provider: \"context7\" | \"exa\";\n      state: \"complete\" | \"partial\" | \"failed\" | \"skipped\";\n    })[];\n    selected_library?: {\n      id: string;\n      title?: string;\n      description?: string;\n    };\n    snippets: {\n      /** Bounded Context7 documentation snippet; discovery metadata, not a fetched page body. */\n      content: string;\n      title?: string;\n      library_id?: string;\n    }[];\n    sources: {\n      /** HTTP(S) source URL. */\n      url: string;\n      /** Source title when supplied by a search Provider. */\n      title?: string;\n      /** Discovery snippet; not fetched page-body evidence. */\n      snippet?: string;\n      /** Provider-supplied publication or crawl timestamp. */\n      publishedAt?: string;\n    }[];\n    /** Opaque private-storage reference for search_sources. */\n    source_ref?: string;\n    /** Opaque, evictable reference to the plugin-private Context7 docs cache. */\n    doc_ref?: string;\n    cache: {\n      resolve: {\n        state: \"hit\" | \"miss\" | \"refresh\" | \"stale\" | \"skipped\" | \"failed\";\n        evicted_entries: number;\n        reason?: \"provider_not_selected\" | \"known_library_id\" | \"library_not_found\" | \"upstream_failed\";\n      };\n      docs: {\n        state: \"hit\" | \"miss\" | \"refresh\" | \"stale\" | \"skipped\" | \"failed\";\n        evicted_entries: number;\n        reason?: \"provider_not_selected\" | \"known_library_id\" | \"library_not_found\" | \"upstream_failed\";\n      };\n    };\n    total_sources: number;\n    returned_sources: number;\n    total_snippets: number;\n    returned_snippets: number;\n    truncated: boolean;\n    evidence_level: \"discovery\";\n    warnings: ({\n      code: \"provider_failed\" | \"provider_not_configured\" | \"cache_stale\" | \"cache_evicted\" | \"provider_result_truncated\" | \"no_results\" | \"sources_truncated\" | \"canonical_output_truncated\";\n      provider?: \"context7\" | \"exa\" | \"context7-cache\";\n      path?: \"resolve\" | \"docs\";\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n      count?: number;\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n  search_tools: {\n    requested_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    added_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    active_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    groups: ({\n      group: \"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\";\n      description: string;\n      tools: string[];\n    })[];\n    added_tools: string[];\n    disclosed_tools: string[];\n    takes_effect: \"next_step\";\n  };\n  web_extract: {\n    requested_url: string;\n    final_url?: string;\n    content: string;\n    format: \"markdown\" | \"text\" | \"html\" | \"json\" | \"raw\";\n    title?: string;\n    author?: string;\n    published_at?: string;\n    canonical_url?: string;\n    content_type?: string;\n    content_length?: number;\n    content_disposition?: string;\n    content_encoding?: string;\n    status_code?: number;\n    encoded_bytes?: number;\n    decompressed_bytes?: number;\n    metadata_only_reason?: \"attachment\" | \"binary_content_type\" | \"binary_body\" | \"declared_too_large\" | \"unsupported_content_encoding\" | \"empty_body\" | \"encoded_limit\" | \"decompressed_limit\";\n    content_transform?: \"html_to_markdown\" | \"html_to_text\" | \"json_pretty\";\n    encoded_body_truncated?: true;\n    decompressed_body_truncated?: true;\n    output_truncated?: true;\n    metadata_truncated?: true;\n    canonical_output_truncated?: true;\n    retrieval_route: \"tavily_extract\" | \"firecrawl_scrape\" | \"smart_direct\" | \"direct\";\n    evidence_level: \"extracted_content\" | \"direct_http_content\";\n    truncated: boolean;\n    attempts: ({\n      route: \"tavily_extract\" | \"firecrawl_scrape\" | \"smart_direct\" | \"direct\";\n      outcome: \"success\" | \"failed\" | \"aborted\" | \"skipped\";\n      count: number;\n      duration_ms: number;\n      fallback: boolean;\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n      http_status?: number;\n      retryable?: boolean;\n      skip_reason?: \"not_configured\" | \"not_applicable\" | \"budget_zero\" | \"format_unsupported\" | \"disabled\";\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n  web_fetch: string;\n  web_search: {\n    state: \"complete\" | \"partial\";\n    answer?: string;\n    sources: {\n      /** HTTP(S) source URL. */\n      url: string;\n      /** Source title when supplied by a search Provider. */\n      title?: string;\n      /** Discovery snippet; not fetched page-body evidence. */\n      snippet?: string;\n      /** Provider-supplied publication or crawl timestamp. */\n      publishedAt?: string;\n    }[];\n    /** Opaque private-storage reference for search_sources. */\n    source_ref?: string;\n    total_sources: number;\n    returned_sources: number;\n    truncated: boolean;\n    evidence_level: \"discovery\";\n    warnings: ({\n      /** Stable warning category. */\n      code: \"main_search_failed\" | \"provider_failed\" | \"provider_result_truncated\" | \"cache_stale\" | \"cache_evicted\" | \"answer_truncated\" | \"sources_truncated\" | \"canonical_output_truncated\" | \"no_results\";\n      /** Affected search capability, when applicable. */\n      capability?: \"main_search\" | \"docs_search\" | \"web_search\" | \"web_extract\" | \"site_map\" | \"model_list\";\n      /** Credential-free Provider identifier, when applicable. */\n      provider?: string;\n      /** Safe Provider failure category, when applicable. */\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n}\n\ntype ToolName = keyof ToolOutputMap\n\ndeclare class ToolCallError extends Error {\n  readonly name: \"ToolCallError\";\n  readonly toolName: ToolName;\n}\n\ndeclare const tools: {\n  [K in ToolName]: (args: ToolArgsMap[K]) => Promise<ToolOutputMap[K]>;\n}\n```",
+    "code_after_sources": "You are an AI agent powered by DeepSeek Harness.\n\n`run_code` is the only tool you can call directly — a tool call naming any other tool fails. Reach every tool the SDK declares below from inside the program.\n\nAdditional Search Enhance capabilities are deferred for this Agent: context7, site_map, planning, diagnostics.\nUse search_tools only when web_search, docs_search, and web_extract cannot complete the task; do not activate every group preemptively.\nActivate planning only for explicit deep research, multi-source verification, or complex comparison. Activate diagnostics only when the user asks about Provider configuration or connectivity.\nA successful disclosure applies on the next model step and cannot bypass another Preset restriction. In Code Mode, call search_tools through the current run_code SDK and wait for the next step before using newly disclosed bindings.\nSuccessful source-producing searches disclose sources automatically, so do not request it again when already active.\n\nFor current or external factual questions, start with one focused web_search (use docs_search for SDK/API documentation); do not inspect local files, settings, sessions, or credentials unless the user explicitly asks about local state.\nTreat web_search/docs_search answers, snippets, and source metadata as discovery, not claim-level evidence.\nBefore asserting decisive factual or causal conclusions, inspect selected authoritative URLs with web_extract; never present an inferred mechanism as source-stated fact, and label unestablished mechanisms as inference or unconfirmed.\n\n## Writing code for run_code\n\n`run_code` takes two required arguments: `code` — the body of an async TypeScript function (erasable syntax only — no `enum` or namespaces; type annotations are advisory, the code runs type-stripped) — and `description`, a short summary of what the program does. Inside the program:\n\n- Call tools as `await tools.name(args)` — quoted access for exotic names: `tools[\"my-tool\"](args)`. Every call resolves to the tool's typed canonical JSON value. Tool arguments must be lossless JSON.\n- A FAILED tool call rejects with `ToolCallError`, whose `toolName` identifies the failed tool and whose `message` is human-readable — `try/catch` it to handle and continue.\n- Independent read-only calls MAY overlap under `Promise.all` (safe calls run concurrently; mutating calls run alone, in submission order). Sequence dependent work with `await`.\n- Emit results with `return` and/or `console.log(...)`. ONLY what you print or return comes back to you — intermediate tool results never enter the conversation, so extract just what you need.\n\nThe available tools:\n\n```ts\ntype JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }\n\ninterface ToolArgsMap {\n  /** High-level SDK/API/framework/README/release documentation search. Routes Context7 first and optionally Exa, returns discovery snippets and durable source_ref pagination; common documentation tasks do not need granular Context7 tools. */\n  docs_search: {\n    /** A non-empty SDK, API, framework, README, release, or documentation question. */\n    query: string;\n    /** auto (default), Context7, Exa, or both documentation discovery routes. */\n    provider?: \"auto\" | \"context7\" | \"exa\" | \"all\";\n    /** Optional exact Context7 /org/project or /org/project/version id; valid ids skip resolve. */\n    library_id?: string;\n    /** Maximum results (1-20); defaults to 6 and may be lowered by Settings. */\n    max_results?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20;\n    /** Bypass fresh Context7 cache entries and request current Provider data. */\n    force_refresh?: boolean;\n  } & Record<string, JsonValue>;\n  /** Page discovery sources retained by web_search or docs_search for the current Agent session or an inherited fork. The private search_enhance_sources storage must be backed up and restored together with the session. */\n  search_sources: {\n    /** Opaque source reference returned by web_search or docs_search. */\n    source_ref: string;\n    /** Zero-based source offset; defaults to 0. */\n    offset?: number;\n    /** Positive page size; defaults to 20 and is capped by Settings. */\n    limit?: number;\n    /** compact (default) or full with bounded snippets. */\n    format?: \"compact\" | \"full\";\n  } & Record<string, JsonValue>;\n  /** Disclose one or more deferred search capability groups for the current Agent. Use only when the resident search tools cannot complete the task; do not activate every group preemptively. A successful call takes effect on the next model step and does not bypass restrictions from other Presets. */\n  search_tools: {\n    /** One to five deferred search capability groups to disclose for this Agent. */\n    capabilities: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n  };\n  /** Read a specific HTTP(S) URL through independent extraction/direct routes. No JavaScript or login; host-reachable addresses may be accessed, and evidence differs by route. */\n  web_extract: {\n    /** A non-empty concrete HTTP(S) URL to read. */\n    url: string;\n    /** Output format; defaults to markdown. */\n    format?: \"markdown\" | \"text\" | \"html\" | \"json\" | \"raw\";\n  } & Record<string, JsonValue>;\n  /** Test-only independent native web fetch stub. */\n  web_fetch: {\n    url: string;\n  } & Record<string, JsonValue>;\n  /** Recommended entry point for ordinary search. Returns a bounded answer and discovery-level source metadata; snippets are not verified webpage-body evidence. */\n  web_search: {\n    /** A non-empty, self-contained natural-language search question. */\n    query: string;\n    /** Optional search strategy; omitted uses the user setting. */\n    profile?: \"auto\" | \"coding_docs\" | \"code_examples\" | \"project_research\" | \"academic\" | \"fact_check\";\n    /** Optional result depth; omitted uses the user setting. */\n    depth?: \"compact\" | \"normal\" | \"deep\";\n  } & Record<string, JsonValue>;\n}\n\ninterface ToolOutputMap {\n  docs_search: {\n    state: \"complete\" | \"partial\";\n    provider: \"auto\" | \"context7\" | \"exa\" | \"all\";\n    providers: ({\n      provider: \"context7\" | \"exa\";\n      state: \"complete\" | \"partial\" | \"failed\" | \"skipped\";\n    })[];\n    selected_library?: {\n      id: string;\n      title?: string;\n      description?: string;\n    };\n    snippets: {\n      /** Bounded Context7 documentation snippet; discovery metadata, not a fetched page body. */\n      content: string;\n      title?: string;\n      library_id?: string;\n    }[];\n    sources: {\n      /** HTTP(S) source URL. */\n      url: string;\n      /** Source title when supplied by a search Provider. */\n      title?: string;\n      /** Discovery snippet; not fetched page-body evidence. */\n      snippet?: string;\n      /** Provider-supplied publication or crawl timestamp. */\n      publishedAt?: string;\n    }[];\n    /** Opaque private-storage reference for search_sources. */\n    source_ref?: string;\n    /** Opaque, evictable reference to the plugin-private Context7 docs cache. */\n    doc_ref?: string;\n    cache: {\n      resolve: {\n        state: \"hit\" | \"miss\" | \"refresh\" | \"stale\" | \"skipped\" | \"failed\";\n        evicted_entries: number;\n        reason?: \"provider_not_selected\" | \"known_library_id\" | \"library_not_found\" | \"upstream_failed\";\n      };\n      docs: {\n        state: \"hit\" | \"miss\" | \"refresh\" | \"stale\" | \"skipped\" | \"failed\";\n        evicted_entries: number;\n        reason?: \"provider_not_selected\" | \"known_library_id\" | \"library_not_found\" | \"upstream_failed\";\n      };\n    };\n    total_sources: number;\n    returned_sources: number;\n    total_snippets: number;\n    returned_snippets: number;\n    truncated: boolean;\n    evidence_level: \"discovery\";\n    warnings: ({\n      code: \"provider_failed\" | \"provider_not_configured\" | \"cache_stale\" | \"cache_evicted\" | \"provider_result_truncated\" | \"no_results\" | \"sources_truncated\" | \"canonical_output_truncated\";\n      provider?: \"context7\" | \"exa\" | \"context7-cache\";\n      path?: \"resolve\" | \"docs\";\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n      count?: number;\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n  search_sources: {\n    state: \"found\";\n    source_ref: string;\n    offset: number;\n    limit: number;\n    format: \"compact\" | \"full\";\n    total: number;\n    returned: number;\n    sources: ({\n      url: string;\n      title?: string;\n      date?: string;\n      category: \"official\" | \"primary\" | \"documentation\" | \"code\" | \"academic\" | \"news\" | \"community\" | \"aggregate\" | \"unknown\";\n      /** Bounded discovery snippet; not fetched page-body evidence. */\n      snippet?: string;\n      snippet_truncated?: true;\n    })[];\n    has_more: boolean;\n    next_offset?: number;\n    total_before_retention: number;\n    truncated: boolean;\n    page_byte_limited: boolean;\n  } | {\n    state: \"not_found\";\n    code: \"SOURCE_REF_NOT_FOUND\";\n  };\n  search_tools: {\n    requested_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    added_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    active_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    groups: ({\n      group: \"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\";\n      description: string;\n      tools: string[];\n    })[];\n    added_tools: string[];\n    disclosed_tools: string[];\n    takes_effect: \"next_step\";\n  };\n  web_extract: {\n    requested_url: string;\n    final_url?: string;\n    content: string;\n    format: \"markdown\" | \"text\" | \"html\" | \"json\" | \"raw\";\n    title?: string;\n    author?: string;\n    published_at?: string;\n    canonical_url?: string;\n    content_type?: string;\n    content_length?: number;\n    content_disposition?: string;\n    content_encoding?: string;\n    status_code?: number;\n    encoded_bytes?: number;\n    decompressed_bytes?: number;\n    metadata_only_reason?: \"attachment\" | \"binary_content_type\" | \"binary_body\" | \"declared_too_large\" | \"unsupported_content_encoding\" | \"empty_body\" | \"encoded_limit\" | \"decompressed_limit\";\n    content_transform?: \"html_to_markdown\" | \"html_to_text\" | \"json_pretty\";\n    encoded_body_truncated?: true;\n    decompressed_body_truncated?: true;\n    output_truncated?: true;\n    metadata_truncated?: true;\n    canonical_output_truncated?: true;\n    retrieval_route: \"tavily_extract\" | \"firecrawl_scrape\" | \"smart_direct\" | \"direct\";\n    evidence_level: \"extracted_content\" | \"direct_http_content\";\n    truncated: boolean;\n    attempts: ({\n      route: \"tavily_extract\" | \"firecrawl_scrape\" | \"smart_direct\" | \"direct\";\n      outcome: \"success\" | \"failed\" | \"aborted\" | \"skipped\";\n      count: number;\n      duration_ms: number;\n      fallback: boolean;\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n      http_status?: number;\n      retryable?: boolean;\n      skip_reason?: \"not_configured\" | \"not_applicable\" | \"budget_zero\" | \"format_unsupported\" | \"disabled\";\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n  web_fetch: string;\n  web_search: {\n    state: \"complete\" | \"partial\";\n    answer?: string;\n    sources: {\n      /** HTTP(S) source URL. */\n      url: string;\n      /** Source title when supplied by a search Provider. */\n      title?: string;\n      /** Discovery snippet; not fetched page-body evidence. */\n      snippet?: string;\n      /** Provider-supplied publication or crawl timestamp. */\n      publishedAt?: string;\n    }[];\n    /** Opaque private-storage reference for search_sources. */\n    source_ref?: string;\n    total_sources: number;\n    returned_sources: number;\n    truncated: boolean;\n    evidence_level: \"discovery\";\n    warnings: ({\n      /** Stable warning category. */\n      code: \"main_search_failed\" | \"provider_failed\" | \"provider_result_truncated\" | \"cache_stale\" | \"cache_evicted\" | \"answer_truncated\" | \"sources_truncated\" | \"canonical_output_truncated\" | \"no_results\";\n      /** Affected search capability, when applicable. */\n      capability?: \"main_search\" | \"docs_search\" | \"web_search\" | \"web_extract\" | \"site_map\" | \"model_list\";\n      /** Credential-free Provider identifier, when applicable. */\n      provider?: string;\n      /** Safe Provider failure category, when applicable. */\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n}\n\ntype ToolName = keyof ToolOutputMap\n\ndeclare class ToolCallError extends Error {\n  readonly name: \"ToolCallError\";\n  readonly toolName: ToolName;\n}\n\ndeclare const tools: {\n  [K in ToolName]: (args: ToolArgsMap[K]) => Promise<ToolOutputMap[K]>;\n}\n```",
+    "code_site_map_initial": "You are an AI agent powered by DeepSeek Harness.\n\n`run_code` is the only tool you can call directly — a tool call naming any other tool fails. Reach every tool the SDK declares below from inside the program.\n\nAdditional Search Enhance capabilities are deferred for this Agent: context7, sources, site_map, planning, diagnostics.\nUse search_tools only when web_search, docs_search, and web_extract cannot complete the task; do not activate every group preemptively.\nActivate planning only for explicit deep research, multi-source verification, or complex comparison. Activate diagnostics only when the user asks about Provider configuration or connectivity.\nA successful disclosure applies on the next model step and cannot bypass another Preset restriction. In Code Mode, call search_tools through the current run_code SDK and wait for the next step before using newly disclosed bindings.\nSuccessful source-producing searches disclose sources automatically, so do not request it again when already active.\n\nFor current or external factual questions, start with one focused web_search (use docs_search for SDK/API documentation); do not inspect local files, settings, sessions, or credentials unless the user explicitly asks about local state.\nTreat web_search/docs_search answers, snippets, and source metadata as discovery, not claim-level evidence.\nBefore asserting decisive factual or causal conclusions, inspect selected authoritative URLs with web_extract; never present an inferred mechanism as source-stated fact, and label unestablished mechanisms as inference or unconfirmed.\n\n## Writing code for run_code\n\n`run_code` takes two required arguments: `code` — the body of an async TypeScript function (erasable syntax only — no `enum` or namespaces; type annotations are advisory, the code runs type-stripped) — and `description`, a short summary of what the program does. Inside the program:\n\n- Call tools as `await tools.name(args)` — quoted access for exotic names: `tools[\"my-tool\"](args)`. Every call resolves to the tool's typed canonical JSON value. Tool arguments must be lossless JSON.\n- A FAILED tool call rejects with `ToolCallError`, whose `toolName` identifies the failed tool and whose `message` is human-readable — `try/catch` it to handle and continue.\n- Independent read-only calls MAY overlap under `Promise.all` (safe calls run concurrently; mutating calls run alone, in submission order). Sequence dependent work with `await`.\n- Emit results with `return` and/or `console.log(...)`. ONLY what you print or return comes back to you — intermediate tool results never enter the conversation, so extract just what you need.\n\nThe available tools:\n\n```ts\ntype JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }\n\ninterface ToolArgsMap {\n  /** High-level SDK/API/framework/README/release documentation search. Routes Context7 first and optionally Exa, returns discovery snippets and durable source_ref pagination; common documentation tasks do not need granular Context7 tools. */\n  docs_search: {\n    /** A non-empty SDK, API, framework, README, release, or documentation question. */\n    query: string;\n    /** auto (default), Context7, Exa, or both documentation discovery routes. */\n    provider?: \"auto\" | \"context7\" | \"exa\" | \"all\";\n    /** Optional exact Context7 /org/project or /org/project/version id; valid ids skip resolve. */\n    library_id?: string;\n    /** Maximum results (1-20); defaults to 6 and may be lowered by Settings. */\n    max_results?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20;\n    /** Bypass fresh Context7 cache entries and request current Provider data. */\n    force_refresh?: boolean;\n  } & Record<string, JsonValue>;\n  /** Disclose one or more deferred search capability groups for the current Agent. Use only when the resident search tools cannot complete the task; do not activate every group preemptively. A successful call takes effect on the next model step and does not bypass restrictions from other Presets. */\n  search_tools: {\n    /** One to five deferred search capability groups to disclose for this Agent. */\n    capabilities: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n  };\n  /** Read a specific HTTP(S) URL through independent extraction/direct routes. No JavaScript or login; host-reachable addresses may be accessed, and evidence differs by route. */\n  web_extract: {\n    /** A non-empty concrete HTTP(S) URL to read. */\n    url: string;\n    /** Output format; defaults to markdown. */\n    format?: \"markdown\" | \"text\" | \"html\" | \"json\" | \"raw\";\n  } & Record<string, JsonValue>;\n  /** Test-only independent native web fetch stub. */\n  web_fetch: {\n    url: string;\n  } & Record<string, JsonValue>;\n  /** Recommended entry point for ordinary search. Returns a bounded answer and discovery-level source metadata; snippets are not verified webpage-body evidence. */\n  web_search: {\n    /** A non-empty, self-contained natural-language search question. */\n    query: string;\n    /** Optional search strategy; omitted uses the user setting. */\n    profile?: \"auto\" | \"coding_docs\" | \"code_examples\" | \"project_research\" | \"academic\" | \"fact_check\";\n    /** Optional result depth; omitted uses the user setting. */\n    depth?: \"compact\" | \"normal\" | \"deep\";\n  } & Record<string, JsonValue>;\n}\n\ninterface ToolOutputMap {\n  docs_search: {\n    state: \"complete\" | \"partial\";\n    provider: \"auto\" | \"context7\" | \"exa\" | \"all\";\n    providers: ({\n      provider: \"context7\" | \"exa\";\n      state: \"complete\" | \"partial\" | \"failed\" | \"skipped\";\n    })[];\n    selected_library?: {\n      id: string;\n      title?: string;\n      description?: string;\n    };\n    snippets: {\n      /** Bounded Context7 documentation snippet; discovery metadata, not a fetched page body. */\n      content: string;\n      title?: string;\n      library_id?: string;\n    }[];\n    sources: {\n      /** HTTP(S) source URL. */\n      url: string;\n      /** Source title when supplied by a search Provider. */\n      title?: string;\n      /** Discovery snippet; not fetched page-body evidence. */\n      snippet?: string;\n      /** Provider-supplied publication or crawl timestamp. */\n      publishedAt?: string;\n    }[];\n    /** Opaque private-storage reference for search_sources. */\n    source_ref?: string;\n    /** Opaque, evictable reference to the plugin-private Context7 docs cache. */\n    doc_ref?: string;\n    cache: {\n      resolve: {\n        state: \"hit\" | \"miss\" | \"refresh\" | \"stale\" | \"skipped\" | \"failed\";\n        evicted_entries: number;\n        reason?: \"provider_not_selected\" | \"known_library_id\" | \"library_not_found\" | \"upstream_failed\";\n      };\n      docs: {\n        state: \"hit\" | \"miss\" | \"refresh\" | \"stale\" | \"skipped\" | \"failed\";\n        evicted_entries: number;\n        reason?: \"provider_not_selected\" | \"known_library_id\" | \"library_not_found\" | \"upstream_failed\";\n      };\n    };\n    total_sources: number;\n    returned_sources: number;\n    total_snippets: number;\n    returned_snippets: number;\n    truncated: boolean;\n    evidence_level: \"discovery\";\n    warnings: ({\n      code: \"provider_failed\" | \"provider_not_configured\" | \"cache_stale\" | \"cache_evicted\" | \"provider_result_truncated\" | \"no_results\" | \"sources_truncated\" | \"canonical_output_truncated\";\n      provider?: \"context7\" | \"exa\" | \"context7-cache\";\n      path?: \"resolve\" | \"docs\";\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n      count?: number;\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n  search_tools: {\n    requested_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    added_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    active_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    groups: ({\n      group: \"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\";\n      description: string;\n      tools: string[];\n    })[];\n    added_tools: string[];\n    disclosed_tools: string[];\n    takes_effect: \"next_step\";\n  };\n  web_extract: {\n    requested_url: string;\n    final_url?: string;\n    content: string;\n    format: \"markdown\" | \"text\" | \"html\" | \"json\" | \"raw\";\n    title?: string;\n    author?: string;\n    published_at?: string;\n    canonical_url?: string;\n    content_type?: string;\n    content_length?: number;\n    content_disposition?: string;\n    content_encoding?: string;\n    status_code?: number;\n    encoded_bytes?: number;\n    decompressed_bytes?: number;\n    metadata_only_reason?: \"attachment\" | \"binary_content_type\" | \"binary_body\" | \"declared_too_large\" | \"unsupported_content_encoding\" | \"empty_body\" | \"encoded_limit\" | \"decompressed_limit\";\n    content_transform?: \"html_to_markdown\" | \"html_to_text\" | \"json_pretty\";\n    encoded_body_truncated?: true;\n    decompressed_body_truncated?: true;\n    output_truncated?: true;\n    metadata_truncated?: true;\n    canonical_output_truncated?: true;\n    retrieval_route: \"tavily_extract\" | \"firecrawl_scrape\" | \"smart_direct\" | \"direct\";\n    evidence_level: \"extracted_content\" | \"direct_http_content\";\n    truncated: boolean;\n    attempts: ({\n      route: \"tavily_extract\" | \"firecrawl_scrape\" | \"smart_direct\" | \"direct\";\n      outcome: \"success\" | \"failed\" | \"aborted\" | \"skipped\";\n      count: number;\n      duration_ms: number;\n      fallback: boolean;\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n      http_status?: number;\n      retryable?: boolean;\n      skip_reason?: \"not_configured\" | \"not_applicable\" | \"budget_zero\" | \"format_unsupported\" | \"disabled\";\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n  web_fetch: string;\n  web_search: {\n    state: \"complete\" | \"partial\";\n    answer?: string;\n    sources: {\n      /** HTTP(S) source URL. */\n      url: string;\n      /** Source title when supplied by a search Provider. */\n      title?: string;\n      /** Discovery snippet; not fetched page-body evidence. */\n      snippet?: string;\n      /** Provider-supplied publication or crawl timestamp. */\n      publishedAt?: string;\n    }[];\n    /** Opaque private-storage reference for search_sources. */\n    source_ref?: string;\n    total_sources: number;\n    returned_sources: number;\n    truncated: boolean;\n    evidence_level: \"discovery\";\n    warnings: ({\n      /** Stable warning category. */\n      code: \"main_search_failed\" | \"provider_failed\" | \"provider_result_truncated\" | \"cache_stale\" | \"cache_evicted\" | \"answer_truncated\" | \"sources_truncated\" | \"canonical_output_truncated\" | \"no_results\";\n      /** Affected search capability, when applicable. */\n      capability?: \"main_search\" | \"docs_search\" | \"web_search\" | \"web_extract\" | \"site_map\" | \"model_list\";\n      /** Credential-free Provider identifier, when applicable. */\n      provider?: string;\n      /** Safe Provider failure category, when applicable. */\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n}\n\ntype ToolName = keyof ToolOutputMap\n\ndeclare class ToolCallError extends Error {\n  readonly name: \"ToolCallError\";\n  readonly toolName: ToolName;\n}\n\ndeclare const tools: {\n  [K in ToolName]: (args: ToolArgsMap[K]) => Promise<ToolOutputMap[K]>;\n}\n```",
+    "code_site_map_next": "You are an AI agent powered by DeepSeek Harness.\n\n`run_code` is the only tool you can call directly — a tool call naming any other tool fails. Reach every tool the SDK declares below from inside the program.\n\nAdditional Search Enhance capabilities are deferred for this Agent: context7, sources, planning, diagnostics.\nUse search_tools only when web_search, docs_search, and web_extract cannot complete the task; do not activate every group preemptively.\nActivate planning only for explicit deep research, multi-source verification, or complex comparison. Activate diagnostics only when the user asks about Provider configuration or connectivity.\nA successful disclosure applies on the next model step and cannot bypass another Preset restriction. In Code Mode, call search_tools through the current run_code SDK and wait for the next step before using newly disclosed bindings.\nSuccessful source-producing searches disclose sources automatically, so do not request it again when already active.\n\nFor current or external factual questions, start with one focused web_search (use docs_search for SDK/API documentation); do not inspect local files, settings, sessions, or credentials unless the user explicitly asks about local state.\nTreat web_search/docs_search answers, snippets, and source metadata as discovery, not claim-level evidence.\nBefore asserting decisive factual or causal conclusions, inspect selected authoritative URLs with web_extract; never present an inferred mechanism as source-stated fact, and label unestablished mechanisms as inference or unconfirmed.\n\n## Writing code for run_code\n\n`run_code` takes two required arguments: `code` — the body of an async TypeScript function (erasable syntax only — no `enum` or namespaces; type annotations are advisory, the code runs type-stripped) — and `description`, a short summary of what the program does. Inside the program:\n\n- Call tools as `await tools.name(args)` — quoted access for exotic names: `tools[\"my-tool\"](args)`. Every call resolves to the tool's typed canonical JSON value. Tool arguments must be lossless JSON.\n- A FAILED tool call rejects with `ToolCallError`, whose `toolName` identifies the failed tool and whose `message` is human-readable — `try/catch` it to handle and continue.\n- Independent read-only calls MAY overlap under `Promise.all` (safe calls run concurrently; mutating calls run alone, in submission order). Sequence dependent work with `await`.\n- Emit results with `return` and/or `console.log(...)`. ONLY what you print or return comes back to you — intermediate tool results never enter the conversation, so extract just what you need.\n\nThe available tools:\n\n```ts\ntype JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }\n\ninterface ToolArgsMap {\n  /** High-level SDK/API/framework/README/release documentation search. Routes Context7 first and optionally Exa, returns discovery snippets and durable source_ref pagination; common documentation tasks do not need granular Context7 tools. */\n  docs_search: {\n    /** A non-empty SDK, API, framework, README, release, or documentation question. */\n    query: string;\n    /** auto (default), Context7, Exa, or both documentation discovery routes. */\n    provider?: \"auto\" | \"context7\" | \"exa\" | \"all\";\n    /** Optional exact Context7 /org/project or /org/project/version id; valid ids skip resolve. */\n    library_id?: string;\n    /** Maximum results (1-20); defaults to 6 and may be lowered by Settings. */\n    max_results?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20;\n    /** Bypass fresh Context7 cache entries and request current Provider data. */\n    force_refresh?: boolean;\n  } & Record<string, JsonValue>;\n  /** Disclose one or more deferred search capability groups for the current Agent. Use only when the resident search tools cannot complete the task; do not activate every group preemptively. A successful call takes effect on the next model step and does not bypass restrictions from other Presets. */\n  search_tools: {\n    /** One to five deferred search capability groups to disclose for this Agent. */\n    capabilities: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n  };\n  /** Read a specific HTTP(S) URL through independent extraction/direct routes. No JavaScript or login; host-reachable addresses may be accessed, and evidence differs by route. */\n  web_extract: {\n    /** A non-empty concrete HTTP(S) URL to read. */\n    url: string;\n    /** Output format; defaults to markdown. */\n    format?: \"markdown\" | \"text\" | \"html\" | \"json\" | \"raw\";\n  } & Record<string, JsonValue>;\n  /** Test-only independent native web fetch stub. */\n  web_fetch: {\n    url: string;\n  } & Record<string, JsonValue>;\n  /** Discover a bounded set of links under a known HTTP(S) website. Results are discovery candidates, not fetched page-body evidence. */\n  web_map: {\n    /** Absolute HTTP(S) root URL to map through Tavily; userinfo is rejected. */\n    url: string;\n    /** Optional natural-language filter for the website crawl. */\n    instructions?: string;\n    /** Maximum traversal depth (1-5); defaults to 1. */\n    max_depth?: 1 | 2 | 3 | 4 | 5;\n    /** Maximum links followed per level (1-500); defaults to 10 and must not exceed the deployment cap. */\n    max_breadth?: number;\n    /** Total links processed (1-500); defaults to 30 and must not exceed the deployment cap. */\n    limit?: number;\n  } & Record<string, JsonValue>;\n  /** Recommended entry point for ordinary search. Returns a bounded answer and discovery-level source metadata; snippets are not verified webpage-body evidence. */\n  web_search: {\n    /** A non-empty, self-contained natural-language search question. */\n    query: string;\n    /** Optional search strategy; omitted uses the user setting. */\n    profile?: \"auto\" | \"coding_docs\" | \"code_examples\" | \"project_research\" | \"academic\" | \"fact_check\";\n    /** Optional result depth; omitted uses the user setting. */\n    depth?: \"compact\" | \"normal\" | \"deep\";\n  } & Record<string, JsonValue>;\n}\n\ninterface ToolOutputMap {\n  docs_search: {\n    state: \"complete\" | \"partial\";\n    provider: \"auto\" | \"context7\" | \"exa\" | \"all\";\n    providers: ({\n      provider: \"context7\" | \"exa\";\n      state: \"complete\" | \"partial\" | \"failed\" | \"skipped\";\n    })[];\n    selected_library?: {\n      id: string;\n      title?: string;\n      description?: string;\n    };\n    snippets: {\n      /** Bounded Context7 documentation snippet; discovery metadata, not a fetched page body. */\n      content: string;\n      title?: string;\n      library_id?: string;\n    }[];\n    sources: {\n      /** HTTP(S) source URL. */\n      url: string;\n      /** Source title when supplied by a search Provider. */\n      title?: string;\n      /** Discovery snippet; not fetched page-body evidence. */\n      snippet?: string;\n      /** Provider-supplied publication or crawl timestamp. */\n      publishedAt?: string;\n    }[];\n    /** Opaque private-storage reference for search_sources. */\n    source_ref?: string;\n    /** Opaque, evictable reference to the plugin-private Context7 docs cache. */\n    doc_ref?: string;\n    cache: {\n      resolve: {\n        state: \"hit\" | \"miss\" | \"refresh\" | \"stale\" | \"skipped\" | \"failed\";\n        evicted_entries: number;\n        reason?: \"provider_not_selected\" | \"known_library_id\" | \"library_not_found\" | \"upstream_failed\";\n      };\n      docs: {\n        state: \"hit\" | \"miss\" | \"refresh\" | \"stale\" | \"skipped\" | \"failed\";\n        evicted_entries: number;\n        reason?: \"provider_not_selected\" | \"known_library_id\" | \"library_not_found\" | \"upstream_failed\";\n      };\n    };\n    total_sources: number;\n    returned_sources: number;\n    total_snippets: number;\n    returned_snippets: number;\n    truncated: boolean;\n    evidence_level: \"discovery\";\n    warnings: ({\n      code: \"provider_failed\" | \"provider_not_configured\" | \"cache_stale\" | \"cache_evicted\" | \"provider_result_truncated\" | \"no_results\" | \"sources_truncated\" | \"canonical_output_truncated\";\n      provider?: \"context7\" | \"exa\" | \"context7-cache\";\n      path?: \"resolve\" | \"docs\";\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n      count?: number;\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n  search_tools: {\n    requested_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    added_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    active_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    groups: ({\n      group: \"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\";\n      description: string;\n      tools: string[];\n    })[];\n    added_tools: string[];\n    disclosed_tools: string[];\n    takes_effect: \"next_step\";\n  };\n  web_extract: {\n    requested_url: string;\n    final_url?: string;\n    content: string;\n    format: \"markdown\" | \"text\" | \"html\" | \"json\" | \"raw\";\n    title?: string;\n    author?: string;\n    published_at?: string;\n    canonical_url?: string;\n    content_type?: string;\n    content_length?: number;\n    content_disposition?: string;\n    content_encoding?: string;\n    status_code?: number;\n    encoded_bytes?: number;\n    decompressed_bytes?: number;\n    metadata_only_reason?: \"attachment\" | \"binary_content_type\" | \"binary_body\" | \"declared_too_large\" | \"unsupported_content_encoding\" | \"empty_body\" | \"encoded_limit\" | \"decompressed_limit\";\n    content_transform?: \"html_to_markdown\" | \"html_to_text\" | \"json_pretty\";\n    encoded_body_truncated?: true;\n    decompressed_body_truncated?: true;\n    output_truncated?: true;\n    metadata_truncated?: true;\n    canonical_output_truncated?: true;\n    retrieval_route: \"tavily_extract\" | \"firecrawl_scrape\" | \"smart_direct\" | \"direct\";\n    evidence_level: \"extracted_content\" | \"direct_http_content\";\n    truncated: boolean;\n    attempts: ({\n      route: \"tavily_extract\" | \"firecrawl_scrape\" | \"smart_direct\" | \"direct\";\n      outcome: \"success\" | \"failed\" | \"aborted\" | \"skipped\";\n      count: number;\n      duration_ms: number;\n      fallback: boolean;\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n      http_status?: number;\n      retryable?: boolean;\n      skip_reason?: \"not_configured\" | \"not_applicable\" | \"budget_zero\" | \"format_unsupported\" | \"disabled\";\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n  web_fetch: string;\n  web_map: {\n    requested_url: string;\n    base_url?: string;\n    results: string[];\n    total_results: number;\n    returned_results: number;\n    max_depth: number;\n    max_breadth: number;\n    limit: number;\n    response_time?: number;\n    truncated: boolean;\n    evidence_level: \"discovery\";\n    provider: \"tavily\";\n    attempts: {\n      provider: \"tavily\";\n      outcome: \"success\";\n      count: number;\n      duration_ms: number;\n      fallback: false;\n    }[];\n    warnings: ({\n      code: \"invalid_result_url_omitted\" | \"duplicate_result_url_omitted\" | \"results_truncated\" | \"canonical_output_truncated\";\n      count?: number;\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n  web_search: {\n    state: \"complete\" | \"partial\";\n    answer?: string;\n    sources: {\n      /** HTTP(S) source URL. */\n      url: string;\n      /** Source title when supplied by a search Provider. */\n      title?: string;\n      /** Discovery snippet; not fetched page-body evidence. */\n      snippet?: string;\n      /** Provider-supplied publication or crawl timestamp. */\n      publishedAt?: string;\n    }[];\n    /** Opaque private-storage reference for search_sources. */\n    source_ref?: string;\n    total_sources: number;\n    returned_sources: number;\n    truncated: boolean;\n    evidence_level: \"discovery\";\n    warnings: ({\n      /** Stable warning category. */\n      code: \"main_search_failed\" | \"provider_failed\" | \"provider_result_truncated\" | \"cache_stale\" | \"cache_evicted\" | \"answer_truncated\" | \"sources_truncated\" | \"canonical_output_truncated\" | \"no_results\";\n      /** Affected search capability, when applicable. */\n      capability?: \"main_search\" | \"docs_search\" | \"web_search\" | \"web_extract\" | \"site_map\" | \"model_list\";\n      /** Credential-free Provider identifier, when applicable. */\n      provider?: string;\n      /** Safe Provider failure category, when applicable. */\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n}\n\ntype ToolName = keyof ToolOutputMap\n\ndeclare class ToolCallError extends Error {\n  readonly name: \"ToolCallError\";\n  readonly toolName: ToolName;\n}\n\ndeclare const tools: {\n  [K in ToolName]: (args: ToolArgsMap[K]) => Promise<ToolOutputMap[K]>;\n}\n```"
+  },
+  "search_surface_system_prompts": {
+    "native_default": "You are an AI agent powered by DeepSeek Harness.\n\nAdditional Search Enhance capabilities are deferred for this Agent: context7, sources, site_map, planning, diagnostics.\nUse search_tools only when web_search, docs_search, and web_extract cannot complete the task; do not activate every group preemptively.\nActivate planning only for explicit deep research, multi-source verification, or complex comparison. Activate diagnostics only when the user asks about Provider configuration or connectivity.\nA successful disclosure applies on the next model step and cannot bypass another Preset restriction. In Code Mode, call search_tools through the current run_code SDK and wait for the next step before using newly disclosed bindings.\nSuccessful source-producing searches disclose sources automatically, so do not request it again when already active.\n\nFor current or external factual questions, start with one focused web_search (use docs_search for SDK/API documentation); do not inspect local files, settings, sessions, or credentials unless the user explicitly asks about local state.\nTreat web_search/docs_search answers, snippets, and source metadata as discovery, not claim-level evidence.\nBefore asserting decisive factual or causal conclusions, inspect selected authoritative URLs with web_extract; never present an inferred mechanism as source-stated fact, and label unestablished mechanisms as inference or unconfirmed.",
+    "native_only_web_search": "You are an AI agent powered by DeepSeek Harness.\n\nFor current or external factual questions, start with one focused web_search; do not inspect local files, settings, sessions, or credentials unless the user explicitly asks about local state.\nTreat web_search answers, snippets, and source metadata as discovery, not claim-level evidence.\nNever present an inferred mechanism as source-stated fact; label unestablished mechanisms as inference or unconfirmed.",
+    "native_no_web_search": "You are an AI agent powered by DeepSeek Harness.",
+    "code_default": "You are an AI agent powered by DeepSeek Harness.\n\n`run_code` is the only tool you can call directly — a tool call naming any other tool fails. Reach every tool the SDK declares below from inside the program.\n\nAdditional Search Enhance capabilities are deferred for this Agent: context7, sources, site_map, planning, diagnostics.\nUse search_tools only when web_search, docs_search, and web_extract cannot complete the task; do not activate every group preemptively.\nActivate planning only for explicit deep research, multi-source verification, or complex comparison. Activate diagnostics only when the user asks about Provider configuration or connectivity.\nA successful disclosure applies on the next model step and cannot bypass another Preset restriction. In Code Mode, call search_tools through the current run_code SDK and wait for the next step before using newly disclosed bindings.\nSuccessful source-producing searches disclose sources automatically, so do not request it again when already active.\n\nFor current or external factual questions, start with one focused web_search (use docs_search for SDK/API documentation); do not inspect local files, settings, sessions, or credentials unless the user explicitly asks about local state.\nTreat web_search/docs_search answers, snippets, and source metadata as discovery, not claim-level evidence.\nBefore asserting decisive factual or causal conclusions, inspect selected authoritative URLs with web_extract; never present an inferred mechanism as source-stated fact, and label unestablished mechanisms as inference or unconfirmed.\n\n## Writing code for run_code\n\n`run_code` takes two required arguments: `code` — the body of an async TypeScript function (erasable syntax only — no `enum` or namespaces; type annotations are advisory, the code runs type-stripped) — and `description`, a short summary of what the program does. Inside the program:\n\n- Call tools as `await tools.name(args)` — quoted access for exotic names: `tools[\"my-tool\"](args)`. Every call resolves to the tool's typed canonical JSON value. Tool arguments must be lossless JSON.\n- A FAILED tool call rejects with `ToolCallError`, whose `toolName` identifies the failed tool and whose `message` is human-readable — `try/catch` it to handle and continue.\n- Independent read-only calls MAY overlap under `Promise.all` (safe calls run concurrently; mutating calls run alone, in submission order). Sequence dependent work with `await`.\n- Emit results with `return` and/or `console.log(...)`. ONLY what you print or return comes back to you — intermediate tool results never enter the conversation, so extract just what you need.\n\nThe available tools:\n\n```ts\ntype JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }\n\ninterface ToolArgsMap {\n  /** High-level SDK/API/framework/README/release documentation search. Routes Context7 first and optionally Exa, returns discovery snippets and durable source_ref pagination; common documentation tasks do not need granular Context7 tools. */\n  docs_search: {\n    /** A non-empty SDK, API, framework, README, release, or documentation question. */\n    query: string;\n    /** auto (default), Context7, Exa, or both documentation discovery routes. */\n    provider?: \"auto\" | \"context7\" | \"exa\" | \"all\";\n    /** Optional exact Context7 /org/project or /org/project/version id; valid ids skip resolve. */\n    library_id?: string;\n    /** Maximum results (1-20); defaults to 6 and may be lowered by Settings. */\n    max_results?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20;\n    /** Bypass fresh Context7 cache entries and request current Provider data. */\n    force_refresh?: boolean;\n  } & Record<string, JsonValue>;\n  /** Disclose one or more deferred search capability groups for the current Agent. Use only when the resident search tools cannot complete the task; do not activate every group preemptively. A successful call takes effect on the next model step and does not bypass restrictions from other Presets. */\n  search_tools: {\n    /** One to five deferred search capability groups to disclose for this Agent. */\n    capabilities: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n  };\n  /** Read a specific HTTP(S) URL through independent extraction/direct routes. No JavaScript or login; host-reachable addresses may be accessed, and evidence differs by route. */\n  web_extract: {\n    /** A non-empty concrete HTTP(S) URL to read. */\n    url: string;\n    /** Output format; defaults to markdown. */\n    format?: \"markdown\" | \"text\" | \"html\" | \"json\" | \"raw\";\n  } & Record<string, JsonValue>;\n  /** Test-only independent native web fetch stub. */\n  web_fetch: {\n    url: string;\n  } & Record<string, JsonValue>;\n  /** Recommended entry point for ordinary search. Returns a bounded answer and discovery-level source metadata; snippets are not verified webpage-body evidence. */\n  web_search: {\n    /** A non-empty, self-contained natural-language search question. */\n    query: string;\n    /** Optional search strategy; omitted uses the user setting. */\n    profile?: \"auto\" | \"coding_docs\" | \"code_examples\" | \"project_research\" | \"academic\" | \"fact_check\";\n    /** Optional result depth; omitted uses the user setting. */\n    depth?: \"compact\" | \"normal\" | \"deep\";\n  } & Record<string, JsonValue>;\n}\n\ninterface ToolOutputMap {\n  docs_search: {\n    state: \"complete\" | \"partial\";\n    provider: \"auto\" | \"context7\" | \"exa\" | \"all\";\n    providers: ({\n      provider: \"context7\" | \"exa\";\n      state: \"complete\" | \"partial\" | \"failed\" | \"skipped\";\n    })[];\n    selected_library?: {\n      id: string;\n      title?: string;\n      description?: string;\n    };\n    snippets: {\n      /** Bounded Context7 documentation snippet; discovery metadata, not a fetched page body. */\n      content: string;\n      title?: string;\n      library_id?: string;\n    }[];\n    sources: {\n      /** HTTP(S) source URL. */\n      url: string;\n      /** Source title when supplied by a search Provider. */\n      title?: string;\n      /** Discovery snippet; not fetched page-body evidence. */\n      snippet?: string;\n      /** Provider-supplied publication or crawl timestamp. */\n      publishedAt?: string;\n    }[];\n    /** Opaque private-storage reference for search_sources. */\n    source_ref?: string;\n    /** Opaque, evictable reference to the plugin-private Context7 docs cache. */\n    doc_ref?: string;\n    cache: {\n      resolve: {\n        state: \"hit\" | \"miss\" | \"refresh\" | \"stale\" | \"skipped\" | \"failed\";\n        evicted_entries: number;\n        reason?: \"provider_not_selected\" | \"known_library_id\" | \"library_not_found\" | \"upstream_failed\";\n      };\n      docs: {\n        state: \"hit\" | \"miss\" | \"refresh\" | \"stale\" | \"skipped\" | \"failed\";\n        evicted_entries: number;\n        reason?: \"provider_not_selected\" | \"known_library_id\" | \"library_not_found\" | \"upstream_failed\";\n      };\n    };\n    total_sources: number;\n    returned_sources: number;\n    total_snippets: number;\n    returned_snippets: number;\n    truncated: boolean;\n    evidence_level: \"discovery\";\n    warnings: ({\n      code: \"provider_failed\" | \"provider_not_configured\" | \"cache_stale\" | \"cache_evicted\" | \"provider_result_truncated\" | \"no_results\" | \"sources_truncated\" | \"canonical_output_truncated\";\n      provider?: \"context7\" | \"exa\" | \"context7-cache\";\n      path?: \"resolve\" | \"docs\";\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n      count?: number;\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n  search_tools: {\n    requested_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    added_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    active_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    groups: ({\n      group: \"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\";\n      description: string;\n      tools: string[];\n    })[];\n    added_tools: string[];\n    disclosed_tools: string[];\n    takes_effect: \"next_step\";\n  };\n  web_extract: {\n    requested_url: string;\n    final_url?: string;\n    content: string;\n    format: \"markdown\" | \"text\" | \"html\" | \"json\" | \"raw\";\n    title?: string;\n    author?: string;\n    published_at?: string;\n    canonical_url?: string;\n    content_type?: string;\n    content_length?: number;\n    content_disposition?: string;\n    content_encoding?: string;\n    status_code?: number;\n    encoded_bytes?: number;\n    decompressed_bytes?: number;\n    metadata_only_reason?: \"attachment\" | \"binary_content_type\" | \"binary_body\" | \"declared_too_large\" | \"unsupported_content_encoding\" | \"empty_body\" | \"encoded_limit\" | \"decompressed_limit\";\n    content_transform?: \"html_to_markdown\" | \"html_to_text\" | \"json_pretty\";\n    encoded_body_truncated?: true;\n    decompressed_body_truncated?: true;\n    output_truncated?: true;\n    metadata_truncated?: true;\n    canonical_output_truncated?: true;\n    retrieval_route: \"tavily_extract\" | \"firecrawl_scrape\" | \"smart_direct\" | \"direct\";\n    evidence_level: \"extracted_content\" | \"direct_http_content\";\n    truncated: boolean;\n    attempts: ({\n      route: \"tavily_extract\" | \"firecrawl_scrape\" | \"smart_direct\" | \"direct\";\n      outcome: \"success\" | \"failed\" | \"aborted\" | \"skipped\";\n      count: number;\n      duration_ms: number;\n      fallback: boolean;\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n      http_status?: number;\n      retryable?: boolean;\n      skip_reason?: \"not_configured\" | \"not_applicable\" | \"budget_zero\" | \"format_unsupported\" | \"disabled\";\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n  web_fetch: string;\n  web_search: {\n    state: \"complete\" | \"partial\";\n    answer?: string;\n    sources: {\n      /** HTTP(S) source URL. */\n      url: string;\n      /** Source title when supplied by a search Provider. */\n      title?: string;\n      /** Discovery snippet; not fetched page-body evidence. */\n      snippet?: string;\n      /** Provider-supplied publication or crawl timestamp. */\n      publishedAt?: string;\n    }[];\n    /** Opaque private-storage reference for search_sources. */\n    source_ref?: string;\n    total_sources: number;\n    returned_sources: number;\n    truncated: boolean;\n    evidence_level: \"discovery\";\n    warnings: ({\n      /** Stable warning category. */\n      code: \"main_search_failed\" | \"provider_failed\" | \"provider_result_truncated\" | \"cache_stale\" | \"cache_evicted\" | \"answer_truncated\" | \"sources_truncated\" | \"canonical_output_truncated\" | \"no_results\";\n      /** Affected search capability, when applicable. */\n      capability?: \"main_search\" | \"docs_search\" | \"web_search\" | \"web_extract\" | \"site_map\" | \"model_list\";\n      /** Credential-free Provider identifier, when applicable. */\n      provider?: string;\n      /** Safe Provider failure category, when applicable. */\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n}\n\ntype ToolName = keyof ToolOutputMap\n\ndeclare class ToolCallError extends Error {\n  readonly name: \"ToolCallError\";\n  readonly toolName: ToolName;\n}\n\ndeclare const tools: {\n  [K in ToolName]: (args: ToolArgsMap[K]) => Promise<ToolOutputMap[K]>;\n}\n```"
+  },
+  "search_surface_wire_tools": {
+    "native_default": [
+      "docs_search",
+      "search_tools",
+      "web_extract",
+      "web_fetch",
+      "web_search"
+    ],
+    "native_only_web_search": [
+      "web_search"
+    ],
+    "native_no_web_search": [],
+    "code_default": [
+      "run_code"
+    ]
+  },
+  "native_full_transcript": [
+    {
+      "type": "tool/call",
+      "callId": "native-full-call",
+      "name": "web_search",
+      "arguments": {
+        "query": "native full SDK v4 fixture",
+        "profile": "auto",
+        "depth": "compact"
+      }
+    },
+    {
+      "type": "tool/result",
+      "callId": "native-full-call",
+      "isError": false,
+      "content": [
+        {
+          "type": "text",
+          "text": "Fixture answer for native full SDK v4 fixture.\n\nTop sources\n1. Acme SDK v4 release\n   URL: https://github.com/acme/sdk/releases/tag/v4\n   Snippet: Current release discovery for the v4 fixture\n2. Acme SDK v3 community guide\n   URL: <fixture-origin>/pages/sdk-v3\n   Date: 2023-01-02\n\nSources shown: 2/2\nSource reference: <source-ref>\n\nEvidence level: discovery. Snippets are discovery metadata, not verified page-body evidence."
+        }
+      ],
+      "meta": {
+        "version": 1,
+        "type": "web_search",
+        "source_produced": true,
+        "answer": "Fixture answer for native full SDK v4 fixture.",
+        "sources": [
+          {
+            "url": "https://github.com/acme/sdk/releases/tag/v4",
+            "title": "Acme SDK v4 release",
+            "snippet": "Current release discovery for the v4 fixture"
+          },
+          {
+            "url": "<fixture-origin>/pages/sdk-v3",
+            "title": "Acme SDK v3 community guide",
+            "publishedAt": "2023-01-02"
+          }
+        ],
+        "truncated": false
+      }
+    }
+  ],
+  "session_event_types": [
+    "agent/inbox/spliced",
+    "assistant/chunk",
+    "assistant/message",
+    "request/context",
+    "request/header",
+    "step/end",
+    "step/start",
+    "tool/call",
+    "tool/code-dispatch",
+    "tool/code-dispatch-start",
+    "tool/result",
+    "turn/end",
+    "turn/start",
+    "user/message"
+  ],
+  "native_page_transcript": [
+    {
+      "type": "tool/call",
+      "callId": "native-page-call",
+      "name": "search_sources",
+      "arguments": {
+        "source_ref": "<source-ref>",
+        "offset": 0,
+        "limit": 1,
+        "format": "full"
+      }
+    },
+    {
+      "type": "tool/result",
+      "callId": "native-page-call",
+      "isError": false,
+      "content": [
+        {
+          "type": "text",
+          "text": "Sources\n1. Acme SDK v4 release\n   URL: https://github.com/acme/sdk/releases/tag/v4\n   Category: unknown\n   Snippet: Current release discovery for the v4 fixture\n\nPage returned: 1; retained total: 2; original total: 2.\nMore sources are available at offset 1.\n\nThese are retained discovery records; snippets are not fetched webpage bodies."
+        }
+      ],
+      "meta": {
+        "version": 1,
+        "type": "search_sources",
+        "state": "found",
+        "offset": 0,
+        "returned": 1,
+        "total": 2,
+        "sources": [
+          {
+            "url": "https://github.com/acme/sdk/releases/tag/v4",
+            "title": "Acme SDK v4 release",
+            "snippet": "Current release discovery for the v4 fixture"
+          }
+        ],
+        "truncated": true
+      }
+    }
+  ],
+  "native_not_found_transcript": [
+    {
+      "type": "tool/call",
+      "callId": "native-not-found-call",
+      "name": "search_sources",
+      "arguments": {
+        "source_ref": "<source-ref>"
+      }
+    },
+    {
+      "type": "tool/result",
+      "callId": "native-not-found-call",
+      "isError": false,
+      "content": [
+        {
+          "type": "text",
+          "text": "Source reference not found (SOURCE_REF_NOT_FOUND).\nThe reference is missing, malformed, unauthorized for this session/fork, or its private storage was not restored."
+        }
+      ],
+      "meta": {
+        "version": 1,
+        "type": "search_sources",
+        "state": "not_found",
+        "code": "SOURCE_REF_NOT_FOUND"
+      }
+    }
+  ],
+  "native_partial_transcript": [
+    {
+      "type": "tool/call",
+      "callId": "native-partial-call",
+      "name": "web_search",
+      "arguments": {
+        "query": "native partial fixture",
+        "profile": "auto",
+        "depth": "compact"
+      }
+    },
+    {
+      "type": "tool/result",
+      "callId": "native-partial-call",
+      "isError": false,
+      "content": [
+        {
+          "type": "text",
+          "text": "Partial search result\n\n主搜索失败，仅返回补充来源。\n\nTop sources\n1. Tavily native partial fixture\n   URL: <fixture-origin>/pages/tavily\n   Snippet: Supplemental discovery for native partial fixture\n\nSources shown: 1/1\nSource reference: <source-ref>\n\nLimitations\n- Main search failed; only supplemental discovery sources are available (search-api/main_search, http).\n\nEvidence level: discovery. Snippets are discovery metadata, not verified page-body evidence."
+        }
+      ],
+      "meta": {
+        "version": 1,
+        "type": "web_search",
+        "source_produced": true,
+        "answer": "主搜索失败，仅返回补充来源。",
+        "sources": [
+          {
+            "url": "<fixture-origin>/pages/tavily",
+            "title": "Tavily native partial fixture",
+            "snippet": "Supplemental discovery for native partial fixture"
+          }
+        ],
+        "truncated": false
+      }
+    }
+  ],
+  "native_empty_transcript": [
+    {
+      "type": "tool/call",
+      "callId": "native-empty-call",
+      "name": "web_search",
+      "arguments": {
+        "query": "native empty fixture",
+        "profile": "auto",
+        "depth": "compact"
+      }
+    },
+    {
+      "type": "tool/result",
+      "callId": "native-empty-call",
+      "isError": false,
+      "content": [
+        {
+          "type": "text",
+          "text": "Search completed with no matching results.\n\nSources shown: 0/0\n\nLimitations\n- The search completed but found no matching result.\n\nEvidence level: discovery. Snippets are discovery metadata, not verified page-body evidence."
+        }
+      ],
+      "meta": {
+        "version": 1,
+        "type": "web_search",
+        "source_produced": false,
+        "sources": [],
+        "truncated": false
+      }
+    }
+  ],
+  "native_outputs": {
+    "complete": {
+      "state": "complete",
+      "answer": "Fixture answer for native full SDK v4 fixture.",
+      "sources": [
+        {
+          "url": "https://github.com/acme/sdk/releases/tag/v4",
+          "title": "Acme SDK v4 release",
+          "snippet": "Current release discovery for the v4 fixture"
+        },
+        {
+          "url": "<fixture-origin>/pages/sdk-v3",
+          "title": "Acme SDK v3 community guide",
+          "publishedAt": "2023-01-02"
+        }
+      ],
+      "source_ref": "<source-ref>",
+      "total_sources": 2,
+      "returned_sources": 2,
+      "truncated": false,
+      "evidence_level": "discovery",
+      "warnings": [],
+      "model_text_max_bytes": 4096
+    },
+    "partial": {
+      "state": "partial",
+      "answer": "主搜索失败，仅返回补充来源。",
+      "sources": [
+        {
+          "url": "<fixture-origin>/pages/tavily",
+          "title": "Tavily native partial fixture",
+          "snippet": "Supplemental discovery for native partial fixture"
+        }
+      ],
+      "source_ref": "<source-ref>",
+      "total_sources": 1,
+      "returned_sources": 1,
+      "truncated": false,
+      "evidence_level": "discovery",
+      "warnings": [
+        {
+          "code": "main_search_failed",
+          "capability": "main_search",
+          "provider": "search-api",
+          "error_kind": "http"
+        }
+      ],
+      "model_text_max_bytes": 4096
+    },
+    "empty": {
+      "state": "complete",
+      "sources": [],
+      "total_sources": 0,
+      "returned_sources": 0,
+      "truncated": false,
+      "evidence_level": "discovery",
+      "warnings": [
+        {
+          "code": "no_results"
+        }
+      ],
+      "model_text_max_bytes": 4096
+    },
+    "page": {
+      "state": "found",
+      "source_ref": "<source-ref>",
+      "offset": 0,
+      "limit": 1,
+      "format": "full",
+      "total": 2,
+      "returned": 1,
+      "sources": [
+        {
+          "url": "https://github.com/acme/sdk/releases/tag/v4",
+          "category": "unknown",
+          "title": "Acme SDK v4 release",
+          "snippet": "Current release discovery for the v4 fixture"
+        }
+      ],
+      "has_more": true,
+      "next_offset": 1,
+      "total_before_retention": 2,
+      "truncated": false,
+      "page_byte_limited": false
+    },
+    "not_found": {
+      "state": "not_found",
+      "code": "SOURCE_REF_NOT_FOUND"
+    },
+    "docs": {
+      "state": "complete",
+      "provider": "exa",
+      "providers": [
+        {
+          "provider": "context7",
+          "state": "skipped"
+        },
+        {
+          "provider": "exa",
+          "state": "complete"
+        }
+      ],
+      "snippets": [],
+      "sources": [
+        {
+          "url": "<fixture-origin>/pages/exa-docs",
+          "title": "Exa documentation fixture",
+          "snippet": "Documentation for progressive Exa documentation fixture"
+        }
+      ],
+      "source_ref": "<source-ref>",
+      "cache": {
+        "resolve": {
+          "state": "skipped",
+          "evicted_entries": 0,
+          "reason": "provider_not_selected"
+        },
+        "docs": {
+          "state": "skipped",
+          "evicted_entries": 0,
+          "reason": "provider_not_selected"
+        }
+      },
+      "total_sources": 1,
+      "returned_sources": 1,
+      "total_snippets": 0,
+      "returned_snippets": 0,
+      "truncated": false,
+      "evidence_level": "discovery",
+      "warnings": [],
+      "model_text_max_bytes": 9000
+    },
+    "web_map": {
+      "requested_url": "https://example.test",
+      "base_url": "https://example.test",
+      "results": [
+        "https://example.test/docs",
+        "https://example.test/api"
+      ],
+      "total_results": 2,
+      "returned_results": 2,
+      "max_depth": 1,
+      "max_breadth": 2,
+      "limit": 2,
+      "response_time": 0.01,
+      "truncated": false,
+      "evidence_level": "discovery",
+      "provider": "tavily",
+      "attempts": [
+        {
+          "provider": "tavily",
+          "outcome": "success",
+          "count": 1,
+          "duration_ms": "<duration-ms>",
+          "fallback": false
+        }
+      ],
+      "warnings": [],
+      "model_text_max_bytes": 65536
+    },
+    "diagnostics": {
+      "tested": true,
+      "action": "test",
+      "capability_status": [
+        {
+          "capability": "main_search",
+          "available": true,
+          "required": true,
+          "providers": [
+            {
+              "provider": "search_api",
+              "state": "configured"
+            },
+            {
+              "provider": "tavily_search",
+              "state": "configured"
+            },
+            {
+              "provider": "firecrawl_search",
+              "state": "configured"
+            }
+          ]
+        },
+        {
+          "capability": "docs_search",
+          "available": true,
+          "required": true,
+          "providers": [
+            {
+              "provider": "context7",
+              "state": "configured"
+            },
+            {
+              "provider": "exa",
+              "state": "configured"
+            }
+          ]
+        },
+        {
+          "capability": "web_extract",
+          "available": true,
+          "required": true,
+          "providers": [
+            {
+              "provider": "tavily_extract",
+              "state": "configured"
+            },
+            {
+              "provider": "firecrawl_scrape",
+              "state": "configured"
+            },
+            {
+              "provider": "smart_direct",
+              "state": "configured"
+            },
+            {
+              "provider": "direct",
+              "state": "configured"
+            }
+          ]
+        },
+        {
+          "capability": "site_map",
+          "available": true,
+          "required": false,
+          "providers": [
+            {
+              "provider": "tavily_map",
+              "state": "configured"
+            }
+          ]
+        }
+      ],
+      "provider_attempts": [
+        {
+          "capability": "main_search",
+          "provider": "search_api",
+          "outcome": "success",
+          "duration_ms": "<duration-ms>",
+          "attempts": 1
+        },
+        {
+          "capability": "main_search",
+          "provider": "tavily_search",
+          "outcome": "success",
+          "duration_ms": "<duration-ms>",
+          "attempts": 1
+        },
+        {
+          "capability": "main_search",
+          "provider": "firecrawl_search",
+          "outcome": "success",
+          "duration_ms": "<duration-ms>",
+          "attempts": 1
+        },
+        {
+          "capability": "docs_search",
+          "provider": "context7",
+          "outcome": "success",
+          "duration_ms": "<duration-ms>",
+          "attempts": 1
+        },
+        {
+          "capability": "docs_search",
+          "provider": "exa",
+          "outcome": "success",
+          "duration_ms": "<duration-ms>",
+          "attempts": 1
+        },
+        {
+          "capability": "web_extract",
+          "provider": "tavily_extract",
+          "outcome": "unsupported",
+          "duration_ms": "<duration-ms>",
+          "attempts": 0
+        },
+        {
+          "capability": "web_extract",
+          "provider": "firecrawl_scrape",
+          "outcome": "unsupported",
+          "duration_ms": "<duration-ms>",
+          "attempts": 0
+        },
+        {
+          "capability": "web_extract",
+          "provider": "smart_direct",
+          "outcome": "unsupported",
+          "duration_ms": "<duration-ms>",
+          "attempts": 0
+        },
+        {
+          "capability": "web_extract",
+          "provider": "direct",
+          "outcome": "unsupported",
+          "duration_ms": "<duration-ms>",
+          "attempts": 0
+        },
+        {
+          "capability": "site_map",
+          "provider": "tavily_map",
+          "outcome": "unsupported",
+          "duration_ms": "<duration-ms>",
+          "attempts": 0
+        }
+      ],
+      "providers_used": [
+        "search_api",
+        "tavily_search",
+        "firecrawl_search",
+        "context7",
+        "exa"
+      ],
+      "fallback_used": false,
+      "minimum_profile": {
+        "profile": "standard",
+        "satisfied": true
+      },
+      "configuration": {
+        "default_profile": "auto",
+        "default_depth": "compact",
+        "search_api_protocol": "completions",
+        "search_model_configured": true,
+        "thinking_level": "off",
+        "fallback_mode": "off",
+        "web_map_enabled": true,
+        "research_plan_enabled": true,
+        "diagnostics_enabled": true,
+        "tavily_search_enabled": true,
+        "firecrawl_search_enabled": true,
+        "tavily_extract_enabled": true,
+        "firecrawl_scrape_enabled": true,
+        "smart_direct_enabled": true,
+        "direct_enabled": true
+      },
+      "warnings": [
+        {
+          "code": "unsupported",
+          "count": 5
+        }
+      ],
+      "limitations": [
+        "Capability availability reflects configuration and route enablement; only provider_attempts describes this test.",
+        "Connectivity probes are bounded point-in-time checks and do not guarantee complete third-party service health.",
+        "Tavily Extract, Firecrawl Scrape, Tavily Map, smart_direct, and direct are not network-probed; local routes report enabled state only.",
+        "The test does not call Search API main search or write session events, source records, or Provider response caches."
+      ],
+      "canonical_output_truncated": false,
+      "model_text_max_bytes": 16384
+    }
+  },
+  "cards": {
+    "search": {
+      "live": {
+        "card": "web",
+        "kind": "search",
+        "title": "native full SDK v4 fixture",
+        "sources": [
+          {
+            "url": "https://github.com/acme/sdk/releases/tag/v4",
+            "title": "Acme SDK v4 release",
+            "snippet": "Current release discovery for the v4 fixture"
+          },
+          {
+            "url": "<fixture-origin>/pages/sdk-v3",
+            "title": "Acme SDK v3 community guide",
+            "publishedAt": "2023-01-02"
+          }
+        ],
+        "answer": "Fixture answer for native full SDK v4 fixture.",
+        "truncated": false
+      },
+      "replay": {
+        "card": "web",
+        "kind": "search",
+        "title": "native full SDK v4 fixture",
+        "sources": [
+          {
+            "url": "https://github.com/acme/sdk/releases/tag/v4",
+            "title": "Acme SDK v4 release",
+            "snippet": "Current release discovery for the v4 fixture"
+          },
+          {
+            "url": "<fixture-origin>/pages/sdk-v3",
+            "title": "Acme SDK v3 community guide",
+            "publishedAt": "2023-01-02"
+          }
+        ],
+        "answer": "Fixture answer for native full SDK v4 fixture.",
+        "truncated": false
+      },
+      "metadata": {
+        "version": 1,
+        "type": "web_search",
+        "source_produced": true,
+        "answer": "Fixture answer for native full SDK v4 fixture.",
+        "sources": [
+          {
+            "url": "https://github.com/acme/sdk/releases/tag/v4",
+            "title": "Acme SDK v4 release",
+            "snippet": "Current release discovery for the v4 fixture"
+          },
+          {
+            "url": "<fixture-origin>/pages/sdk-v3",
+            "title": "Acme SDK v3 community guide",
+            "publishedAt": "2023-01-02"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    "search_tools": {
+      "call": {
+        "card": "generic",
+        "kind": "search",
+        "title": "Disclose search capabilities (2)"
+      },
+      "live": {
+        "card": "generic",
+        "title": "Search capabilities disclosed (1 added; next step)"
+      },
+      "replay": {
+        "card": "generic",
+        "title": "Search capabilities disclosed (1 added; next step)"
+      },
+      "metadata": {
+        "version": 1,
+        "type": "search_tools",
+        "requested_count": 2,
+        "added_count": 1,
+        "active_count": 3,
+        "takes_effect": "next_step"
+      }
+    }
+  },
+  "code_mode": {
+    "nested_values": {
+      "web_search": [
+        {
+          "state": "complete",
+          "answer": "Fixture answer for code first-step fixture.",
+          "sources": [
+            {
+              "url": "<fixture-origin>/pages/primary",
+              "title": "Primary fixture"
+            },
+            {
+              "url": "<fixture-origin>/pages/tavily",
+              "title": "Tavily code first-step fixture",
+              "snippet": "Supplemental discovery for code first-step fixture"
+            }
+          ],
+          "source_ref": "<source-ref>",
+          "total_sources": 2,
+          "returned_sources": 2,
+          "truncated": false,
+          "evidence_level": "discovery",
+          "warnings": [],
+          "model_text_max_bytes": 4096
+        },
+        {
+          "state": "complete",
+          "answer": "Fixture answer for code next-SDK fixture.",
+          "sources": [
+            {
+              "url": "<fixture-origin>/pages/primary",
+              "title": "Primary fixture"
+            },
+            {
+              "url": "<fixture-origin>/pages/tavily",
+              "title": "Tavily code next-SDK fixture",
+              "snippet": "Supplemental discovery for code next-SDK fixture"
+            }
+          ],
+          "source_ref": "<source-ref>",
+          "total_sources": 2,
+          "returned_sources": 2,
+          "truncated": false,
+          "evidence_level": "discovery",
+          "warnings": [],
+          "model_text_max_bytes": 4096
+        }
+      ],
+      "search_sources": {
+        "state": "found",
+        "source_ref": "<source-ref>",
+        "offset": 0,
+        "limit": 1,
+        "format": "full",
+        "total": 2,
+        "returned": 1,
+        "sources": [
+          {
+            "url": "<fixture-origin>/pages/primary",
+            "category": "unknown",
+            "title": "Primary fixture"
+          }
+        ],
+        "has_more": true,
+        "next_offset": 1,
+        "total_before_retention": 2,
+        "truncated": false,
+        "page_byte_limited": false
+      }
+    },
+    "outer_values": {
+      "first": {
+        "logs": [],
+        "result": {
+          "search": {
+            "state": "complete",
+            "answer": "Fixture answer for code first-step fixture.",
+            "sources": [
+              {
+                "url": "<fixture-origin>/pages/primary",
+                "title": "Primary fixture"
+              },
+              {
+                "url": "<fixture-origin>/pages/tavily",
+                "title": "Tavily code first-step fixture",
+                "snippet": "Supplemental discovery for code first-step fixture"
+              }
+            ],
+            "source_ref": "<source-ref>",
+            "total_sources": 2,
+            "returned_sources": 2,
+            "truncated": false,
+            "evidence_level": "discovery",
+            "warnings": [],
+            "model_text_max_bytes": 4096
+          },
+          "search_sources_binding": "undefined"
+        }
+      },
+      "next": {
+        "logs": [],
+        "result": {
+          "search": {
+            "state": "complete",
+            "answer": "Fixture answer for code next-SDK fixture.",
+            "sources": [
+              {
+                "url": "<fixture-origin>/pages/primary",
+                "title": "Primary fixture"
+              },
+              {
+                "url": "<fixture-origin>/pages/tavily",
+                "title": "Tavily code next-SDK fixture",
+                "snippet": "Supplemental discovery for code next-SDK fixture"
+              }
+            ],
+            "source_ref": "<source-ref>",
+            "total_sources": 2,
+            "returned_sources": 2,
+            "truncated": false,
+            "evidence_level": "discovery",
+            "warnings": [],
+            "model_text_max_bytes": 4096
+          },
+          "page": {
+            "state": "found",
+            "source_ref": "<source-ref>",
+            "offset": 0,
+            "limit": 1,
+            "format": "full",
+            "total": 2,
+            "returned": 1,
+            "sources": [
+              {
+                "url": "<fixture-origin>/pages/primary",
+                "category": "unknown",
+                "title": "Primary fixture"
+              }
+            ],
+            "has_more": true,
+            "next_offset": 1,
+            "total_before_retention": 2,
+            "truncated": false,
+            "page_byte_limited": false
+          },
+          "search_sources_binding": "function"
+        }
+      },
+      "site_map_activation": {
+        "logs": [],
+        "result": {
+          "activation": {
+            "requested_groups": [
+              "site_map"
+            ],
+            "added_groups": [
+              "site_map"
+            ],
+            "active_groups": [
+              "site_map"
+            ],
+            "groups": [
+              {
+                "group": "site_map",
+                "description": "Discover bounded candidate URLs under a known website.",
+                "tools": [
+                  "web_map"
+                ]
+              }
+            ],
+            "added_tools": [
+              "web_map"
+            ],
+            "disclosed_tools": [
+              "web_map"
+            ],
+            "takes_effect": "next_step"
+          },
+          "binding": "undefined",
+          "early": "unavailable"
+        }
+      },
+      "site_map_next": {
+        "logs": [],
+        "result": {
+          "binding": "function",
+          "map": {
+            "requested_url": "https://example.test",
+            "base_url": "https://example.test",
+            "results": [
+              "https://example.test/docs",
+              "https://example.test/api"
+            ],
+            "total_results": 2,
+            "returned_results": 2,
+            "max_depth": 1,
+            "max_breadth": 2,
+            "limit": 2,
+            "response_time": 0.01,
+            "truncated": false,
+            "evidence_level": "discovery",
+            "provider": "tavily",
+            "attempts": [
+              {
+                "provider": "tavily",
+                "outcome": "success",
+                "count": 1,
+                "duration_ms": "<duration-ms>",
+                "fallback": false
+              }
+            ],
+            "warnings": [],
+            "model_text_max_bytes": 65536
+          }
+        }
+      }
+    },
+    "dispatches": [
+      {
+        "rootCallId": "code-first-call",
+        "parentCallId": "code-first-call",
+        "subCallId": "code-first-call:code:1",
+        "name": "web_search",
+        "arguments": {
+          "query": "code first-step fixture",
+          "profile": "auto",
+          "depth": "compact"
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Fixture answer for code first-step fixture.\n\nTop sources\n1. Primary fixture\n   URL: <fixture-origin>/pages/primary\n2. Tavily code first-step fixture\n   URL: <fixture-origin>/pages/tavily\n   Snippet: Supplemental discovery for code first-step fixture\n\nSources shown: 2/2\nSource reference: <source-ref>\n\nEvidence level: discovery. Snippets are discovery metadata, not verified page-body evidence."
+          },
+          {
+            "type": "search-enhance/source-produced",
+            "version": 1
+          }
+        ]
+      },
+      {
+        "rootCallId": "code-next-call",
+        "parentCallId": "code-next-call",
+        "subCallId": "code-next-call:code:1",
+        "name": "web_search",
+        "arguments": {
+          "query": "code next-SDK fixture",
+          "profile": "auto",
+          "depth": "compact"
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Fixture answer for code next-SDK fixture.\n\nTop sources\n1. Primary fixture\n   URL: <fixture-origin>/pages/primary\n2. Tavily code next-SDK fixture\n   URL: <fixture-origin>/pages/tavily\n   Snippet: Supplemental discovery for code next-SDK fixture\n\nSources shown: 2/2\nSource reference: <source-ref>\n\nEvidence level: discovery. Snippets are discovery metadata, not verified page-body evidence."
+          },
+          {
+            "type": "search-enhance/source-produced",
+            "version": 1
+          }
+        ]
+      },
+      {
+        "rootCallId": "code-next-call",
+        "parentCallId": "code-next-call",
+        "subCallId": "code-next-call:code:2",
+        "name": "search_sources",
+        "arguments": {
+          "source_ref": "<source-ref>",
+          "offset": 0,
+          "limit": 1,
+          "format": "full"
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Sources\n1. Primary fixture\n   URL: <fixture-origin>/pages/primary\n   Category: unknown\n\nPage returned: 1; retained total: 2; original total: 2.\nMore sources are available at offset 1.\n\nThese are retained discovery records; snippets are not fetched webpage bodies."
+          }
+        ]
+      }
+    ],
+    "post_restart_page": {
+      "logs": [],
+      "result": {
+        "state": "found",
+        "source_ref": "<source-ref>",
+        "offset": 0,
+        "limit": 1,
+        "format": "compact",
+        "total": 2,
+        "returned": 1,
+        "sources": [
+          {
+            "url": "<fixture-origin>/pages/primary",
+            "category": "unknown",
+            "title": "Primary fixture"
+          }
+        ],
+        "has_more": true,
+        "next_offset": 1,
+        "total_before_retention": 2,
+        "truncated": false,
+        "page_byte_limited": false
+      }
+    }
+  },
+  "cancellation": {
+    "native_error": "ABORTED",
+    "code_dispatch_error": true,
+    "reload_error": "ABORTED"
+  },
+  "native_web_tools": {
+    "names": [
+      "web_fetch",
+      "web_search"
+    ],
+    "hidden_preset_tools": [
+      "web_fetch"
+    ],
+    "calls_while_plugin_active": {
+      "web_search": 0,
+      "web_fetch": 1
+    }
+  },
+  "storage_records": [
+    {
+      "version": 1,
+      "sourceRef": "<source-ref>",
+      "ownerSessionId": "native-full-session",
+      "query": "capacity fill 5",
+      "profile": "auto",
+      "depth": "compact",
+      "call": {
+        "mode": "top-level",
+        "rootCallId": "capacity-fill-5",
+        "callId": "capacity-fill-5",
+        "name": "web_search"
+      },
+      "sources": [
+        {
+          "url": "<fixture-origin>/pages/primary",
+          "title": "Primary fixture",
+          "provider": "search-api"
+        },
+        {
+          "url": "<fixture-origin>/pages/tavily",
+          "title": "Tavily capacity fill 5",
+          "snippet": "Supplemental discovery for capacity fill 5",
+          "provider": "tavily"
+        }
+      ],
+      "totalBeforeRetention": 2,
+      "collectionTruncated": false,
+      "truncated": false
+    },
+    {
+      "version": 1,
+      "sourceRef": "<source-ref>",
+      "ownerSessionId": "code-session",
+      "query": "code first-step fixture",
+      "profile": "auto",
+      "depth": "compact",
+      "call": {
+        "mode": "nested-code",
+        "rootCallId": "code-first-call",
+        "callId": "code-first-call:code:1",
+        "name": "web_search"
+      },
+      "sources": [
+        {
+          "url": "<fixture-origin>/pages/primary",
+          "title": "Primary fixture",
+          "provider": "search-api"
+        },
+        {
+          "url": "<fixture-origin>/pages/tavily",
+          "title": "Tavily code first-step fixture",
+          "snippet": "Supplemental discovery for code first-step fixture",
+          "provider": "tavily"
+        }
+      ],
+      "totalBeforeRetention": 2,
+      "collectionTruncated": false,
+      "truncated": false
+    },
+    {
+      "version": 1,
+      "sourceRef": "<source-ref>",
+      "ownerSessionId": "code-session",
+      "query": "code next-SDK fixture",
+      "profile": "auto",
+      "depth": "compact",
+      "call": {
+        "mode": "nested-code",
+        "rootCallId": "code-next-call",
+        "callId": "code-next-call:code:1",
+        "name": "web_search"
+      },
+      "sources": [
+        {
+          "url": "<fixture-origin>/pages/primary",
+          "title": "Primary fixture",
+          "provider": "search-api"
+        },
+        {
+          "url": "<fixture-origin>/pages/tavily",
+          "title": "Tavily code next-SDK fixture",
+          "snippet": "Supplemental discovery for code next-SDK fixture",
+          "provider": "tavily"
+        }
+      ],
+      "totalBeforeRetention": 2,
+      "collectionTruncated": false,
+      "truncated": false
+    },
+    {
+      "version": 1,
+      "sourceRef": "<source-ref>",
+      "ownerSessionId": "native-full-session",
+      "query": "native full SDK v4 fixture",
+      "profile": "auto",
+      "depth": "compact",
+      "call": {
+        "mode": "top-level",
+        "rootCallId": "native-full-call",
+        "callId": "native-full-call",
+        "name": "web_search"
+      },
+      "sources": [
+        {
+          "url": "https://github.com/acme/sdk/releases/tag/v4",
+          "title": "Acme SDK v4 release",
+          "snippet": "Current release discovery for the v4 fixture",
+          "provider": "tavily"
+        },
+        {
+          "url": "<fixture-origin>/pages/sdk-v3",
+          "title": "Acme SDK v3 community guide",
+          "publishedAt": "2023-01-02",
+          "provider": "search-api"
+        }
+      ],
+      "totalBeforeRetention": 2,
+      "collectionTruncated": false,
+      "truncated": false
+    },
+    {
+      "version": 1,
+      "sourceRef": "<source-ref>",
+      "ownerSessionId": "native-partial-session",
+      "query": "native partial fixture",
+      "profile": "auto",
+      "depth": "compact",
+      "call": {
+        "mode": "top-level",
+        "rootCallId": "native-partial-call",
+        "callId": "native-partial-call",
+        "name": "web_search"
+      },
+      "sources": [
+        {
+          "url": "<fixture-origin>/pages/tavily",
+          "title": "Tavily native partial fixture",
+          "snippet": "Supplemental discovery for native partial fixture",
+          "provider": "tavily"
+        }
+      ],
+      "totalBeforeRetention": 1,
+      "collectionTruncated": false,
+      "truncated": false
+    },
+    {
+      "version": 1,
+      "sourceRef": "<source-ref>",
+      "ownerSessionId": "docs-success-session",
+      "query": "progressive Exa documentation fixture",
+      "profile": "coding_docs",
+      "depth": "compact",
+      "call": {
+        "mode": "top-level",
+        "rootCallId": "docs-success",
+        "callId": "docs-success",
+        "name": "docs_search"
+      },
+      "sources": [
+        {
+          "url": "<fixture-origin>/pages/exa-docs",
+          "title": "Exa documentation fixture",
+          "snippet": "Documentation for progressive Exa documentation fixture",
+          "provider": "exa",
+          "category": "unknown"
+        }
+      ],
+      "totalBeforeRetention": 1,
+      "collectionTruncated": false,
+      "truncated": false
+    }
+  ],
+  "http_requests": [
+    {
+      "method": "GET",
+      "url": "/context7/api/v2/search?query=react+documentation",
+      "authorization": "<redacted>"
+    },
+    {
+      "method": "GET",
+      "url": "/search/v1/models",
+      "authorization": "<redacted>"
+    },
+    {
+      "method": "GET",
+      "url": "/search/v1/models",
+      "authorization": "<redacted>"
+    },
+    {
+      "method": "POST",
+      "url": "/exa/search",
+      "body": {
+        "contents": {
+          "highlights": true
+        },
+        "numResults": 1,
+        "query": "progressive Exa documentation fixture",
+        "type": "neural",
+        "useAutoprompt": true
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/exa/search",
+      "body": {
+        "contents": {
+          "highlights": true
+        },
+        "numResults": 1,
+        "query": "search-enhance fixed connectivity diagnostic",
+        "type": "neural",
+        "useAutoprompt": true
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/firecrawl/search",
+      "authorization": "<redacted>",
+      "body": {
+        "limit": 1,
+        "query": "search-enhance fixed connectivity diagnostic"
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/search/v1/chat/completions",
+      "authorization": "<redacted>",
+      "body": {
+        "model": "fixture-search-model",
+        "query": "capacity fill 5",
+        "stream": true
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/search/v1/chat/completions",
+      "authorization": "<redacted>",
+      "body": {
+        "model": "fixture-search-model",
+        "query": "capacity full fixture",
+        "stream": true
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/search/v1/chat/completions",
+      "authorization": "<redacted>",
+      "body": {
+        "model": "fixture-search-model",
+        "query": "code cancel fixture",
+        "stream": true
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/search/v1/chat/completions",
+      "authorization": "<redacted>",
+      "body": {
+        "model": "fixture-search-model",
+        "query": "code first-step fixture",
+        "stream": true
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/search/v1/chat/completions",
+      "authorization": "<redacted>",
+      "body": {
+        "model": "fixture-search-model",
+        "query": "code next-SDK fixture",
+        "stream": true
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/search/v1/chat/completions",
+      "authorization": "<redacted>",
+      "body": {
+        "model": "fixture-search-model",
+        "query": "malformed fixture",
+        "stream": true
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/search/v1/chat/completions",
+      "authorization": "<redacted>",
+      "body": {
+        "model": "fixture-search-model",
+        "query": "native cancel fixture",
+        "stream": true
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/search/v1/chat/completions",
+      "authorization": "<redacted>",
+      "body": {
+        "model": "fixture-search-model",
+        "query": "native empty fixture",
+        "stream": true
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/search/v1/chat/completions",
+      "authorization": "<redacted>",
+      "body": {
+        "model": "fixture-search-model",
+        "query": "native full SDK v4 fixture",
+        "stream": true
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/search/v1/chat/completions",
+      "authorization": "<redacted>",
+      "body": {
+        "model": "fixture-search-model",
+        "query": "native partial fixture",
+        "stream": true
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/search/v1/chat/completions",
+      "authorization": "<redacted>",
+      "body": {
+        "model": "fixture-search-model",
+        "query": "reload cancel fixture",
+        "stream": true
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/tavily/map",
+      "authorization": "<redacted>",
+      "body": {
+        "url": "https://example.test",
+        "max_depth": 1,
+        "max_breadth": 2,
+        "limit": 2,
+        "timeout": 150,
+        "instructions": "only docs"
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/tavily/map",
+      "authorization": "<redacted>",
+      "body": {
+        "url": "https://example.test",
+        "max_depth": 1,
+        "max_breadth": 2,
+        "limit": 2,
+        "timeout": 150,
+        "instructions": "only docs"
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/tavily/search",
+      "authorization": "<redacted>",
+      "body": {
+        "include_answer": false,
+        "include_raw_content": false,
+        "max_results": 1,
+        "query": "capacity fill 5",
+        "search_depth": "advanced"
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/tavily/search",
+      "authorization": "<redacted>",
+      "body": {
+        "include_answer": false,
+        "include_raw_content": false,
+        "max_results": 1,
+        "query": "capacity full fixture",
+        "search_depth": "advanced"
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/tavily/search",
+      "authorization": "<redacted>",
+      "body": {
+        "include_answer": false,
+        "include_raw_content": false,
+        "max_results": 1,
+        "query": "code cancel fixture",
+        "search_depth": "advanced"
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/tavily/search",
+      "authorization": "<redacted>",
+      "body": {
+        "include_answer": false,
+        "include_raw_content": false,
+        "max_results": 1,
+        "query": "code first-step fixture",
+        "search_depth": "advanced"
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/tavily/search",
+      "authorization": "<redacted>",
+      "body": {
+        "include_answer": false,
+        "include_raw_content": false,
+        "max_results": 1,
+        "query": "code next-SDK fixture",
+        "search_depth": "advanced"
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/tavily/search",
+      "authorization": "<redacted>",
+      "body": {
+        "include_answer": false,
+        "include_raw_content": false,
+        "max_results": 1,
+        "query": "malformed fixture",
+        "search_depth": "advanced"
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/tavily/search",
+      "authorization": "<redacted>",
+      "body": {
+        "include_answer": false,
+        "include_raw_content": false,
+        "max_results": 1,
+        "query": "native cancel fixture",
+        "search_depth": "advanced"
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/tavily/search",
+      "authorization": "<redacted>",
+      "body": {
+        "include_answer": false,
+        "include_raw_content": false,
+        "max_results": 1,
+        "query": "native empty fixture",
+        "search_depth": "advanced"
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/tavily/search",
+      "authorization": "<redacted>",
+      "body": {
+        "include_answer": false,
+        "include_raw_content": false,
+        "max_results": 1,
+        "query": "native full SDK v4 fixture",
+        "search_depth": "advanced"
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/tavily/search",
+      "authorization": "<redacted>",
+      "body": {
+        "include_answer": false,
+        "include_raw_content": false,
+        "max_results": 1,
+        "query": "native partial fixture",
+        "search_depth": "advanced"
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/tavily/search",
+      "authorization": "<redacted>",
+      "body": {
+        "include_answer": false,
+        "include_raw_content": false,
+        "max_results": 1,
+        "query": "reload cancel fixture",
+        "search_depth": "advanced"
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/tavily/search",
+      "authorization": "<redacted>",
+      "body": {
+        "include_answer": false,
+        "include_raw_content": false,
+        "max_results": 1,
+        "query": "search-enhance fixed connectivity diagnostic",
+        "search_depth": "advanced"
+      }
+    }
+  ]
+}

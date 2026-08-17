@@ -1,0 +1,98 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`web_extract replayable cards > projects exact/over caps onto SmartDirect/Direct cards and ignores host spill on replay 1`] = `
+[
+  {
+    "boundary": "exact",
+    "canonical_truncated": false,
+    "card": {
+      "card": "web",
+      "kind": "fetch",
+      "statusCode": 200,
+      "truncated": false,
+      "url": "https://example.test/final",
+    },
+    "meta": {
+      "evidence_level": "extracted_content",
+      "final_url": "https://example.test/final",
+      "retrieval_route": "smart_direct",
+      "status_code": 200,
+      "truncated": false,
+      "type": "web_extract",
+      "version": 1,
+    },
+    "model_text_truncated": false,
+    "replay_equal": true,
+    "route": "smart_direct",
+  },
+  {
+    "boundary": "over",
+    "canonical_truncated": false,
+    "card": {
+      "card": "web",
+      "kind": "fetch",
+      "statusCode": 200,
+      "truncated": true,
+      "url": "https://example.test/final",
+    },
+    "meta": {
+      "evidence_level": "extracted_content",
+      "final_url": "https://example.test/final",
+      "retrieval_route": "smart_direct",
+      "status_code": 200,
+      "truncated": true,
+      "type": "web_extract",
+      "version": 1,
+    },
+    "model_text_truncated": true,
+    "replay_equal": true,
+    "route": "smart_direct",
+  },
+  {
+    "boundary": "exact",
+    "canonical_truncated": false,
+    "card": {
+      "card": "web",
+      "kind": "fetch",
+      "statusCode": 200,
+      "truncated": false,
+      "url": "https://example.test/final",
+    },
+    "meta": {
+      "evidence_level": "direct_http_content",
+      "final_url": "https://example.test/final",
+      "retrieval_route": "direct",
+      "status_code": 200,
+      "truncated": false,
+      "type": "web_extract",
+      "version": 1,
+    },
+    "model_text_truncated": false,
+    "replay_equal": true,
+    "route": "direct",
+  },
+  {
+    "boundary": "over",
+    "canonical_truncated": false,
+    "card": {
+      "card": "web",
+      "kind": "fetch",
+      "statusCode": 200,
+      "truncated": true,
+      "url": "https://example.test/final",
+    },
+    "meta": {
+      "evidence_level": "direct_http_content",
+      "final_url": "https://example.test/final",
+      "retrieval_route": "direct",
+      "status_code": 200,
+      "truncated": true,
+      "type": "web_extract",
+      "version": 1,
+    },
+    "model_text_truncated": true,
+    "replay_equal": true,
+    "route": "direct",
+  },
+]
+`;

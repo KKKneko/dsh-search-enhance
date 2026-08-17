@@ -1,0 +1,402 @@
+{
+  "process_boundary": {
+    "independent_processes": true,
+    "first_loader_disposed_before_reopen": true,
+    "second_loader_disposed": true,
+    "sockets_quiescent": true
+  },
+  "phase1": {
+    "pid": "<first-process>",
+    "event_count": 97,
+    "event_types": [
+      "agent/inbox/spliced",
+      "turn/start",
+      "step/start",
+      "user/message",
+      "request/header",
+      "request/context",
+      "assistant/chunk",
+      "assistant/message",
+      "tool/call",
+      "tool/result",
+      "step/end",
+      "turn/end"
+    ],
+    "custom_event_types": [],
+    "sequences_contiguous": true,
+    "event_types_supported": true,
+    "model_tool_views": [
+      [
+        "docs_search",
+        "search_tools",
+        "web_extract",
+        "web_search"
+      ],
+      [
+        "context7_get_cached_doc_raw",
+        "context7_get_library_docs",
+        "context7_query_docs",
+        "context7_resolve_library_id",
+        "docs_search",
+        "search_tools",
+        "web_extract",
+        "web_search"
+      ],
+      [
+        "context7_get_cached_doc_raw",
+        "context7_get_library_docs",
+        "context7_query_docs",
+        "context7_resolve_library_id",
+        "docs_search",
+        "search_tools",
+        "web_extract",
+        "web_search"
+      ],
+      [
+        "context7_get_cached_doc_raw",
+        "context7_get_library_docs",
+        "context7_query_docs",
+        "context7_resolve_library_id",
+        "docs_search",
+        "search_tools",
+        "web_extract",
+        "web_map",
+        "web_search"
+      ],
+      [
+        "context7_get_cached_doc_raw",
+        "context7_get_library_docs",
+        "context7_query_docs",
+        "context7_resolve_library_id",
+        "docs_search",
+        "search_tools",
+        "web_extract",
+        "web_map",
+        "web_search"
+      ],
+      [
+        "context7_get_cached_doc_raw",
+        "context7_get_library_docs",
+        "context7_query_docs",
+        "context7_resolve_library_id",
+        "docs_search",
+        "search_tools",
+        "web_extract",
+        "web_map",
+        "web_search"
+      ],
+      [
+        "context7_get_cached_doc_raw",
+        "context7_get_library_docs",
+        "context7_query_docs",
+        "context7_resolve_library_id",
+        "docs_search",
+        "search_tools",
+        "web_extract",
+        "web_map",
+        "web_search"
+      ],
+      [
+        "context7_get_cached_doc_raw",
+        "context7_get_library_docs",
+        "context7_query_docs",
+        "context7_resolve_library_id",
+        "docs_search",
+        "search_sources",
+        "search_tools",
+        "web_extract",
+        "web_map",
+        "web_search"
+      ]
+    ],
+    "fork_boundary_event_type": "turn/end",
+    "context7_card": {
+      "card": "generic",
+      "title": "Context7 documentation lookup (1 returned)"
+    },
+    "context7_model_content": [
+      {
+        "type": "text",
+        "text": "{\n  \"state\": \"found\",\n  \"library_id\": \"/acme/sdk\",\n  \"query\": \"fresh process Context7 cache fixture\",\n  \"raw\": false,\n  \"snippets\": [\n    {\n      \"content\": \"Create the client once and dispose it at the lifecycle boundary.\",\n      \"title\": \"Lifecycle\",\n      \"library_id\": \"/acme/sdk\"\n    }\n  ],\n  \"doc_ref\": \"<doc-ref>\",\n  \"cache\": {\n    \"state\": \"miss\",\n    \"evicted_entries\": 0\n  },\n  \"attempts\": [\n    {\n      \"provider\": \"context7-docs\",\n      \"outcome\": \"success\",\n      \"count\": 1,\n      \"duration_ms\":\"<duration-ms>\",\n      \"fallback\": false\n    }\n  ],\n  \"warnings\": [],\n  \"total_snippets\": 1,\n  \"returned_snippets\": 1,\n  \"response_bytes\": 117,\n  \"cache_entry_truncated\": false,\n  \"canonical_output_truncated\": false,\n  \"model_text_max_bytes\": 9000,\n  \"evidence_level\": \"discovery\"\n}\n\nModel text truncated: FALSE\n\nEvidence level: discovery. Context7 snippets are validated discovery metadata, not fetched page-body evidence; use web_extract for claim-level verification."
+      }
+    ],
+    "tool_events": {
+      "call": {
+        "type": "tool/call",
+        "call_id": "fresh-process-enhance-call",
+        "name": "web_search",
+        "arguments": {
+          "query": "fresh process recovery fixture",
+          "profile": "auto",
+          "depth": "compact"
+        }
+      },
+      "result": {
+        "type": "tool/result",
+        "call_id": "fresh-process-enhance-call",
+        "is_error": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Fresh-process fixture answer.\n\nTop sources\n1. Primary recovery evidence\n   URL: <fixture-origin>/evidence/primary\n\nSources shown: 1/1\nSource reference: <source-ref>\n\nEvidence level: discovery. Snippets are discovery metadata, not verified page-body evidence."
+          }
+        ]
+      }
+    },
+    "raw_artifact": {
+      "filename": "session.jsonl",
+      "has_tool_call": true,
+      "has_tool_result": true,
+      "has_tool_args": true,
+      "has_final_result": true,
+      "has_source_ref": true,
+      "has_doc_ref": true,
+      "has_search_credential": false,
+      "has_context7_credential": false,
+      "has_resolved_endpoint": false,
+      "has_search_model": false,
+      "has_profile_prompt": false,
+      "has_reasoning_field": false
+    },
+    "private_source_record_durable": true,
+    "context7_cache_durable": true
+  },
+  "phase2": {
+    "pid": "<second-process>",
+    "loaded_event_count": 97,
+    "loaded_event_types": [
+      "agent/inbox/spliced",
+      "turn/start",
+      "step/start",
+      "user/message",
+      "request/header",
+      "request/context",
+      "assistant/chunk",
+      "assistant/message",
+      "tool/call",
+      "tool/result",
+      "step/end",
+      "turn/end"
+    ],
+    "resumed_event_count": 136,
+    "resumed_event_types": [
+      "agent/inbox/spliced",
+      "turn/start",
+      "step/start",
+      "user/message",
+      "request/header",
+      "request/context",
+      "assistant/chunk",
+      "assistant/message",
+      "tool/call",
+      "tool/result",
+      "step/end",
+      "turn/end",
+      "session/end-seed"
+    ],
+    "custom_event_types": [],
+    "session_format_unsupported_error": false,
+    "sequences_contiguous": true,
+    "event_types_supported": true,
+    "tool_events": {
+      "call": {
+        "type": "tool/call",
+        "call_id": "fresh-process-enhance-call",
+        "name": "web_search",
+        "arguments": {
+          "query": "fresh process recovery fixture",
+          "profile": "auto",
+          "depth": "compact"
+        }
+      },
+      "result": {
+        "type": "tool/result",
+        "call_id": "fresh-process-enhance-call",
+        "is_error": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Fresh-process fixture answer.\n\nTop sources\n1. Primary recovery evidence\n   URL: <fixture-origin>/evidence/primary\n\nSources shown: 1/1\nSource reference: <source-ref>\n\nEvidence level: discovery. Snippets are discovery metadata, not verified page-body evidence."
+          }
+        ]
+      }
+    },
+    "recovered_tools_before_first_request": [
+      "context7_get_cached_doc_raw",
+      "context7_get_library_docs",
+      "context7_query_docs",
+      "context7_resolve_library_id",
+      "docs_search",
+      "search_sources",
+      "search_tools",
+      "web_extract",
+      "web_map",
+      "web_search"
+    ],
+    "first_request_tools": [
+      "context7_get_cached_doc_raw",
+      "context7_get_library_docs",
+      "context7_query_docs",
+      "context7_resolve_library_id",
+      "docs_search",
+      "search_sources",
+      "search_tools",
+      "web_extract",
+      "web_map",
+      "web_search"
+    ],
+    "first_request_restored_before_assembly": true,
+    "source_page": {
+      "state": "found",
+      "source_ref": "<source-ref>",
+      "offset": 0,
+      "limit": 1,
+      "format": "full",
+      "total": 1,
+      "returned": 1,
+      "sources": [
+        {
+          "url": "<fixture-origin>/evidence/primary",
+          "category": "unknown",
+          "title": "Primary recovery evidence"
+        }
+      ],
+      "has_more": false,
+      "total_before_retention": 1,
+      "truncated": false,
+      "page_byte_limited": false
+    },
+    "private_source_record_restored": true,
+    "context7_cache": {
+      "state": "found",
+      "doc_ref": "<doc-ref>",
+      "library_id": "/acme/sdk"
+    },
+    "context7_cache_restored": true,
+    "context7_replay_card": {
+      "card": "generic",
+      "title": "Context7 documentation lookup (1 returned)"
+    },
+    "context7_model_content": [
+      {
+        "type": "text",
+        "text": "{\n  \"state\": \"found\",\n  \"library_id\": \"/acme/sdk\",\n  \"query\": \"fresh process Context7 cache fixture\",\n  \"raw\": false,\n  \"snippets\": [\n    {\n      \"content\": \"Create the client once and dispose it at the lifecycle boundary.\",\n      \"title\": \"Lifecycle\",\n      \"library_id\": \"/acme/sdk\"\n    }\n  ],\n  \"doc_ref\": \"<doc-ref>\",\n  \"cache\": {\n    \"state\": \"miss\",\n    \"evicted_entries\": 0\n  },\n  \"attempts\": [\n    {\n      \"provider\": \"context7-docs\",\n      \"outcome\": \"success\",\n      \"count\": 1,\n      \"duration_ms\":\"<duration-ms>\",\n      \"fallback\": false\n    }\n  ],\n  \"warnings\": [],\n  \"total_snippets\": 1,\n  \"returned_snippets\": 1,\n  \"response_bytes\": 117,\n  \"cache_entry_truncated\": false,\n  \"canonical_output_truncated\": false,\n  \"model_text_max_bytes\": 9000,\n  \"evidence_level\": \"discovery\"\n}\n\nModel text truncated: FALSE\n\nEvidence level: discovery. Context7 snippets are validated discovery metadata, not fetched page-body evidence; use web_extract for claim-level verification."
+      }
+    ],
+    "public_fork_used": true,
+    "public_forks": [
+      {
+        "boundary": 25,
+        "seed_length": 26,
+        "marker": "session/end-seed",
+        "event_types": [
+          "agent/inbox/spliced",
+          "turn/start",
+          "step/start",
+          "user/message",
+          "request/header",
+          "request/context",
+          "assistant/chunk",
+          "assistant/message",
+          "tool/call",
+          "tool/result",
+          "step/end",
+          "turn/end",
+          "session/end-seed"
+        ]
+      },
+      {
+        "boundary": 25,
+        "seed_length": 26,
+        "marker": "session/end-seed",
+        "event_types": [
+          "agent/inbox/spliced",
+          "turn/start",
+          "step/start",
+          "user/message",
+          "request/header",
+          "request/context",
+          "assistant/chunk",
+          "assistant/message",
+          "tool/call",
+          "tool/result",
+          "step/end",
+          "turn/end",
+          "session/end-seed"
+        ]
+      }
+    ],
+    "fork_tools": {
+      "inherited": [
+        "context7_get_cached_doc_raw",
+        "context7_get_library_docs",
+        "context7_query_docs",
+        "context7_resolve_library_id",
+        "docs_search",
+        "search_tools",
+        "web_extract",
+        "web_search"
+      ],
+      "child_after_activation": [
+        "context7_get_cached_doc_raw",
+        "context7_get_library_docs",
+        "context7_query_docs",
+        "context7_resolve_library_id",
+        "docs_search",
+        "research_plan",
+        "search_sources",
+        "search_tools",
+        "web_extract",
+        "web_search"
+      ],
+      "sibling_after_activation": [
+        "context7_get_cached_doc_raw",
+        "context7_get_library_docs",
+        "context7_query_docs",
+        "context7_resolve_library_id",
+        "docs_search",
+        "search_diagnostics",
+        "search_tools",
+        "web_extract",
+        "web_search"
+      ],
+      "parent_after_activation": [
+        "context7_get_cached_doc_raw",
+        "context7_get_library_docs",
+        "context7_query_docs",
+        "context7_resolve_library_id",
+        "docs_search",
+        "research_plan",
+        "search_sources",
+        "search_tools",
+        "web_extract",
+        "web_map",
+        "web_search"
+      ],
+      "unrelated_fresh": [
+        "docs_search",
+        "search_tools",
+        "web_extract",
+        "web_search"
+      ]
+    },
+    "source_isolation": true,
+    "no_additional_http_dispatch": true,
+    "loader_disposed": true
+  },
+  "provider_requests_observed_only_in_process_1": {
+    "search_api": {
+      "method": "POST",
+      "url": "/search/v1/chat/completions",
+      "authorization": "<redacted>",
+      "model": "fresh-process-search-model",
+      "query": "fresh process recovery fixture",
+      "stream": true
+    },
+    "context7": {
+      "method": "GET",
+      "url": "/context7/api/v2/context?libraryId=%2Facme%2Fsdk&query=fresh+process+Context7+cache+fixture",
+      "authorization": "<redacted>"
+    }
+  }
+}

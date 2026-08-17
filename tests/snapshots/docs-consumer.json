@@ -1,0 +1,2148 @@
+{
+  "native_schema": [
+    {
+      "name": "context7_get_cached_doc_raw",
+      "description": "Read this plugin's validated Context7 docs cache by exact doc_ref, or deterministically match at most 500 ordered records by query with an optional exact library_id filter. It performs no network request and never exposes storage paths, endpoints, credentials, raw errors, or unparsed bodies.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "doc_ref": {
+            "type": "string",
+            "description": "Exact opaque ctx7d_ reference returned by a Context7 docs tool."
+          },
+          "query": {
+            "type": "string",
+            "description": "Non-empty deterministic cache-match query used only when doc_ref is absent."
+          },
+          "library_id": {
+            "type": "string",
+            "description": "Optional exact Context7 id used only as a cache-record filter."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "context7_get_library_docs",
+      "description": "Resolve a library name when needed, then query Context7 through the same persistent TTL cache and Provider client. An exact library_id strictly skips resolve. raw is a validated cache envelope; all results are discovery evidence.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Non-empty documentation task or question."
+          },
+          "library_name": {
+            "type": "string",
+            "description": "Package or product name to resolve when library_id is absent."
+          },
+          "library_id": {
+            "type": "string",
+            "description": "Exact Context7 id. When supplied, resolve is skipped even if library_name is also present."
+          },
+          "max_results": {
+            "type": "integer",
+            "description": "Maximum resolve candidates from 1 through 20; defaults to 8.",
+            "default": 8,
+            "enum": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20
+            ]
+          },
+          "max_snippets": {
+            "type": "integer",
+            "description": "Maximum snippets from 1 through 20; defaults to 8.",
+            "default": 8,
+            "enum": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20
+            ]
+          },
+          "raw": {
+            "type": "boolean",
+            "description": "Return the validated bounded cache envelope instead of the ordinary snippet projection.",
+            "default": false
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "description": "Bypass fresh Context7 resolve/docs cache entries.",
+            "default": false
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "context7_query_docs",
+      "description": "Query documentation for an exact Context7 /org/project[/version] id. raw=false returns structured snippets; raw=true returns only a validated bounded cache envelope, never a Provider body, path, endpoint, or credential. Discovery only; verify claims with web_extract.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "library_id": {
+            "type": "string",
+            "description": "Exact Context7 /org/project or /org/project/version id."
+          },
+          "query": {
+            "type": "string",
+            "description": "Non-empty documentation task or question."
+          },
+          "max_snippets": {
+            "type": "integer",
+            "description": "Maximum snippets from 1 through 20; defaults to 5.",
+            "default": 5,
+            "enum": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20
+            ]
+          },
+          "raw": {
+            "type": "boolean",
+            "description": "Return the validated bounded cache envelope, never an unparsed Provider body or backend file.",
+            "default": false
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "description": "Bypass a fresh docs cache entry; expired transient failures may still use stale cache.",
+            "default": false
+          }
+        },
+        "required": [
+          "library_id",
+          "query"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "context7_resolve_library_id",
+      "description": "Resolve a package/product name to an exact Context7 library id. Skip this tool when /org/project[/version] is already known. Returns bounded safe candidates and cache/Provider facts; discovery only.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "library_name": {
+            "type": "string",
+            "description": "Non-empty package or product name. If an exact /org/project[/version] id is already known, call context7_query_docs instead."
+          },
+          "query": {
+            "type": "string",
+            "description": "Optional non-empty task context used only to rank the bounded candidates."
+          },
+          "max_results": {
+            "type": "integer",
+            "description": "Maximum candidates from 1 through 20; defaults to 8.",
+            "default": 8,
+            "enum": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20
+            ]
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "description": "Bypass a fresh resolve cache entry; expired transient failures may still use stale cache.",
+            "default": false
+          }
+        },
+        "required": [
+          "library_name"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "docs_search",
+      "description": "High-level SDK/API/framework/README/release documentation search. Routes Context7 first and optionally Exa, returns discovery snippets and durable source_ref pagination; common documentation tasks do not need granular Context7 tools.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "A non-empty SDK, API, framework, README, release, or documentation question."
+          },
+          "provider": {
+            "type": "string",
+            "description": "auto (default), Context7, Exa, or both documentation discovery routes.",
+            "enum": [
+              "auto",
+              "context7",
+              "exa",
+              "all"
+            ]
+          },
+          "library_id": {
+            "type": "string",
+            "description": "Optional exact Context7 /org/project or /org/project/version id; valid ids skip resolve."
+          },
+          "max_results": {
+            "type": "integer",
+            "description": "Maximum results (1-20); defaults to 6 and may be lowered by Settings.",
+            "default": 6,
+            "enum": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20
+            ]
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "description": "Bypass fresh Context7 cache entries and request current Provider data."
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    {
+      "name": "research_plan",
+      "description": "Generate one offline research plan only for explicit deep research, multi-source verification, or complex comparison. It does not search, fetch, or verify claims; execute only the listed stable plugin tools and fetch key pages with web_extract before claim-level conclusions.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "description": "Non-empty research question to plan without searching or fetching."
+          },
+          "budget": {
+            "type": "string",
+            "description": "Bounded planning breadth/depth intent; defaults to standard.",
+            "default": "standard",
+            "enum": [
+              "quick",
+              "standard",
+              "deep"
+            ]
+          },
+          "recency_requirement": {
+            "type": "string",
+            "default": "none",
+            "enum": [
+              "none",
+              "recent",
+              "current"
+            ]
+          },
+          "locale_domain_scope": {
+            "type": "string",
+            "default": "global",
+            "enum": [
+              "global",
+              "china",
+              "known_domains",
+              "mixed"
+            ]
+          },
+          "source_authority_need": {
+            "type": "string",
+            "default": "high",
+            "enum": [
+              "normal",
+              "high"
+            ]
+          },
+          "claim_risk": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "cross_validation_need": {
+            "type": "string",
+            "enum": [
+              "normal",
+              "high"
+            ]
+          },
+          "known_urls": {
+            "type": "array",
+            "description": "At most 10 known source URLs; a lower deployment cap may apply.",
+            "items": {
+              "type": "string",
+              "description": "Absolute HTTP(S) source URL without userinfo."
+            }
+          },
+          "sub_queries": {
+            "type": "array",
+            "description": "One through 6 focused sub-questions when supplied.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Stable caller-owned sub-question id such as sq1."
+                },
+                "question": {
+                  "type": "string",
+                  "description": "One focused, non-empty sub-question."
+                },
+                "reason": {
+                  "type": "string",
+                  "description": "Why this sub-question is necessary."
+                },
+                "tool": {
+                  "type": "string",
+                  "description": "Optional explicit plugin tool; deferred tools must be disclosed before execution.",
+                  "enum": [
+                    "web_search",
+                    "docs_search",
+                    "web_extract",
+                    "web_map"
+                  ]
+                },
+                "query": {
+                  "type": "string",
+                  "description": "Optional bounded tool query or URL; defaults deterministically."
+                }
+              },
+              "required": [
+                "id",
+                "question",
+                "reason"
+              ]
+            }
+          }
+        },
+        "required": [
+          "question"
+        ]
+      }
+    },
+    {
+      "name": "search_diagnostics",
+      "description": "Read-only masked search capability/config status. show is network-free. Use test only when the user explicitly requests connection diagnostics; test runs bounded fixed Provider health probes. API keys are never parameters or output, config writes happen only through DSH Settings/UI, and ordinary searches should not call this tool.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "Use show for network-free masked capability/config status. Use test only after the user explicitly requests bounded connection diagnostics.",
+            "enum": [
+              "show",
+              "test"
+            ]
+          }
+        },
+        "required": [
+          "action"
+        ]
+      }
+    },
+    {
+      "name": "search_sources",
+      "description": "Page discovery sources retained by web_search or docs_search for the current Agent session or an inherited fork. The private search_enhance_sources storage must be backed up and restored together with the session.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "source_ref": {
+            "type": "string",
+            "description": "Opaque source reference returned by web_search or docs_search."
+          },
+          "offset": {
+            "type": "integer",
+            "description": "Zero-based source offset; defaults to 0."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Positive page size; defaults to 20 and is capped by Settings."
+          },
+          "format": {
+            "type": "string",
+            "description": "compact (default) or full with bounded snippets.",
+            "enum": [
+              "compact",
+              "full"
+            ]
+          }
+        },
+        "required": [
+          "source_ref"
+        ]
+      }
+    },
+    {
+      "name": "search_tools",
+      "description": "Disclose one or more deferred search capability groups for the current Agent. Use only when the resident search tools cannot complete the task; do not activate every group preemptively. A successful call takes effect on the next model step and does not bypass restrictions from other Presets.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "capabilities": {
+            "type": "array",
+            "description": "One to five deferred search capability groups to disclose for this Agent.",
+            "items": {
+              "type": "string",
+              "enum": [
+                "context7",
+                "sources",
+                "site_map",
+                "planning",
+                "diagnostics"
+              ]
+            }
+          }
+        },
+        "required": [
+          "capabilities"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "web_extract",
+      "description": "Read a specific HTTP(S) URL through independent extraction/direct routes. No JavaScript or login; host-reachable addresses may be accessed, and evidence differs by route.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "A non-empty concrete HTTP(S) URL to read."
+          },
+          "format": {
+            "type": "string",
+            "description": "Output format; defaults to markdown.",
+            "default": "markdown",
+            "enum": [
+              "markdown",
+              "text",
+              "html",
+              "json",
+              "raw"
+            ]
+          }
+        },
+        "required": [
+          "url"
+        ]
+      }
+    },
+    {
+      "name": "web_map",
+      "description": "Discover a bounded set of links under a known HTTP(S) website. Results are discovery candidates, not fetched page-body evidence.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Absolute HTTP(S) root URL to map through Tavily; userinfo is rejected."
+          },
+          "instructions": {
+            "type": "string",
+            "description": "Optional natural-language filter for the website crawl."
+          },
+          "max_depth": {
+            "type": "integer",
+            "description": "Maximum traversal depth (1-5); defaults to 1.",
+            "default": 1,
+            "enum": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "max_breadth": {
+            "type": "integer",
+            "description": "Maximum links followed per level (1-500); defaults to 10 and must not exceed the deployment cap.",
+            "default": 10
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Total links processed (1-500); defaults to 30 and must not exceed the deployment cap.",
+            "default": 30
+          }
+        },
+        "required": [
+          "url"
+        ]
+      }
+    }
+  ],
+  "native_result": {
+    "callId": "native-docs-call",
+    "isError": false,
+    "content": [
+      {
+        "type": "text",
+        "text": "Documentation search (complete)\nDocumentation discovery completed; bounded discovery results follow.\n\nTop sources\n1. Acme SDK repository\n   URL: https://github.com/acme/sdk\n   Snippet: Acme SDK release and source repository.\n2. Acme SDK documentation\n   URL: https://docs.acme.test/sdk\n   Date: 2026-08-01\n   Snippet: Official Acme SDK discovery summary.\n\nSources shown: 2/2\nSnippets shown: 0/0\nSource reference: <source-ref>\n\nContext7 resolve cache: skipped, provider_not_selected\nContext7 docs cache: skipped, provider_not_selected\nProviders\n- context7: skipped\n- exa: complete\n\nEvidence level: discovery. Documentation snippets and source summaries are discovery metadata, not verified fetched page-body evidence; inspect an exact source page before relying on a claim."
+      }
+    ],
+    "meta": {
+      "version": 1,
+      "type": "docs_search",
+      "source_produced": true,
+      "sources": [
+        {
+          "url": "https://github.com/acme/sdk",
+          "title": "Acme SDK repository",
+          "snippet": "Acme SDK release and source repository."
+        },
+        {
+          "url": "https://docs.acme.test/sdk",
+          "title": "Acme SDK documentation",
+          "snippet": "Official Acme SDK discovery summary.",
+          "publishedAt": "2026-08-01"
+        }
+      ],
+      "snippets": [],
+      "cache": {
+        "resolve": {
+          "state": "skipped",
+          "evicted_entries": 0,
+          "reason": "provider_not_selected"
+        },
+        "docs": {
+          "state": "skipped",
+          "evicted_entries": 0,
+          "reason": "provider_not_selected"
+        }
+      },
+      "truncated": false
+    }
+  },
+  "native_card": {
+    "live": {
+      "card": "web",
+      "kind": "search",
+      "title": "Docs: canonical equality docs",
+      "sources": [
+        {
+          "url": "https://github.com/acme/sdk",
+          "title": "Acme SDK repository",
+          "snippet": "Acme SDK release and source repository."
+        },
+        {
+          "url": "https://docs.acme.test/sdk",
+          "title": "Acme SDK documentation",
+          "snippet": "Official Acme SDK discovery summary.",
+          "publishedAt": "2026-08-01"
+        }
+      ],
+      "truncated": false
+    },
+    "replay": {
+      "card": "web",
+      "kind": "search",
+      "title": "Docs: canonical equality docs",
+      "sources": [
+        {
+          "url": "https://github.com/acme/sdk",
+          "title": "Acme SDK repository",
+          "snippet": "Acme SDK release and source repository."
+        },
+        {
+          "url": "https://docs.acme.test/sdk",
+          "title": "Acme SDK documentation",
+          "snippet": "Official Acme SDK discovery summary.",
+          "publishedAt": "2026-08-01"
+        }
+      ],
+      "truncated": false
+    },
+    "metadata": {
+      "version": 1,
+      "type": "docs_search",
+      "source_produced": true,
+      "sources": [
+        {
+          "url": "https://github.com/acme/sdk",
+          "title": "Acme SDK repository",
+          "snippet": "Acme SDK release and source repository."
+        },
+        {
+          "url": "https://docs.acme.test/sdk",
+          "title": "Acme SDK documentation",
+          "snippet": "Official Acme SDK discovery summary.",
+          "publishedAt": "2026-08-01"
+        }
+      ],
+      "snippets": [],
+      "cache": {
+        "resolve": {
+          "state": "skipped",
+          "evicted_entries": 0,
+          "reason": "provider_not_selected"
+        },
+        "docs": {
+          "state": "skipped",
+          "evicted_entries": 0,
+          "reason": "provider_not_selected"
+        }
+      },
+      "truncated": false
+    }
+  },
+  "native_status_views": {
+    "context7_miss": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Documentation search (complete)\nDocumentation discovery completed; bounded discovery results follow.\n\nSelected library: /acme/sdk\nLibrary id: /acme/sdk\nDocumentation cache reference: <doc-ref>\n\nDocumentation snippets\n1. Lifecycle\n   Library: /acme/sdk\nInitialize the SDK with createClient and dispose it during cleanup.\n2. Migration\n   Library: /acme/sdk\nUse the v4 migration helper before replacing legacy adapters.\n\nTop sources\n1. /acme/sdk\n   URL: <fixture-origin>/context7/acme/sdk\n   Snippet: Initialize the SDK with createClient and dispose it during cleanup.\n\nSources shown: 1/1\nSnippets shown: 2/2\nSource reference: <source-ref>\n\nContext7 resolve cache: skipped, known_library_id\nContext7 docs cache: miss\nProviders\n- context7: complete\n- exa: skipped\n\nEvidence level: discovery. Documentation snippets and source summaries are discovery metadata, not verified fetched page-body evidence; inspect an exact source page before relying on a claim."
+        }
+      ],
+      "metadata": {
+        "version": 1,
+        "type": "docs_search",
+        "source_produced": true,
+        "sources": [
+          {
+            "url": "<fixture-origin>/context7/acme/sdk",
+            "title": "/acme/sdk",
+            "snippet": "Initialize the SDK with createClient and dispose it during cleanup."
+          }
+        ],
+        "snippets": [
+          {
+            "content": "Initialize the SDK with createClient and dispose it during cleanup.",
+            "title": "Lifecycle",
+            "library_id": "/acme/sdk"
+          },
+          {
+            "content": "Use the v4 migration helper before replacing legacy adapters.",
+            "title": "Migration",
+            "library_id": "/acme/sdk"
+          }
+        ],
+        "cache": {
+          "resolve": {
+            "state": "skipped",
+            "evicted_entries": 0,
+            "reason": "known_library_id"
+          },
+          "docs": {
+            "state": "miss",
+            "evicted_entries": 0
+          }
+        },
+        "truncated": false
+      },
+      "card": {
+        "card": "web",
+        "kind": "search",
+        "title": "Docs (retrieved): known library cache route",
+        "sources": [
+          {
+            "url": "<fixture-origin>/context7/acme/sdk",
+            "title": "/acme/sdk",
+            "snippet": "Initialize the SDK with createClient and dispose it during cleanup."
+          }
+        ],
+        "answer": "Documentation snippets (discovery metadata; not fetched page bodies):\n1. Lifecycle\nLibrary: /acme/sdk\nInitialize the SDK with createClient and dispose it during cleanup.\n2. Migration\nLibrary: /acme/sdk\nUse the v4 migration helper before replacing legacy adapters.",
+        "truncated": false
+      }
+    },
+    "provider_partial": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Documentation search (partial)\nSome documentation paths failed or stale cache data was used; available discovery results follow.\n\nTop sources\n1. Acme SDK repository\n   URL: https://github.com/acme/sdk\n   Snippet: Acme SDK release and source repository.\n2. Acme SDK documentation\n   URL: https://docs.acme.test/sdk\n   Date: 2026-08-01\n   Snippet: Official Acme SDK discovery summary.\n\nSources shown: 2/2\nSnippets shown: 0/0\nSource reference: <source-ref>\n\nContext7 resolve cache: miss\nContext7 docs cache: skipped, upstream_failed\nProviders\n- context7: failed\n- exa: complete\n\nLimitations\n- A documentation Provider failed (context7/resolve, http).\n\nEvidence level: discovery. Documentation snippets and source summaries are discovery metadata, not verified fetched page-body evidence; inspect an exact source page before relying on a claim."
+        }
+      ],
+      "metadata": {
+        "version": 1,
+        "type": "docs_search",
+        "source_produced": true,
+        "sources": [
+          {
+            "url": "https://github.com/acme/sdk",
+            "title": "Acme SDK repository",
+            "snippet": "Acme SDK release and source repository."
+          },
+          {
+            "url": "https://docs.acme.test/sdk",
+            "title": "Acme SDK documentation",
+            "snippet": "Official Acme SDK discovery summary.",
+            "publishedAt": "2026-08-01"
+          }
+        ],
+        "snippets": [],
+        "cache": {
+          "resolve": {
+            "state": "miss",
+            "evicted_entries": 0
+          },
+          "docs": {
+            "state": "skipped",
+            "evicted_entries": 0,
+            "reason": "upstream_failed"
+          }
+        },
+        "truncated": false
+      },
+      "card": {
+        "card": "web",
+        "kind": "search",
+        "title": "Docs (retrieved): partial-route documentation",
+        "sources": [
+          {
+            "url": "https://github.com/acme/sdk",
+            "title": "Acme SDK repository",
+            "snippet": "Acme SDK release and source repository."
+          },
+          {
+            "url": "https://docs.acme.test/sdk",
+            "title": "Acme SDK documentation",
+            "snippet": "Official Acme SDK discovery summary.",
+            "publishedAt": "2026-08-01"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    "stale_fallback": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Documentation search (partial)\nSome documentation paths failed or stale cache data was used; available discovery results follow.\n\nSelected library: Acme SDK\nLibrary id: /acme/sdk\nLibrary summary: Official Acme SDK documentation\nDocumentation cache reference: <doc-ref>\n\nDocumentation snippets\n1. Lifecycle\n   Library: /acme/sdk\nInitialize the SDK with createClient and dispose it during cleanup.\n2. Migration\n   Library: /acme/sdk\nUse the v4 migration helper before replacing legacy adapters.\n\nTop sources\n1. Acme SDK\n   URL: <fixture-origin>/context7/acme/sdk\n   Snippet: Initialize the SDK with createClient and dispose it during cleanup.\n\nSources shown: 1/1\nSnippets shown: 2/2\nSource reference: <source-ref>\n\nContext7 resolve cache: stale\nContext7 docs cache: stale\nProviders\n- context7: complete\n- exa: skipped\n\nLimitations\n- Expired Context7 cache data was used after a temporary Provider failure (context7-cache/resolve, http).\n- Expired Context7 cache data was used after a temporary Provider failure (context7-cache/docs, http).\n\nEvidence level: discovery. Documentation snippets and source summaries are discovery metadata, not verified fetched page-body evidence; inspect an exact source page before relying on a claim."
+        }
+      ],
+      "metadata": {
+        "version": 1,
+        "type": "docs_search",
+        "source_produced": true,
+        "sources": [
+          {
+            "url": "<fixture-origin>/context7/acme/sdk",
+            "title": "Acme SDK",
+            "snippet": "Initialize the SDK with createClient and dispose it during cleanup."
+          }
+        ],
+        "snippets": [
+          {
+            "content": "Initialize the SDK with createClient and dispose it during cleanup.",
+            "title": "Lifecycle",
+            "library_id": "/acme/sdk"
+          },
+          {
+            "content": "Use the v4 migration helper before replacing legacy adapters.",
+            "title": "Migration",
+            "library_id": "/acme/sdk"
+          }
+        ],
+        "cache": {
+          "resolve": {
+            "state": "stale",
+            "evicted_entries": 0
+          },
+          "docs": {
+            "state": "stale",
+            "evicted_entries": 0
+          }
+        },
+        "truncated": false
+      },
+      "card": {
+        "card": "web",
+        "kind": "search",
+        "title": "Docs (stale cache): restart durable cache route",
+        "sources": [
+          {
+            "url": "<fixture-origin>/context7/acme/sdk",
+            "title": "Acme SDK",
+            "snippet": "Initialize the SDK with createClient and dispose it during cleanup."
+          }
+        ],
+        "answer": "Documentation snippets (discovery metadata; not fetched page bodies):\n1. Lifecycle\nLibrary: /acme/sdk\nInitialize the SDK with createClient and dispose it during cleanup.\n2. Migration\nLibrary: /acme/sdk\nUse the v4 migration helper before replacing legacy adapters.",
+        "truncated": false
+      }
+    }
+  },
+  "canonical_equality": {
+    "native": {
+      "state": "complete",
+      "provider": "exa",
+      "providers": [
+        {
+          "provider": "context7",
+          "state": "skipped"
+        },
+        {
+          "provider": "exa",
+          "state": "complete"
+        }
+      ],
+      "snippets": [],
+      "sources": [
+        {
+          "url": "https://github.com/acme/sdk",
+          "title": "Acme SDK repository",
+          "snippet": "Acme SDK release and source repository."
+        },
+        {
+          "url": "https://docs.acme.test/sdk",
+          "title": "Acme SDK documentation",
+          "snippet": "Official Acme SDK discovery summary.",
+          "publishedAt": "2026-08-01"
+        }
+      ],
+      "source_ref": "<source-ref>",
+      "cache": {
+        "resolve": {
+          "state": "skipped",
+          "evicted_entries": 0,
+          "reason": "provider_not_selected"
+        },
+        "docs": {
+          "state": "skipped",
+          "evicted_entries": 0,
+          "reason": "provider_not_selected"
+        }
+      },
+      "total_sources": 2,
+      "returned_sources": 2,
+      "total_snippets": 0,
+      "returned_snippets": 0,
+      "truncated": false,
+      "evidence_level": "discovery",
+      "warnings": [],
+      "model_text_max_bytes": 9000
+    },
+    "code": {
+      "state": "complete",
+      "provider": "exa",
+      "providers": [
+        {
+          "provider": "context7",
+          "state": "skipped"
+        },
+        {
+          "provider": "exa",
+          "state": "complete"
+        }
+      ],
+      "snippets": [],
+      "sources": [
+        {
+          "url": "https://github.com/acme/sdk",
+          "title": "Acme SDK repository",
+          "snippet": "Acme SDK release and source repository."
+        },
+        {
+          "url": "https://docs.acme.test/sdk",
+          "title": "Acme SDK documentation",
+          "snippet": "Official Acme SDK discovery summary.",
+          "publishedAt": "2026-08-01"
+        }
+      ],
+      "source_ref": "<source-ref>",
+      "cache": {
+        "resolve": {
+          "state": "skipped",
+          "evicted_entries": 0,
+          "reason": "provider_not_selected"
+        },
+        "docs": {
+          "state": "skipped",
+          "evicted_entries": 0,
+          "reason": "provider_not_selected"
+        }
+      },
+      "total_sources": 2,
+      "returned_sources": 2,
+      "total_snippets": 0,
+      "returned_snippets": 0,
+      "truncated": false,
+      "evidence_level": "discovery",
+      "warnings": [],
+      "model_text_max_bytes": 9000
+    },
+    "code_page": {
+      "state": "found",
+      "source_ref": "<source-ref>",
+      "offset": 0,
+      "limit": 1,
+      "format": "full",
+      "total": 2,
+      "returned": 1,
+      "sources": [
+        {
+          "url": "https://github.com/acme/sdk",
+          "category": "code",
+          "title": "Acme SDK repository",
+          "snippet": "Acme SDK release and source repository."
+        }
+      ],
+      "has_more": true,
+      "next_offset": 1,
+      "total_before_retention": 2,
+      "truncated": false,
+      "page_byte_limited": false
+    }
+  },
+  "cache_states": {
+    "known_miss": {
+      "state": "complete",
+      "provider": "context7",
+      "providers": [
+        {
+          "provider": "context7",
+          "state": "complete"
+        },
+        {
+          "provider": "exa",
+          "state": "skipped"
+        }
+      ],
+      "selected_library": {
+        "id": "/acme/sdk"
+      },
+      "snippets": [
+        {
+          "content": "Initialize the SDK with createClient and dispose it during cleanup.",
+          "title": "Lifecycle",
+          "library_id": "/acme/sdk"
+        },
+        {
+          "content": "Use the v4 migration helper before replacing legacy adapters.",
+          "title": "Migration",
+          "library_id": "/acme/sdk"
+        }
+      ],
+      "sources": [
+        {
+          "url": "<fixture-origin>/context7/acme/sdk",
+          "title": "/acme/sdk",
+          "snippet": "Initialize the SDK with createClient and dispose it during cleanup."
+        }
+      ],
+      "source_ref": "<source-ref>",
+      "doc_ref": "<doc-ref>",
+      "cache": {
+        "resolve": {
+          "state": "skipped",
+          "evicted_entries": 0,
+          "reason": "known_library_id"
+        },
+        "docs": {
+          "state": "miss",
+          "evicted_entries": 0
+        }
+      },
+      "total_sources": 1,
+      "returned_sources": 1,
+      "total_snippets": 2,
+      "returned_snippets": 2,
+      "truncated": false,
+      "evidence_level": "discovery",
+      "warnings": [],
+      "model_text_max_bytes": 9000
+    },
+    "known_hit": {
+      "state": "complete",
+      "provider": "context7",
+      "providers": [
+        {
+          "provider": "context7",
+          "state": "complete"
+        },
+        {
+          "provider": "exa",
+          "state": "skipped"
+        }
+      ],
+      "selected_library": {
+        "id": "/acme/sdk"
+      },
+      "snippets": [
+        {
+          "content": "Initialize the SDK with createClient and dispose it during cleanup.",
+          "title": "Lifecycle",
+          "library_id": "/acme/sdk"
+        },
+        {
+          "content": "Use the v4 migration helper before replacing legacy adapters.",
+          "title": "Migration",
+          "library_id": "/acme/sdk"
+        }
+      ],
+      "sources": [
+        {
+          "url": "<fixture-origin>/context7/acme/sdk",
+          "title": "/acme/sdk",
+          "snippet": "Initialize the SDK with createClient and dispose it during cleanup."
+        }
+      ],
+      "source_ref": "<source-ref>",
+      "doc_ref": "<doc-ref>",
+      "cache": {
+        "resolve": {
+          "state": "skipped",
+          "evicted_entries": 0,
+          "reason": "known_library_id"
+        },
+        "docs": {
+          "state": "hit",
+          "evicted_entries": 0
+        }
+      },
+      "total_sources": 1,
+      "returned_sources": 1,
+      "total_snippets": 2,
+      "returned_snippets": 2,
+      "truncated": false,
+      "evidence_level": "discovery",
+      "warnings": [],
+      "model_text_max_bytes": 9000
+    },
+    "known_refresh": {
+      "state": "complete",
+      "provider": "context7",
+      "providers": [
+        {
+          "provider": "context7",
+          "state": "complete"
+        },
+        {
+          "provider": "exa",
+          "state": "skipped"
+        }
+      ],
+      "selected_library": {
+        "id": "/acme/sdk"
+      },
+      "snippets": [
+        {
+          "content": "Initialize the SDK with createClient and dispose it during cleanup.",
+          "title": "Lifecycle",
+          "library_id": "/acme/sdk"
+        },
+        {
+          "content": "Use the v4 migration helper before replacing legacy adapters.",
+          "title": "Migration",
+          "library_id": "/acme/sdk"
+        }
+      ],
+      "sources": [
+        {
+          "url": "<fixture-origin>/context7/acme/sdk",
+          "title": "/acme/sdk",
+          "snippet": "Initialize the SDK with createClient and dispose it during cleanup."
+        }
+      ],
+      "source_ref": "<source-ref>",
+      "doc_ref": "<doc-ref>",
+      "cache": {
+        "resolve": {
+          "state": "skipped",
+          "evicted_entries": 0,
+          "reason": "known_library_id"
+        },
+        "docs": {
+          "state": "refresh",
+          "evicted_entries": 0
+        }
+      },
+      "total_sources": 1,
+      "returned_sources": 1,
+      "total_snippets": 2,
+      "returned_snippets": 2,
+      "truncated": false,
+      "evidence_level": "discovery",
+      "warnings": [],
+      "model_text_max_bytes": 9000
+    },
+    "restart_miss": {
+      "state": "complete",
+      "provider": "context7",
+      "providers": [
+        {
+          "provider": "context7",
+          "state": "complete"
+        },
+        {
+          "provider": "exa",
+          "state": "skipped"
+        }
+      ],
+      "selected_library": {
+        "id": "/acme/sdk",
+        "title": "Acme SDK",
+        "description": "Official Acme SDK documentation"
+      },
+      "snippets": [
+        {
+          "content": "Initialize the SDK with createClient and dispose it during cleanup.",
+          "title": "Lifecycle",
+          "library_id": "/acme/sdk"
+        },
+        {
+          "content": "Use the v4 migration helper before replacing legacy adapters.",
+          "title": "Migration",
+          "library_id": "/acme/sdk"
+        }
+      ],
+      "sources": [
+        {
+          "url": "<fixture-origin>/context7/acme/sdk",
+          "title": "Acme SDK",
+          "snippet": "Initialize the SDK with createClient and dispose it during cleanup."
+        }
+      ],
+      "source_ref": "<source-ref>",
+      "doc_ref": "<doc-ref>",
+      "cache": {
+        "resolve": {
+          "state": "miss",
+          "evicted_entries": 0
+        },
+        "docs": {
+          "state": "miss",
+          "evicted_entries": 0
+        }
+      },
+      "total_sources": 1,
+      "returned_sources": 1,
+      "total_snippets": 2,
+      "returned_snippets": 2,
+      "truncated": false,
+      "evidence_level": "discovery",
+      "warnings": [],
+      "model_text_max_bytes": 9000
+    },
+    "restart_hit": {
+      "state": "complete",
+      "provider": "context7",
+      "providers": [
+        {
+          "provider": "context7",
+          "state": "complete"
+        },
+        {
+          "provider": "exa",
+          "state": "skipped"
+        }
+      ],
+      "selected_library": {
+        "id": "/acme/sdk",
+        "title": "Acme SDK",
+        "description": "Official Acme SDK documentation"
+      },
+      "snippets": [
+        {
+          "content": "Initialize the SDK with createClient and dispose it during cleanup.",
+          "title": "Lifecycle",
+          "library_id": "/acme/sdk"
+        },
+        {
+          "content": "Use the v4 migration helper before replacing legacy adapters.",
+          "title": "Migration",
+          "library_id": "/acme/sdk"
+        }
+      ],
+      "sources": [
+        {
+          "url": "<fixture-origin>/context7/acme/sdk",
+          "title": "Acme SDK",
+          "snippet": "Initialize the SDK with createClient and dispose it during cleanup."
+        }
+      ],
+      "source_ref": "<source-ref>",
+      "doc_ref": "<doc-ref>",
+      "cache": {
+        "resolve": {
+          "state": "hit",
+          "evicted_entries": 0
+        },
+        "docs": {
+          "state": "hit",
+          "evicted_entries": 0
+        }
+      },
+      "total_sources": 1,
+      "returned_sources": 1,
+      "total_snippets": 2,
+      "returned_snippets": 2,
+      "truncated": false,
+      "evidence_level": "discovery",
+      "warnings": [],
+      "model_text_max_bytes": 9000
+    },
+    "stale": {
+      "state": "partial",
+      "provider": "context7",
+      "providers": [
+        {
+          "provider": "context7",
+          "state": "complete"
+        },
+        {
+          "provider": "exa",
+          "state": "skipped"
+        }
+      ],
+      "selected_library": {
+        "id": "/acme/sdk",
+        "title": "Acme SDK",
+        "description": "Official Acme SDK documentation"
+      },
+      "snippets": [
+        {
+          "content": "Initialize the SDK with createClient and dispose it during cleanup.",
+          "title": "Lifecycle",
+          "library_id": "/acme/sdk"
+        },
+        {
+          "content": "Use the v4 migration helper before replacing legacy adapters.",
+          "title": "Migration",
+          "library_id": "/acme/sdk"
+        }
+      ],
+      "sources": [
+        {
+          "url": "<fixture-origin>/context7/acme/sdk",
+          "title": "Acme SDK",
+          "snippet": "Initialize the SDK with createClient and dispose it during cleanup."
+        }
+      ],
+      "source_ref": "<source-ref>",
+      "doc_ref": "<doc-ref>",
+      "cache": {
+        "resolve": {
+          "state": "stale",
+          "evicted_entries": 0
+        },
+        "docs": {
+          "state": "stale",
+          "evicted_entries": 0
+        }
+      },
+      "total_sources": 1,
+      "returned_sources": 1,
+      "total_snippets": 2,
+      "returned_snippets": 2,
+      "truncated": false,
+      "evidence_level": "discovery",
+      "warnings": [
+        {
+          "code": "cache_stale",
+          "provider": "context7-cache",
+          "path": "resolve",
+          "error_kind": "http"
+        },
+        {
+          "code": "cache_stale",
+          "provider": "context7-cache",
+          "path": "docs",
+          "error_kind": "http"
+        }
+      ],
+      "model_text_max_bytes": 9000
+    }
+  },
+  "routes": {
+    "all": {
+      "state": "complete",
+      "provider": "all",
+      "providers": [
+        {
+          "provider": "context7",
+          "state": "complete"
+        },
+        {
+          "provider": "exa",
+          "state": "complete"
+        }
+      ],
+      "selected_library": {
+        "id": "/acme/sdk",
+        "title": "Acme SDK",
+        "description": "Official Acme SDK documentation"
+      },
+      "snippets": [
+        {
+          "content": "Initialize the SDK with createClient and dispose it during cleanup.",
+          "title": "Lifecycle",
+          "library_id": "/acme/sdk"
+        },
+        {
+          "content": "Use the v4 migration helper before replacing legacy adapters.",
+          "title": "Migration",
+          "library_id": "/acme/sdk"
+        }
+      ],
+      "sources": [
+        {
+          "url": "<fixture-origin>/context7/acme/sdk",
+          "title": "Acme SDK",
+          "snippet": "Initialize the SDK with createClient and dispose it during cleanup."
+        },
+        {
+          "url": "https://github.com/acme/sdk",
+          "title": "Acme SDK repository",
+          "snippet": "Acme SDK release and source repository."
+        }
+      ],
+      "source_ref": "<source-ref>",
+      "doc_ref": "<doc-ref>",
+      "cache": {
+        "resolve": {
+          "state": "miss",
+          "evicted_entries": 0
+        },
+        "docs": {
+          "state": "miss",
+          "evicted_entries": 0
+        }
+      },
+      "total_sources": 3,
+      "returned_sources": 2,
+      "total_snippets": 2,
+      "returned_snippets": 2,
+      "truncated": true,
+      "evidence_level": "discovery",
+      "warnings": [
+        {
+          "code": "provider_result_truncated"
+        },
+        {
+          "code": "sources_truncated"
+        }
+      ],
+      "model_text_max_bytes": 9000
+    },
+    "auto": {
+      "state": "complete",
+      "provider": "auto",
+      "providers": [
+        {
+          "provider": "context7",
+          "state": "complete"
+        },
+        {
+          "provider": "exa",
+          "state": "complete"
+        }
+      ],
+      "selected_library": {
+        "id": "/acme/sdk",
+        "title": "Acme SDK",
+        "description": "Official Acme SDK documentation"
+      },
+      "snippets": [
+        {
+          "content": "Initialize the SDK with createClient and dispose it during cleanup.",
+          "title": "Lifecycle",
+          "library_id": "/acme/sdk"
+        },
+        {
+          "content": "Use the v4 migration helper before replacing legacy adapters.",
+          "title": "Migration",
+          "library_id": "/acme/sdk"
+        }
+      ],
+      "sources": [
+        {
+          "url": "<fixture-origin>/context7/acme/sdk",
+          "title": "Acme SDK",
+          "snippet": "Initialize the SDK with createClient and dispose it during cleanup."
+        },
+        {
+          "url": "https://github.com/acme/sdk",
+          "title": "Acme SDK repository",
+          "snippet": "Acme SDK release and source repository."
+        }
+      ],
+      "source_ref": "<source-ref>",
+      "doc_ref": "<doc-ref>",
+      "cache": {
+        "resolve": {
+          "state": "miss",
+          "evicted_entries": 0
+        },
+        "docs": {
+          "state": "miss",
+          "evicted_entries": 0
+        }
+      },
+      "total_sources": 3,
+      "returned_sources": 2,
+      "total_snippets": 2,
+      "returned_snippets": 2,
+      "truncated": true,
+      "evidence_level": "discovery",
+      "warnings": [
+        {
+          "code": "provider_result_truncated"
+        },
+        {
+          "code": "sources_truncated"
+        }
+      ],
+      "model_text_max_bytes": 9000
+    },
+    "partial": {
+      "state": "partial",
+      "provider": "all",
+      "providers": [
+        {
+          "provider": "context7",
+          "state": "failed"
+        },
+        {
+          "provider": "exa",
+          "state": "complete"
+        }
+      ],
+      "snippets": [],
+      "sources": [
+        {
+          "url": "https://github.com/acme/sdk",
+          "title": "Acme SDK repository",
+          "snippet": "Acme SDK release and source repository."
+        },
+        {
+          "url": "https://docs.acme.test/sdk",
+          "title": "Acme SDK documentation",
+          "snippet": "Official Acme SDK discovery summary.",
+          "publishedAt": "2026-08-01"
+        }
+      ],
+      "source_ref": "<source-ref>",
+      "cache": {
+        "resolve": {
+          "state": "miss",
+          "evicted_entries": 0
+        },
+        "docs": {
+          "state": "skipped",
+          "evicted_entries": 0,
+          "reason": "upstream_failed"
+        }
+      },
+      "total_sources": 2,
+      "returned_sources": 2,
+      "total_snippets": 0,
+      "returned_snippets": 0,
+      "truncated": false,
+      "evidence_level": "discovery",
+      "warnings": [
+        {
+          "code": "provider_failed",
+          "provider": "context7",
+          "path": "resolve",
+          "error_kind": "http"
+        }
+      ],
+      "model_text_max_bytes": 9000
+    }
+  },
+  "granular_context7": {
+    "resolve": {
+      "card": {
+        "card": "generic",
+        "title": "Context7 library resolution (1 returned)"
+      },
+      "result": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"state\": \"found\",\n  \"library_name\": \"Acme SDK\",\n  \"query\": \"granular snapshot resolution\",\n  \"selected_library\": {\n    \"id\": \"/acme/sdk\",\n    \"title\": \"Acme SDK\",\n    \"description\": \"Official Acme SDK documentation\",\n    \"trust_score\": 10,\n    \"benchmark_score\": 91,\n    \"total_snippets\": 500,\n    \"versions\": [],\n    \"versions_truncated\": false\n  },\n  \"candidates\": [\n    {\n      \"id\": \"/acme/sdk\",\n      \"title\": \"Acme SDK\",\n      \"description\": \"Official Acme SDK documentation\",\n      \"trust_score\": 10,\n      \"benchmark_score\": 91,\n      \"total_snippets\": 500,\n      \"versions\": [],\n      \"versions_truncated\": false\n    }\n  ],\n  \"cache\": {\n    \"state\": \"miss\",\n    \"evicted_entries\": 0\n  },\n  \"attempts\": [\n    {\n      \"provider\": \"context7-resolve\",\n      \"outcome\": \"success\",\n      \"count\": 1,\n      \"duration_ms\": <time>,\n      \"fallback\": false\n    }\n  ],\n  \"warnings\": [],\n  \"total_candidates\": 1,\n  \"returned_candidates\": 1,\n  \"response_bytes\": 155,\n  \"cache_entry_truncated\": false,\n  \"canonical_output_truncated\": false,\n  \"model_text_max_bytes\": 9000,\n  \"evidence_level\": \"discovery\"\n}\n\nModel text truncated: FALSE\n\nEvidence level: discovery. Context7 snippets are validated discovery metadata, not fetched page-body evidence; use web_extract for claim-level verification."
+          }
+        ],
+        "meta": {
+          "version": 1,
+          "type": "context7_resolve_library_id",
+          "state": "found",
+          "returned": 1,
+          "canonical_output_truncated": false,
+          "model_text_truncated": false
+        },
+        "value": {
+          "state": "found",
+          "library_name": "Acme SDK",
+          "query": "granular snapshot resolution",
+          "selected_library": {
+            "id": "/acme/sdk",
+            "title": "Acme SDK",
+            "description": "Official Acme SDK documentation",
+            "trust_score": 10,
+            "benchmark_score": 91,
+            "total_snippets": 500,
+            "versions": [],
+            "versions_truncated": false
+          },
+          "candidates": [
+            {
+              "id": "/acme/sdk",
+              "title": "Acme SDK",
+              "description": "Official Acme SDK documentation",
+              "trust_score": 10,
+              "benchmark_score": 91,
+              "total_snippets": 500,
+              "versions": [],
+              "versions_truncated": false
+            }
+          ],
+          "cache": {
+            "state": "miss",
+            "evicted_entries": 0
+          },
+          "attempts": [
+            {
+              "provider": "context7-resolve",
+              "outcome": "success",
+              "count": 1,
+              "duration_ms": "<time>",
+              "fallback": false
+            }
+          ],
+          "warnings": [],
+          "total_candidates": 1,
+          "returned_candidates": 1,
+          "response_bytes": 155,
+          "cache_entry_truncated": false,
+          "canonical_output_truncated": false,
+          "model_text_truncated": false,
+          "model_text_max_bytes": 9000,
+          "evidence_level": "discovery"
+        }
+      }
+    },
+    "query": {
+      "card": {
+        "card": "generic",
+        "title": "Context7 documentation lookup (2 returned)"
+      },
+      "result": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"state\": \"found\",\n  \"library_id\": \"/acme/sdk\",\n  \"query\": \"granular snapshot docs\",\n  \"raw\": false,\n  \"snippets\": [\n    {\n      \"content\": \"Initialize the SDK with createClient and dispose it during cleanup.\",\n      \"title\": \"Lifecycle\",\n      \"library_id\": \"/acme/sdk\"\n    },\n    {\n      \"content\": \"Use the v4 migration helper before replacing legacy adapters.\",\n      \"title\": \"Migration\",\n      \"library_id\": \"/acme/sdk\"\n    }\n  ],\n  \"doc_ref\": \"<doc-ref>\",\n  \"cache\": {\n    \"state\": \"miss\",\n    \"evicted_entries\": 0\n  },\n  \"attempts\": [\n    {\n      \"provider\": \"context7-docs\",\n      \"outcome\": \"success\",\n      \"count\": 1,\n      \"duration_ms\": <time>,\n      \"fallback\": false\n    }\n  ],\n  \"warnings\": [],\n  \"total_snippets\": 2,\n  \"returned_snippets\": 2,\n  \"response_bytes\": 216,\n  \"cache_entry_truncated\": false,\n  \"canonical_output_truncated\": false,\n  \"model_text_max_bytes\": 9000,\n  \"evidence_level\": \"discovery\"\n}\n\nModel text truncated: FALSE\n\nEvidence level: discovery. Context7 snippets are validated discovery metadata, not fetched page-body evidence; use web_extract for claim-level verification."
+          }
+        ],
+        "meta": {
+          "version": 1,
+          "type": "context7_query_docs",
+          "state": "found",
+          "returned": 2,
+          "canonical_output_truncated": false,
+          "model_text_truncated": false
+        },
+        "value": {
+          "state": "found",
+          "library_id": "/acme/sdk",
+          "query": "granular snapshot docs",
+          "raw": false,
+          "snippets": [
+            {
+              "content": "Initialize the SDK with createClient and dispose it during cleanup.",
+              "title": "Lifecycle",
+              "library_id": "/acme/sdk"
+            },
+            {
+              "content": "Use the v4 migration helper before replacing legacy adapters.",
+              "title": "Migration",
+              "library_id": "/acme/sdk"
+            }
+          ],
+          "doc_ref": "<doc-ref>",
+          "cache": {
+            "state": "miss",
+            "evicted_entries": 0
+          },
+          "attempts": [
+            {
+              "provider": "context7-docs",
+              "outcome": "success",
+              "count": 1,
+              "duration_ms": "<time>",
+              "fallback": false
+            }
+          ],
+          "warnings": [],
+          "total_snippets": 2,
+          "returned_snippets": 2,
+          "response_bytes": 216,
+          "cache_entry_truncated": false,
+          "canonical_output_truncated": false,
+          "model_text_truncated": false,
+          "model_text_max_bytes": 9000,
+          "evidence_level": "discovery"
+        }
+      }
+    },
+    "get": {
+      "card": {
+        "card": "generic",
+        "title": "Context7 documentation lookup (2 returned)"
+      },
+      "result": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"state\": \"found\",\n  \"query\": \"granular combined snapshot docs\",\n  \"library_name\": \"Acme SDK\",\n  \"library_id\": \"/acme/sdk\",\n  \"selected_library\": {\n    \"id\": \"/acme/sdk\",\n    \"title\": \"Acme SDK\",\n    \"description\": \"Official Acme SDK documentation\",\n    \"trust_score\": 10,\n    \"benchmark_score\": 91,\n    \"total_snippets\": 500,\n    \"versions\": [],\n    \"versions_truncated\": false\n  },\n  \"raw\": true,\n  \"snippets\": [],\n  \"raw_envelope\": {\n    \"version\": 1,\n    \"kind\": \"docs\",\n    \"cache_key\": \"<doc-ref>\",\n    \"doc_ref\": \"<doc-ref>\",\n    \"library_id\": \"/acme/sdk\",\n    \"created_at_ms\": <time>,\n    \"expires_at_ms\": <time>,\n    \"max_results\": 2,\n    \"response_bytes\": 216,\n    \"total_items\": 2,\n    \"returned_items\": 2,\n    \"truncated\": false,\n    \"snippets\": [\n      {\n        \"content\": \"Initialize the SDK with createClient and dispose it during cleanup.\",\n        \"title\": \"Lifecycle\"\n      },\n      {\n        \"content\": \"Use the v4 migration helper before replacing legacy adapters.\",\n        \"title\": \"Migration\"\n      }\n    ]\n  },\n  \"doc_ref\": \"<doc-ref>\",\n  \"cache\": {\n    \"resolve\": {\n      \"state\": \"hit\",\n      \"evicted_entries\": 0\n    },\n    \"docs\": {\n      \"state\": \"miss\",\n      \"evicted_entries\": 0\n    }\n  },\n  \"attempts\": [\n    {\n      \"provider\": \"context7-cache-resolve\",\n      \"outcome\": \"success\",\n      \"count\": 1,\n      \"duration_ms\": <time>,\n      \"fallback\": false\n    },\n    {\n      \"provider\": \"context7-docs\",\n      \"outcome\": \"success\",\n      \"count\": 1,\n      \"duration_ms\": <time>,\n      \"fallback\": false\n    }\n  ],\n  \"warnings\": [],\n  \"resolve_total_candidates\": 1,\n  \"resolve_returned_candidates\": 1,\n  \"total_snippets\": 2,\n  \"returned_snippets\": 2,\n  \"response_bytes\": 371,\n  \"resolve_cache_entry_truncated\": false,\n  \"docs_cache_entry_truncated\": false,\n  \"canonical_output_truncated\": false,\n  \"model_text_max_bytes\": 9000,\n  \"evidence_level\": \"discovery\"\n}\n\nModel text truncated: FALSE\n\nEvidence level: discovery. Context7 snippets are validated discovery metadata, not fetched page-body evidence; use web_extract for claim-level verification."
+          }
+        ],
+        "meta": {
+          "version": 1,
+          "type": "context7_get_library_docs",
+          "state": "found",
+          "returned": 2,
+          "canonical_output_truncated": false,
+          "model_text_truncated": false
+        },
+        "value": {
+          "state": "found",
+          "query": "granular combined snapshot docs",
+          "library_name": "Acme SDK",
+          "library_id": "/acme/sdk",
+          "selected_library": {
+            "id": "/acme/sdk",
+            "title": "Acme SDK",
+            "description": "Official Acme SDK documentation",
+            "trust_score": 10,
+            "benchmark_score": 91,
+            "total_snippets": 500,
+            "versions": [],
+            "versions_truncated": false
+          },
+          "raw": true,
+          "snippets": [],
+          "raw_envelope": {
+            "version": 1,
+            "kind": "docs",
+            "cache_key": "<doc-ref>",
+            "doc_ref": "<doc-ref>",
+            "library_id": "/acme/sdk",
+            "created_at_ms": "<time>",
+            "expires_at_ms": "<time>",
+            "max_results": 2,
+            "response_bytes": 216,
+            "total_items": 2,
+            "returned_items": 2,
+            "truncated": false,
+            "snippets": [
+              {
+                "content": "Initialize the SDK with createClient and dispose it during cleanup.",
+                "title": "Lifecycle"
+              },
+              {
+                "content": "Use the v4 migration helper before replacing legacy adapters.",
+                "title": "Migration"
+              }
+            ]
+          },
+          "doc_ref": "<doc-ref>",
+          "cache": {
+            "resolve": {
+              "state": "hit",
+              "evicted_entries": 0
+            },
+            "docs": {
+              "state": "miss",
+              "evicted_entries": 0
+            }
+          },
+          "attempts": [
+            {
+              "provider": "context7-cache-resolve",
+              "outcome": "success",
+              "count": 1,
+              "duration_ms": "<time>",
+              "fallback": false
+            },
+            {
+              "provider": "context7-docs",
+              "outcome": "success",
+              "count": 1,
+              "duration_ms": "<time>",
+              "fallback": false
+            }
+          ],
+          "warnings": [],
+          "resolve_total_candidates": 1,
+          "resolve_returned_candidates": 1,
+          "total_snippets": 2,
+          "returned_snippets": 2,
+          "response_bytes": 371,
+          "resolve_cache_entry_truncated": false,
+          "docs_cache_entry_truncated": false,
+          "canonical_output_truncated": false,
+          "model_text_truncated": false,
+          "model_text_max_bytes": 9000,
+          "evidence_level": "discovery"
+        }
+      }
+    },
+    "cached": {
+      "card": {
+        "card": "generic",
+        "title": "Context7 cached document (1 returned)"
+      },
+      "result": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"lookup\": \"doc_ref\",\n  \"requested_doc_ref\": \"<doc-ref>\",\n  \"scan_limit\": 500,\n  \"scanned_records\": 0,\n  \"matched_records\": 1,\n  \"canonical_output_truncated\": false,\n  \"model_text_max_bytes\": 9000,\n  \"evidence_level\": \"discovery\",\n  \"state\": \"found\",\n  \"cache\": \"hit\",\n  \"library_id\": \"/acme/sdk\",\n  \"doc_ref\": \"<doc-ref>\",\n  \"raw_envelope\": {\n    \"version\": 1,\n    \"kind\": \"docs\",\n    \"cache_key\": \"<doc-ref>\",\n    \"doc_ref\": \"<doc-ref>\",\n    \"library_id\": \"/acme/sdk\",\n    \"created_at_ms\": <time>,\n    \"expires_at_ms\": <time>,\n    \"max_results\": 2,\n    \"response_bytes\": 216,\n    \"total_items\": 2,\n    \"returned_items\": 2,\n    \"truncated\": false,\n    \"snippets\": [\n      {\n        \"content\": \"Initialize the SDK with createClient and dispose it during cleanup.\",\n        \"title\": \"Lifecycle\"\n      },\n      {\n        \"content\": \"Use the v4 migration helper before replacing legacy adapters.\",\n        \"title\": \"Migration\"\n      }\n    ]\n  },\n  \"warnings\": []\n}\n\nModel text truncated: FALSE\n\nEvidence level: discovery. Context7 snippets are validated discovery metadata, not fetched page-body evidence; use web_extract for claim-level verification."
+          }
+        ],
+        "meta": {
+          "version": 1,
+          "type": "context7_get_cached_doc_raw",
+          "state": "found",
+          "returned": 1,
+          "canonical_output_truncated": false,
+          "model_text_truncated": false
+        },
+        "value": {
+          "lookup": "doc_ref",
+          "requested_doc_ref": "<doc-ref>",
+          "scan_limit": 500,
+          "scanned_records": 0,
+          "matched_records": 1,
+          "canonical_output_truncated": false,
+          "model_text_truncated": false,
+          "model_text_max_bytes": 9000,
+          "evidence_level": "discovery",
+          "state": "found",
+          "cache": "hit",
+          "library_id": "/acme/sdk",
+          "doc_ref": "<doc-ref>",
+          "raw_envelope": {
+            "version": 1,
+            "kind": "docs",
+            "cache_key": "<doc-ref>",
+            "doc_ref": "<doc-ref>",
+            "library_id": "/acme/sdk",
+            "created_at_ms": "<time>",
+            "expires_at_ms": "<time>",
+            "max_results": 2,
+            "response_bytes": 216,
+            "total_items": 2,
+            "returned_items": 2,
+            "truncated": false,
+            "snippets": [
+              {
+                "content": "Initialize the SDK with createClient and dispose it during cleanup.",
+                "title": "Lifecycle"
+              },
+              {
+                "content": "Use the v4 migration helper before replacing legacy adapters.",
+                "title": "Migration"
+              }
+            ]
+          },
+          "warnings": []
+        }
+      }
+    }
+  },
+  "source_pages": {
+    "first": {
+      "state": "found",
+      "source_ref": "<source-ref>",
+      "offset": 0,
+      "limit": 1,
+      "format": "full",
+      "total": 2,
+      "returned": 1,
+      "sources": [
+        {
+          "url": "https://github.com/acme/sdk",
+          "category": "code",
+          "title": "Acme SDK repository",
+          "snippet": "Acme SDK release and source repository."
+        }
+      ],
+      "has_more": true,
+      "next_offset": 1,
+      "total_before_retention": 2,
+      "truncated": false,
+      "page_byte_limited": false
+    },
+    "second": {
+      "state": "found",
+      "source_ref": "<source-ref>",
+      "offset": 1,
+      "limit": 1,
+      "format": "compact",
+      "total": 2,
+      "returned": 1,
+      "sources": [
+        {
+          "url": "https://docs.acme.test/sdk",
+          "category": "unknown",
+          "title": "Acme SDK documentation",
+          "date": "2026-08-01"
+        }
+      ],
+      "has_more": false,
+      "total_before_retention": 2,
+      "truncated": false,
+      "page_byte_limited": false
+    },
+    "not_found": {
+      "state": "not_found",
+      "code": "SOURCE_REF_NOT_FOUND"
+    },
+    "post_restart": {
+      "state": "found",
+      "source_ref": "<source-ref>",
+      "offset": 0,
+      "limit": 1,
+      "format": "compact",
+      "total": 2,
+      "returned": 1,
+      "sources": [
+        {
+          "url": "https://github.com/acme/sdk",
+          "category": "code",
+          "title": "Acme SDK repository"
+        }
+      ],
+      "has_more": true,
+      "next_offset": 1,
+      "total_before_retention": 2,
+      "truncated": false,
+      "page_byte_limited": false
+    }
+  },
+  "code_dispatches": [
+    {
+      "rootCallId": "code-docs-call",
+      "parentCallId": "code-docs-call",
+      "subCallId": "code-docs-call:code:1",
+      "name": "docs_search",
+      "arguments": {
+        "query": "canonical equality docs",
+        "provider": "exa",
+        "max_results": 2
+      },
+      "isError": false,
+      "content": [
+        {
+          "type": "text",
+          "text": "Documentation search (complete)\nDocumentation discovery completed; bounded discovery results follow.\n\nTop sources\n1. Acme SDK repository\n   URL: https://github.com/acme/sdk\n   Snippet: Acme SDK release and source repository.\n2. Acme SDK documentation\n   URL: https://docs.acme.test/sdk\n   Date: 2026-08-01\n   Snippet: Official Acme SDK discovery summary.\n\nSources shown: 2/2\nSnippets shown: 0/0\nSource reference: <source-ref>\n\nContext7 resolve cache: skipped, provider_not_selected\nContext7 docs cache: skipped, provider_not_selected\nProviders\n- context7: skipped\n- exa: complete\n\nEvidence level: discovery. Documentation snippets and source summaries are discovery metadata, not verified fetched page-body evidence; inspect an exact source page before relying on a claim."
+        }
+      ]
+    },
+    {
+      "rootCallId": "code-docs-call",
+      "parentCallId": "code-docs-call",
+      "subCallId": "code-docs-call:code:2",
+      "name": "search_sources",
+      "arguments": {
+        "source_ref": "<source-ref>",
+        "offset": 0,
+        "limit": 1,
+        "format": "full"
+      },
+      "isError": false,
+      "content": [
+        {
+          "type": "text",
+          "text": "Sources\n1. Acme SDK repository\n   URL: https://github.com/acme/sdk\n   Category: code\n   Snippet: Acme SDK release and source repository.\n\nPage returned: 1; retained total: 2; original total: 2.\nMore sources are available at offset 1.\n\nThese are retained discovery records; snippets are not fetched webpage bodies."
+        }
+      ]
+    }
+  ],
+  "selected_records": {
+    "native": {
+      "version": 1,
+      "sourceRef": "<source-ref>",
+      "ownerSessionId": "docs-native-session",
+      "query": "canonical equality docs",
+      "profile": "coding_docs",
+      "depth": "compact",
+      "call": {
+        "mode": "top-level",
+        "rootCallId": "native-docs-call",
+        "callId": "native-docs-call",
+        "name": "docs_search"
+      },
+      "sources": [
+        {
+          "url": "https://github.com/acme/sdk",
+          "title": "Acme SDK repository",
+          "snippet": "Acme SDK release and source repository.",
+          "provider": "exa",
+          "category": "code"
+        },
+        {
+          "url": "https://docs.acme.test/sdk",
+          "title": "Acme SDK documentation",
+          "snippet": "Official Acme SDK discovery summary.",
+          "publishedAt": "2026-08-01",
+          "provider": "exa",
+          "category": "unknown"
+        }
+      ],
+      "totalBeforeRetention": 2,
+      "collectionTruncated": false,
+      "truncated": false
+    },
+    "code": {
+      "version": 1,
+      "sourceRef": "<source-ref>",
+      "ownerSessionId": "docs-code-session",
+      "query": "canonical equality docs",
+      "profile": "coding_docs",
+      "depth": "compact",
+      "call": {
+        "mode": "nested-code",
+        "rootCallId": "code-docs-call",
+        "callId": "code-docs-call:code:1",
+        "name": "docs_search"
+      },
+      "sources": [
+        {
+          "url": "https://github.com/acme/sdk",
+          "title": "Acme SDK repository",
+          "snippet": "Acme SDK release and source repository.",
+          "provider": "exa",
+          "category": "code"
+        },
+        {
+          "url": "https://docs.acme.test/sdk",
+          "title": "Acme SDK documentation",
+          "snippet": "Official Acme SDK discovery summary.",
+          "publishedAt": "2026-08-01",
+          "provider": "exa",
+          "category": "unknown"
+        }
+      ],
+      "totalBeforeRetention": 2,
+      "collectionTruncated": false,
+      "truncated": false
+    }
+  },
+  "http_requests": [
+    {
+      "method": "POST",
+      "url": "/exa/search",
+      "exaKey": "<redacted>",
+      "body": {
+        "contents": {
+          "highlights": true
+        },
+        "numResults": 2,
+        "query": "canonical equality docs",
+        "type": "neural",
+        "useAutoprompt": true
+      }
+    },
+    {
+      "method": "POST",
+      "url": "/exa/search",
+      "exaKey": "<redacted>",
+      "body": {
+        "contents": {
+          "highlights": true
+        },
+        "numResults": 2,
+        "query": "canonical equality docs",
+        "type": "neural",
+        "useAutoprompt": true
+      }
+    },
+    {
+      "method": "GET",
+      "url": "/context7/api/v2/context?libraryId=%2Facme%2Fsdk&query=known+library+cache+route",
+      "authorization": "<redacted>"
+    },
+    {
+      "method": "GET",
+      "url": "/context7/api/v2/context?libraryId=%2Facme%2Fsdk&query=known+library+cache+route",
+      "authorization": "<redacted>"
+    },
+    {
+      "method": "POST",
+      "url": "/exa/search",
+      "exaKey": "<redacted>",
+      "body": {
+        "contents": {
+          "highlights": true
+        },
+        "numResults": 2,
+        "query": "all provider route",
+        "type": "neural",
+        "useAutoprompt": true
+      }
+    },
+    {
+      "method": "GET",
+      "url": "/context7/api/v2/search?query=all+provider+route",
+      "authorization": "<redacted>"
+    },
+    {
+      "method": "GET",
+      "url": "/context7/api/v2/context?libraryId=%2Facme%2Fsdk&query=all+provider+route",
+      "authorization": "<redacted>"
+    },
+    {
+      "method": "POST",
+      "url": "/exa/search",
+      "exaKey": "<redacted>",
+      "body": {
+        "contents": {
+          "highlights": true
+        },
+        "numResults": 2,
+        "query": "auto provider route",
+        "type": "neural",
+        "useAutoprompt": true
+      }
+    },
+    {
+      "method": "GET",
+      "url": "/context7/api/v2/search?query=auto+provider+route",
+      "authorization": "<redacted>"
+    },
+    {
+      "method": "GET",
+      "url": "/context7/api/v2/context?libraryId=%2Facme%2Fsdk&query=auto+provider+route",
+      "authorization": "<redacted>"
+    },
+    {
+      "method": "POST",
+      "url": "/exa/search",
+      "exaKey": "<redacted>",
+      "body": {
+        "contents": {
+          "highlights": true
+        },
+        "numResults": 2,
+        "query": "partial-route documentation",
+        "type": "neural",
+        "useAutoprompt": true
+      }
+    },
+    {
+      "method": "GET",
+      "url": "/context7/api/v2/search?query=partial-route+documentation",
+      "authorization": "<redacted>"
+    },
+    {
+      "method": "GET",
+      "url": "/context7/api/v2/search?query=restart+durable+cache+route",
+      "authorization": "<redacted>"
+    },
+    {
+      "method": "GET",
+      "url": "/context7/api/v2/context?libraryId=%2Facme%2Fsdk&query=restart+durable+cache+route",
+      "authorization": "<redacted>"
+    },
+    {
+      "method": "GET",
+      "url": "/context7/api/v2/search?query=restart+durable+cache+route",
+      "authorization": "<redacted>"
+    },
+    {
+      "method": "GET",
+      "url": "/context7/api/v2/context?libraryId=%2Facme%2Fsdk&query=restart+durable+cache+route",
+      "authorization": "<redacted>"
+    },
+    {
+      "method": "GET",
+      "url": "/context7/api/v2/search?query=Acme+SDK",
+      "authorization": "<redacted>"
+    },
+    {
+      "method": "GET",
+      "url": "/context7/api/v2/context?libraryId=%2Facme%2Fsdk&query=granular+snapshot+docs",
+      "authorization": "<redacted>"
+    },
+    {
+      "method": "GET",
+      "url": "/context7/api/v2/context?libraryId=%2Facme%2Fsdk&query=granular+combined+snapshot+docs",
+      "authorization": "<redacted>"
+    }
+  ]
+}
