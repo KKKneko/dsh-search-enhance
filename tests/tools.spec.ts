@@ -314,6 +314,7 @@ describe('docs_search execution and durable publication', () => {
         },
       },
       operations,
+      sourceOperationNotice: 'source operation manifest',
       sources: {
         record: async (owner, call, candidate, signal) => {
           order.push('record')
@@ -376,6 +377,7 @@ describe('docs_search execution and durable publication', () => {
         },
       },
       operations,
+      sourceOperationNotice: 'source operation manifest',
       sources: {
         record: async () => { throw new Error('record must not run') },
       },
@@ -415,6 +417,7 @@ describe('docs_search execution and durable publication', () => {
       getConfig: () => resolvedConfig(),
       documentation: { search: async () => empty },
       operations,
+      sourceOperationNotice: 'source operation manifest',
       sources: {
         record: async () => {
           records += 1
@@ -443,6 +446,7 @@ describe('docs_search execution and durable publication', () => {
       getConfig: () => resolvedConfig(),
       documentation: { search: async () => docsResult() },
       operations,
+      sourceOperationNotice: 'source operation manifest',
       sources: {
         record: async () => {
           controller.abort()
@@ -466,6 +470,7 @@ describe('docs_search execution and durable publication', () => {
       getConfig: () => resolvedConfig(),
       documentation: { search: async () => docsResult() },
       operations,
+      sourceOperationNotice: 'source operation manifest',
       sources: { record: async () => { throw failure } },
     })
     const args = { query: 'React docs' }

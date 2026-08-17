@@ -224,3 +224,18 @@ export function foldToolDisclosureEvents(
   for (const event of events) state = foldToolDisclosureEvent(state, event)
   return state
 }
+
+/**
+ * Reconstruct the capabilities available to a new model step. Results from an
+ * unfinished step remain append-only facts, but cannot unlock another call in
+ * that same step.
+ */
+export function foldEffectiveToolDisclosureEvents(
+  events: readonly SessionEvent[],
+): ToolDisclosureFoldState {
+  const lastStepStart = events.findLastIndex(event => event.type === 'step/start')
+  const lastStepEnd = events.findLastIndex(event => event.type === 'step/end')
+  return foldToolDisclosureEvents(
+    lastStepStart > lastStepEnd ? events.slice(0, lastStepStart) : events,
+  )
+}

@@ -20,10 +20,13 @@ import {
   deduplicateCapabilityGroups,
   orderCapabilityGroups,
   parseSearchToolsArguments,
-  toolsForCapabilityGroups,
   type CapabilityGroup,
 } from '../tool-discovery/capabilities.js'
-import { foldToolDisclosureEvents } from '../tool-discovery/fold.js'
+import { foldEffectiveToolDisclosureEvents } from '../tool-discovery/fold.js'
+import type {
+  DeferredOperationManifest,
+  DeferredOperationRegistry,
+} from './search-call.js'
 import {
   assertUtf8WithinLimit,
   throwIfAborted,
@@ -38,7 +41,7 @@ export interface SearchToolsArgs {
 export interface SearchToolsGroupOutput {
   readonly group: CapabilityGroup
   readonly description: string
-  readonly tools: string[]
+  readonly operations: DeferredOperationManifest[]
 }
 
 export interface SearchToolsOutput {
@@ -46,8 +49,7 @@ export interface SearchToolsOutput {
   readonly added_groups: CapabilityGroup[]
   readonly active_groups: CapabilityGroup[]
   readonly groups: SearchToolsGroupOutput[]
-  readonly added_tools: string[]
-  readonly disclosed_tools: string[]
+  readonly gateway: 'search_call'
   readonly takes_effect: 'next_step'
 }
 
@@ -81,9 +83,26 @@ const groupOutputSchema = {
   properties: {
     group: { type: 'string', enum: CAPABILITY_GROUPS, required: true },
     description: { type: 'string', required: true },
-    tools: {
+    operations: {
       type: 'array',
-      items: { type: 'string' },
+      items: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', required: true },
+          description: { type: 'string', required: true },
+          parameters: { type: 'json', required: true },
+          call: {
+            type: 'object',
+            properties: {
+              tool: { type: 'string', const: 'search_call', required: true },
+              operation: { type: 'string', required: true },
+            },
+            additionalProperties: false,
+            required: true,
+          },
+        },
+        additionalProperties: false,
+      },
       required: true,
     },
   },
@@ -113,16 +132,7 @@ export const SEARCH_TOOLS_OUTPUT_SCHEMA = {
       items: groupOutputSchema,
       required: true,
     },
-    added_tools: {
-      type: 'array',
-      items: { type: 'string' },
-      required: true,
-    },
-    disclosed_tools: {
-      type: 'array',
-      items: { type: 'string' },
-      required: true,
-    },
+    gateway: { type: 'string', const: 'search_call', required: true },
     takes_effect: { type: 'string', const: 'next_step', required: true },
   },
   additionalProperties: false,
@@ -130,6 +140,7 @@ export const SEARCH_TOOLS_OUTPUT_SCHEMA = {
 
 export interface SearchToolsDependencies {
   readonly mode: ToolDiscoveryMode
+  readonly registry: DeferredOperationRegistry
 }
 
 function assertArguments(value: unknown): readonly CapabilityGroup[] {
@@ -146,10 +157,11 @@ function assertArguments(value: unknown): readonly CapabilityGroup[] {
   ])
 }
 
-/** Build one deterministic canonical result without consulting mutable runtime state. */
+/** Build one deterministic canonical result from folded Session state and immutable manifests. */
 export function projectSearchToolsOutput(
   requested: readonly CapabilityGroup[],
   activeBefore: readonly CapabilityGroup[],
+  registry: DeferredOperationRegistry,
 ): SearchToolsOutput {
   const requestedGroups = deduplicateCapabilityGroups(requested)
   const activeBeforeSet = new Set(activeBefore)
@@ -162,10 +174,9 @@ export function projectSearchToolsOutput(
     groups: requestedGroups.map(group => ({
       group,
       description: CAPABILITY_GROUP_DEFINITIONS[group].description,
-      tools: [...CAPABILITY_GROUP_DEFINITIONS[group].tools],
+      operations: [...registry.manifestsForGroups([group])],
     })),
-    added_tools: [...toolsForCapabilityGroups(addedGroups)],
-    disclosed_tools: [...toolsForCapabilityGroups(activeGroups)],
+    gateway: 'search_call',
     takes_effect: 'next_step',
   }
 }
@@ -269,13 +280,13 @@ export function presentSearchToolsResult(
   }
 }
 
-/** Build the resident, exclusive Agent-scoped capability disclosure tool. */
+/** Build the resident capability-disclosure and operation-manifest tool. */
 export function createSearchToolsTool(
   dependencies: SearchToolsDependencies,
 ): ToolDefinition {
   const definition = defineTool({
     name: 'search_tools',
-    description: 'Disclose one or more deferred search capability groups for the current Agent. Use only when the resident search tools cannot complete the task; do not activate every group preemptively. A successful call takes effect on the next model step and does not bypass restrictions from other Presets.',
+    description: 'Disclose one or more deferred search capability groups and return their operation manifests. Use only when resident search tools cannot complete the task. Operations remain behind search_call, and a newly disclosed capability takes effect on the next model step.',
     parameters: SEARCH_TOOLS_PARAMETER_SPEC,
     output: {
       schema: SEARCH_TOOLS_OUTPUT_SCHEMA,
@@ -288,8 +299,12 @@ export function createSearchToolsTool(
       const requested = assertArguments(args)
       const activeBefore = dependencies.mode === 'all'
         ? CAPABILITY_GROUPS
-        : foldToolDisclosureEvents(exec.agent.session.events).activeGroups
-      const value = boundSearchToolsOutput(projectSearchToolsOutput(requested, activeBefore))
+        : foldEffectiveToolDisclosureEvents(exec.agent.session.events).activeGroups
+      const value = boundSearchToolsOutput(projectSearchToolsOutput(
+        requested,
+        activeBefore,
+        dependencies.registry,
+      ))
       throwIfAborted(exec.signal)
       return value
     },

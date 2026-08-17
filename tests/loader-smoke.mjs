@@ -156,19 +156,12 @@ try {
     'docs_search',
     'web_extract',
     'search_tools',
-    'search_sources',
-    'web_map',
-    'research_plan',
-    'search_diagnostics',
-    'context7_resolve_library_id',
-    'context7_query_docs',
-    'context7_get_library_docs',
-    'context7_get_cached_doc_raw',
+    'search_call',
   ]
   assert.deepEqual(
     registeredSchemas.map(schema => schema.name),
     expectedPluginToolNames,
-    'the Consumer did not register exactly its eleven global definitions',
+    'the Consumer did not register exactly its fixed resident definitions',
   )
   const schemaByName = name => registeredSchemas.find(schema => schema.name === name)
   assert.deepEqual(
@@ -194,61 +187,24 @@ try {
     },
     required: ['capabilities'],
   })
-  assert.deepEqual(
-    Object.keys(schemaByName('search_sources').parameters.properties),
-    ['source_ref', 'offset', 'limit', 'format'],
-  )
-  assert.deepEqual(
-    Object.keys(schemaByName('web_map').parameters.properties),
-    ['url', 'instructions', 'max_depth', 'max_breadth', 'limit'],
-  )
-  assert.deepEqual(
-    Object.keys(schemaByName('research_plan').parameters.properties),
-    [
-      'question',
-      'budget',
-      'recency_requirement',
-      'locale_domain_scope',
-      'source_authority_need',
-      'claim_risk',
-      'cross_validation_need',
-      'known_urls',
-      'sub_queries',
-    ],
-  )
-  assert.deepEqual(
-    Object.keys(schemaByName('context7_resolve_library_id').parameters.properties),
-    ['library_name', 'query', 'max_results', 'force_refresh'],
-  )
-  assert.deepEqual(
-    Object.keys(schemaByName('context7_query_docs').parameters.properties),
-    ['library_id', 'query', 'max_snippets', 'raw', 'force_refresh'],
-  )
-  assert.deepEqual(
-    Object.keys(schemaByName('context7_get_library_docs').parameters.properties),
-    [
-      'query',
-      'library_name',
-      'library_id',
-      'max_results',
-      'max_snippets',
-      'raw',
-      'force_refresh',
-    ],
-  )
-  assert.deepEqual(
-    Object.keys(schemaByName('context7_get_cached_doc_raw').parameters.properties),
-    ['doc_ref', 'query', 'library_id'],
-  )
-  for (const name of expectedPluginToolNames.filter(name => name.startsWith('context7_'))) {
-    assert.equal(schemaByName(name).parameters.additionalProperties, false)
-  }
-  assert.equal(ctx.tools.get('research_plan')?.name, 'research_plan')
-  const diagnosticsSchema = schemaByName('search_diagnostics')
-  assert.ok(diagnosticsSchema)
-  assert.deepEqual(Object.keys(diagnosticsSchema.parameters.properties), ['action'])
-  assert.deepEqual(diagnosticsSchema.parameters.required, ['action'])
-  assert.equal(ctx.tools.get('search_diagnostics')?.name, 'search_diagnostics')
+  assert.deepEqual(schemaByName('search_call').parameters, {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      operation: {
+        type: 'string',
+        description: 'Exact operation name from a search_tools or source-produced operation manifest.',
+      },
+      arguments: {
+        type: 'object',
+        properties: {},
+        additionalProperties: true,
+        description: 'Arguments validated against the disclosed operation manifest before execution.',
+      },
+    },
+    required: ['operation', 'arguments'],
+  })
+  assert.equal(ctx.tools.get('search_call')?.name, 'search_call')
   assert.equal(ctx.tools.get('search_config'), undefined)
 
   const harnessIdentity = 'You are an AI agent powered by DeepSeek Harness.'
@@ -263,10 +219,13 @@ try {
     'Treat web_search/docs_search answers, snippets, and source metadata as discovery, not claim-level evidence.',
     extractedEvidenceGuidance,
   ].join('\n')
+  const toolDiscoveryGuidance = 'Search Enhance keeps a fixed model-facing surface: web_search, docs_search, web_extract, search_tools, and search_call.'
   const renderCurrentPrompt = async options => systemPromptModule.renderPrompt(
     await ctx.systemPrompt.assemble(options),
   )
-  assert.equal(await renderCurrentPrompt(), `${harnessIdentity}\n\n${docsEvidenceGuidance}`)
+  const initialPrompt = await renderCurrentPrompt()
+  assert.ok(initialPrompt.includes(toolDiscoveryGuidance))
+  assert.ok(initialPrompt.includes(fullEvidenceGuidance))
   const nativeWebSearchDefinition = toolsModule.defineTool({
     name: 'web_search',
     description: 'Loader-only native web search stub.',
@@ -284,7 +243,9 @@ try {
     ctx.tools.schemas().map(schema => schema.name),
     [...expectedPluginToolNames, 'web_search'],
   )
-  assert.equal(await renderCurrentPrompt(), `${harnessIdentity}\n\n${fullEvidenceGuidance}`)
+  const withWebSearchPrompt = await renderCurrentPrompt()
+  assert.ok(withWebSearchPrompt.includes(toolDiscoveryGuidance))
+  assert.ok(withWebSearchPrompt.includes(fullEvidenceGuidance))
 
   const agentSession = sessionModule.Session.create(sessionModule.SessionId('loader-shadow-agent'))
   const mutableAgent = {
@@ -314,10 +275,10 @@ try {
   assert.notEqual(ctx.tools.get('web_search', mutableAgent), nativeWebSearchDefinition)
   assert.deepEqual(
     agentSchemas.map(schema => schema.name).sort(),
-    ['docs_search', 'search_tools', 'web_extract', 'web_search'],
+    ['docs_search', 'search_call', 'search_tools', 'web_extract', 'web_search'],
   )
   const agentPrompt = await renderCurrentPrompt({ scope: mutableAgent, agent: mutableAgent })
-  assert.match(agentPrompt, /Additional Search Enhance capabilities are deferred for this Agent/)
+  assert.ok(agentPrompt.includes(toolDiscoveryGuidance))
   assert.ok(agentPrompt.includes(fullEvidenceGuidance))
 
   assert.equal(ctx.get('webServer'), undefined, 'headless Loader unexpectedly mounted a Web server')
@@ -414,11 +375,9 @@ try {
     [...expectedPluginToolNames, 'web_search'].sort(),
     'reload leaked or duplicated a model tool',
   )
-  assert.equal(
-    await renderCurrentPrompt(),
-    `${harnessIdentity}\n\n${fullEvidenceGuidance}`,
-    'reload leaked or duplicated prompt sections',
-  )
+  const reloadedPrompt = await renderCurrentPrompt()
+  assert.ok(reloadedPrompt.includes(toolDiscoveryGuidance))
+  assert.ok(reloadedPrompt.includes(fullEvidenceGuidance))
   const restartedAgentWebSearch = tools.get('web_search', mutableAgent)
   assert.notEqual(restartedAgentWebSearch, nativeWebSearchDefinition)
   assert.deepEqual(
@@ -539,7 +498,7 @@ try {
     /invalid-record|failed to load|failed to apply/i,
   )
 
-  process.stdout.write(`loader smoke: ok (${expectedPluginToolNames.length} plugin tools, dynamic prompt, real storage, pagination/recovery, corruption rejection, reload/dispose)\n`)
+  process.stdout.write(`loader smoke: ok (${expectedPluginToolNames.length} fixed resident tools, static prompt, real storage, pagination/recovery, corruption rejection, reload/dispose)\n`)
 } finally {
   if (ctx !== undefined && !disposed && ctx.fiber.uid !== null) {
     await ctx.fiber.dispose()

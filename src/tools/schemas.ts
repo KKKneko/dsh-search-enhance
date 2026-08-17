@@ -870,7 +870,7 @@ const researchPlanPreflightSchema = {
     web_map_available: {
       type: 'boolean',
       required: true,
-      description: 'Whether this plugin globally registered web_map; final Agent visibility may be restricted.',
+      description: 'Whether the web_map operation is active for this Agent; invoke it through search_call.',
     },
     required_tools: {
       type: 'array',
@@ -1042,17 +1042,17 @@ const searchDiagnosticsConfigurationSchema = {
     web_map_enabled: {
       type: 'boolean',
       required: true,
-      description: 'Whether this plugin globally registered web_map; final Agent visibility may be restricted.',
+      description: 'Whether the web_map operation is configured for the fixed search_call gateway.',
     },
     research_plan_enabled: {
       type: 'boolean',
       required: true,
-      description: 'Whether this plugin globally registered research_plan; final Agent visibility may be restricted.',
+      description: 'Whether the research_plan operation is configured for the fixed search_call gateway.',
     },
     diagnostics_enabled: {
       type: 'boolean',
       required: true,
-      description: 'Whether this plugin globally registered search_diagnostics; final Agent visibility may be restricted.',
+      description: 'Whether the search_diagnostics operation is configured for the fixed search_call gateway.',
     },
     tavily_search_enabled: { type: 'boolean', required: true },
     firecrawl_search_enabled: { type: 'boolean', required: true },

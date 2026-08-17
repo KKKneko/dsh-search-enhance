@@ -10,39 +10,39 @@ export type CapabilityGroup = (typeof CAPABILITY_GROUPS)[number]
 
 export interface CapabilityGroupDefinition {
   readonly description: string
-  readonly tools: readonly string[]
+  readonly operations: readonly string[]
 }
 
-const context7Tools = Object.freeze([
+const context7Operations = Object.freeze([
   'context7_resolve_library_id',
   'context7_query_docs',
   'context7_get_library_docs',
   'context7_get_cached_doc_raw',
 ] as const)
 
-/** Stable public capability-to-tool mapping shared by disclosure, replay, and prompts. */
+/** Stable public capability-to-operation mapping shared by disclosure and replay. */
 export const CAPABILITY_GROUP_DEFINITIONS: Readonly<
   Record<CapabilityGroup, CapabilityGroupDefinition>
 > = Object.freeze({
   context7: Object.freeze({
     description: 'Granular Context7 library resolution, documentation lookup, and cached-document access.',
-    tools: context7Tools,
+    operations: context7Operations,
   }),
   sources: Object.freeze({
     description: 'Paginate durable source records returned by source-producing search tools.',
-    tools: Object.freeze(['search_sources'] as const),
+    operations: Object.freeze(['search_sources'] as const),
   }),
   site_map: Object.freeze({
     description: 'Discover bounded candidate URLs under a known website.',
-    tools: Object.freeze(['web_map'] as const),
+    operations: Object.freeze(['web_map'] as const),
   }),
   planning: Object.freeze({
     description: 'Create an offline research plan for explicit deep-research work.',
-    tools: Object.freeze(['research_plan'] as const),
+    operations: Object.freeze(['research_plan'] as const),
   }),
   diagnostics: Object.freeze({
     description: 'Inspect masked search configuration or explicitly test Provider connectivity.',
-    tools: Object.freeze(['search_diagnostics'] as const),
+    operations: Object.freeze(['search_diagnostics'] as const),
   }),
 })
 
@@ -51,19 +51,20 @@ export const RESIDENT_TOOL_NAMES = Object.freeze([
   'docs_search',
   'web_extract',
   'search_tools',
+  'search_call',
 ] as const)
 
-export const DEFERRED_TOOL_NAMES = Object.freeze(
-  CAPABILITY_GROUPS.flatMap(group => CAPABILITY_GROUP_DEFINITIONS[group].tools),
+export const DEFERRED_OPERATION_NAMES = Object.freeze(
+  CAPABILITY_GROUPS.flatMap(group => CAPABILITY_GROUP_DEFINITIONS[group].operations),
 )
 
 export const SEARCH_TOOLS_MIN_CAPABILITIES = 1
 export const SEARCH_TOOLS_MAX_CAPABILITIES = CAPABILITY_GROUPS.length
 
-const capabilityByTool = new Map<string, CapabilityGroup>()
+const capabilityByOperation = new Map<string, CapabilityGroup>()
 for (const group of CAPABILITY_GROUPS) {
-  for (const tool of CAPABILITY_GROUP_DEFINITIONS[group].tools) {
-    capabilityByTool.set(tool, group)
+  for (const operation of CAPABILITY_GROUP_DEFINITIONS[group].operations) {
+    capabilityByOperation.set(operation, group)
   }
 }
 
@@ -71,12 +72,12 @@ export function isCapabilityGroup(value: unknown): value is CapabilityGroup {
   return typeof value === 'string' && CAPABILITY_GROUPS.includes(value as CapabilityGroup)
 }
 
-export function capabilityGroupForTool(tool: string): CapabilityGroup | undefined {
-  return capabilityByTool.get(tool)
+export function capabilityGroupForOperation(operation: string): CapabilityGroup | undefined {
+  return capabilityByOperation.get(operation)
 }
 
-export function isDeferredToolName(tool: string): boolean {
-  return capabilityGroupForTool(tool) !== undefined
+export function isDeferredOperationName(operation: string): boolean {
+  return capabilityGroupForOperation(operation) !== undefined
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -127,20 +128,20 @@ export function orderCapabilityGroups(
   return Object.freeze(CAPABILITY_GROUPS.filter(group => selected.has(group)))
 }
 
-/** Flatten mapped tools in canonical group/tool order without duplicates. */
-export function toolsForCapabilityGroups(
+/** Flatten mapped operations in canonical group/operation order without duplicates. */
+export function operationsForCapabilityGroups(
   groups: Iterable<CapabilityGroup>,
 ): readonly string[] {
   const selected = new Set(groups)
   const seen = new Set<string>()
-  const tools: string[] = []
+  const operations: string[] = []
   for (const group of CAPABILITY_GROUPS) {
     if (!selected.has(group)) continue
-    for (const tool of CAPABILITY_GROUP_DEFINITIONS[group].tools) {
-      if (seen.has(tool)) continue
-      seen.add(tool)
-      tools.push(tool)
+    for (const operation of CAPABILITY_GROUP_DEFINITIONS[group].operations) {
+      if (seen.has(operation)) continue
+      seen.add(operation)
+      operations.push(operation)
     }
   }
-  return Object.freeze(tools)
+  return Object.freeze(operations)
 }

@@ -20,6 +20,25 @@ function inline(value: string): string {
   return value.replace(/\s+/gu, ' ').trim()
 }
 
+function renderWithBoundedNotice(
+  text: string,
+  notice: string | undefined,
+  maximumBytes: number,
+): string {
+  if (notice === undefined || notice.length === 0) {
+    return truncateUtf8(text, maximumBytes).text
+  }
+  const separator = '\n\n'
+  const complete = `${text}${separator}${notice}`
+  if (utf8ByteLength(complete) <= maximumBytes) return complete
+  const noticeBytes = utf8ByteLength(notice)
+  if (noticeBytes >= maximumBytes) return truncateUtf8(notice, maximumBytes).text
+  const prefixBudget = maximumBytes - noticeBytes - utf8ByteLength(separator)
+  if (prefixBudget <= 0) return notice
+  const prefix = truncateUtf8(text, prefixBudget).text
+  return prefix.length === 0 ? notice : `${prefix}${separator}${notice}`
+}
+
 function warningText(warning: WebSearchWarning): string {
   const subject = [warning.provider, warning.capability].filter(Boolean).join('/')
   const suffix = [subject, warning.error_kind].filter(Boolean).join(', ')
@@ -96,7 +115,10 @@ function limitationsSection(value: WebSearchOutput): string | undefined {
  * limit is carried in the canonical value, so replay never consults Settings,
  * a cache, the clock, or network state.
  */
-export function renderWebSearchText(value: WebSearchOutput): string {
+export function renderWebSearchText(
+  value: WebSearchOutput,
+  sourceOperationNotice?: string,
+): string {
   const sections = [
     answerSection(value),
     sourceSection(value),
@@ -109,7 +131,11 @@ export function renderWebSearchText(value: WebSearchOutput): string {
     && value.model_text_max_bytes > 0
     ? value.model_text_max_bytes
     : 0
-  return truncateUtf8(complete, maximumBytes).text
+  return renderWithBoundedNotice(
+    complete,
+    value.source_ref === undefined ? undefined : sourceOperationNotice,
+    maximumBytes,
+  )
 }
 
 function docsWarningText(warning: DocsSearchWarning): string {
@@ -189,7 +215,10 @@ function docsSourceSection(value: DocsSearchOutput): string | undefined {
 }
 
 /** Pure Native projection for docs_search; it never reads Settings, cache, storage, or the network. */
-export function renderDocsSearchText(value: DocsSearchOutput): string {
+export function renderDocsSearchText(
+  value: DocsSearchOutput,
+  sourceOperationNotice?: string,
+): string {
   const status = value.state === 'partial' ? 'partial' : 'complete'
   const explanation = value.state === 'partial'
     ? 'Some documentation paths failed or stale cache data was used; available discovery results follow.'
@@ -227,7 +256,11 @@ export function renderDocsSearchText(value: DocsSearchOutput): string {
     && value.model_text_max_bytes > 0
     ? value.model_text_max_bytes
     : 0
-  return truncateUtf8(complete, maximumBytes).text
+  return renderWithBoundedNotice(
+    complete,
+    value.source_ref === undefined ? undefined : sourceOperationNotice,
+    maximumBytes,
+  )
 }
 
 function renderPageSources(page: SearchSourcesFound): string | undefined {
@@ -531,7 +564,7 @@ function completeSearchDiagnosticsText(value: SearchDiagnosticsOutput): string {
     `Search API protocol: ${value.configuration.search_api_protocol}`,
     `Search model configured: ${value.configuration.search_model_configured}`,
     `Thinking/fallback: ${value.configuration.thinking_level}/${value.configuration.fallback_mode}`,
-    `Plugin definitions: web_map=${value.configuration.web_map_enabled}, research_plan=${value.configuration.research_plan_enabled}, diagnostics=${value.configuration.diagnostics_enabled} (final Agent visibility may be further restricted)`,
+    `Configured deferred operations: web_map=${value.configuration.web_map_enabled}, research_plan=${value.configuration.research_plan_enabled}, diagnostics=${value.configuration.diagnostics_enabled} (invoke active operations through search_call)`,
     `Search routes enabled: tavily=${value.configuration.tavily_search_enabled}, firecrawl=${value.configuration.firecrawl_search_enabled}`,
     `Extract routes enabled: tavily=${value.configuration.tavily_extract_enabled}, firecrawl=${value.configuration.firecrawl_scrape_enabled}, smart_direct=${value.configuration.smart_direct_enabled}, direct=${value.configuration.direct_enabled}`,
   ].join('\n')

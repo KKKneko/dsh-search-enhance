@@ -29,7 +29,7 @@ import {
 export interface ResearchPlanToolDependencies {
   /** Read one resolved Settings snapshot for this pure operation. */
   readonly getConfig: () => Config
-  /** Resolve final scoped visibility; absent direct consumers assume the global definition exists. */
+  /** Resolve whether web_map is active through the fixed gateway for this Agent. */
   readonly isWebMapAvailable?: (agent: ToolRunContext['agent']) => boolean
   readonly operations: ForegroundOperationScope
 }

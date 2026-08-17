@@ -37,20 +37,22 @@ import {
   SourceRecordStore,
 } from './source-storage/index.js'
 import {
+  foldEffectiveToolDisclosureEvents,
   installAgentToolDisclosure,
-  isDeferredToolName,
 } from './tool-discovery/index.js'
 import {
   ForegroundOperationScope,
+  DeferredOperationRegistry,
   createContext7Tools,
   createDocsSearchTool,
-  createWebSearchTool,
   createResearchPlanTool,
+  createSearchCallTool,
   createSearchDiagnosticsTool,
   createSearchSourcesTool,
   createSearchToolsTool,
   createWebExtractTool,
   createWebMapTool,
+  createWebSearchTool,
 } from './tools/index.js'
 import { WebExtractOrchestrator } from './web-extract/orchestrator.js'
 import { installWebConfigBridge } from './web-config/host.js'
@@ -140,25 +142,12 @@ export async function apply(ctx: Context, config: SearchEnhanceConfigValue): Pro
     getConfig,
   })
 
-  const webSearchDefinition = createWebSearchTool({
-    getConfig,
-    operations,
-    orchestrator,
-    sources: ctx.searchEnhanceSources,
-  })
-  const globalToolDefinitions = [
-    createDocsSearchTool({
+  const deferredOperationDefinitions = [
+    ...createContext7Tools({
       documentation,
       getConfig,
       operations,
-      sources: ctx.searchEnhanceSources,
     }),
-    createWebExtractTool({
-      getConfig,
-      operations,
-      orchestrator: webExtract,
-    }),
-    createSearchToolsTool({ mode: effective.toolDiscovery.mode }),
     createSearchSourcesTool({
       getConfig,
       operations,
@@ -171,7 +160,11 @@ export async function apply(ctx: Context, config: SearchEnhanceConfigValue): Pro
     }),
     createResearchPlanTool({
       getConfig,
-      isWebMapAvailable: agent => ctx.tools.get('web_map', agent) !== undefined,
+      isWebMapAvailable: agent => effective.toolDiscovery.mode === 'all' || (
+        agent !== undefined
+        && foldEffectiveToolDisclosureEvents(agent.session.events).activeGroups
+          .includes('site_map')
+      ),
       operations,
     }),
     createSearchDiagnosticsTool({
@@ -179,21 +172,41 @@ export async function apply(ctx: Context, config: SearchEnhanceConfigValue): Pro
       operations,
       reporter: diagnostics,
     }),
-    ...createContext7Tools({
+  ]
+  const deferredOperations = new DeferredOperationRegistry(deferredOperationDefinitions)
+  const sourceOperationNotice = deferredOperations.renderCapabilityDisclosure('sources')
+  const webSearchDefinition = createWebSearchTool({
+    getConfig,
+    operations,
+    orchestrator,
+    sourceOperationNotice,
+    sources: ctx.searchEnhanceSources,
+  })
+  const residentToolDefinitions = [
+    createDocsSearchTool({
       documentation,
       getConfig,
       operations,
+      sourceOperationNotice,
+      sources: ctx.searchEnhanceSources,
+    }),
+    createWebExtractTool({
+      getConfig,
+      operations,
+      orchestrator: webExtract,
+    }),
+    createSearchToolsTool({
+      mode: effective.toolDiscovery.mode,
+      registry: deferredOperations,
+    }),
+    createSearchCallTool({
+      mode: effective.toolDiscovery.mode,
+      registry: deferredOperations,
     }),
   ]
-  for (const definition of globalToolDefinitions) ctx.tools.register(definition)
+  for (const definition of residentToolDefinitions) ctx.tools.register(definition)
 
-  installAgentToolDisclosure(ctx, {
-    mode: effective.toolDiscovery.mode,
-    deferredToolNames: globalToolDefinitions
-      .map(definition => definition.name)
-      .filter(isDeferredToolName),
-    webSearchDefinition,
-  })
-  registerToolDiscoveryGuidance(ctx, effective.toolDiscovery.mode)
+  installAgentToolDisclosure(ctx, { webSearchDefinition })
+  registerToolDiscoveryGuidance(ctx)
   installWebConfigBridge(ctx)
 }

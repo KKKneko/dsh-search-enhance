@@ -168,7 +168,7 @@ describe('research_plan schema and deterministic planner', () => {
       }],
     }, options(undefined, false, 4))
     expect(unavailable.research_plan.preflight.unavailable_tools).toEqual(['web_map'])
-    expect(unavailable.research_plan.preflight.gaps.join('\n')).toMatch(/not visible.*current Agent/i)
+    expect(unavailable.research_plan.preflight.gaps.join('\n')).toMatch(/not active.*current Agent/i)
 
     const mapped = buildResearchPlan({
       question: 'Map the API site',

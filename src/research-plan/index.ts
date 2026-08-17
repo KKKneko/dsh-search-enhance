@@ -32,7 +32,7 @@ import {
 
 export interface ResearchPlanBuildOptions {
   readonly config: ResearchPlanConfig
-  /** Effective web_map visibility for the Agent executing this plan. */
+  /** Whether the web_map operation is active for the Agent executing this plan. */
   readonly webMapAvailable: boolean
   /** The deployment site-map link cap used when emitting a web_map step. */
   readonly siteMapMaxLinks?: number
@@ -40,11 +40,11 @@ export interface ResearchPlanBuildOptions {
 
 const RESEARCH_PLAN_MAX_STEPS = 10
 const PLAN_BOUNDARY = 'Stay within this sub-question and do not infer unsupported claims.'
-const PLAN_RULE = 'Use only the listed stable plugin tools; inspect selected pages with web_extract before claim-level conclusions.'
+const PLAN_RULE = 'Use the fixed search_call gateway with the listed operation names; inspect selected pages with web_extract before claim-level conclusions.'
 const PREFLIGHT_RULE = 'Planning is offline. A listed tool is an execution instruction, not an automatic call or claim verification.'
 const GAP_RULE = 'Discovery candidates are not claim evidence; fetch selected key pages, inspect route and truncation facts, and mark unresolved claims as unverified.'
 const PLANNING_BOUNDARY = 'Offline plan only: this call does not search, fetch pages, access credentials, verify claims, or write session/storage state.'
-const EXECUTION_BOUNDARY = 'Execute only the listed plugin tools. Fetch selected key pages with web_extract before claim-level conclusions.'
+const EXECUTION_BOUNDARY = 'Execute the listed operations through search_call. Fetch selected key pages with web_extract before claim-level conclusions.'
 const FINAL_ANSWER_POLICY = 'Cite extracted evidence for claim-level statements, separate discovery candidates from extracted evidence, disclose truncation and route limitations, and state unresolved gaps.'
 
 const DOCS_INTENT_PATTERN = /\b(api|apis|sdk|docs?|documentation|reference|framework|library|libraries|github|readme|changelog|migration|migrate|release)\b|文档|文档库|接口|软件开发工具包|框架|库|代码库|迁移|版本说明/iu
@@ -491,7 +491,7 @@ function buildGapMessages(
 ): string[] {
   const gaps: string[] = []
   for (const tool of unavailableTools) {
-    gaps.push(`${tool} is not visible to the current Agent; disclose its capability group if allowed before execution.`)
+    gaps.push(`${tool} is not active for the current Agent; disclose its capability group before execution through search_call.`)
   }
   for (const step of steps) {
     if ((step.tool === 'web_extract' || step.tool === 'web_map') && !validTargetUrl(step.query)) {
@@ -816,7 +816,7 @@ export function isResearchPlanModelTextTruncated(value: ResearchPlanOutput): boo
 
 function stepText(step: ResearchPlanStep): string {
   return [
-    `${step.id} (${step.subquestion_id}) via ${step.tool}`,
+    `${step.id} (${step.subquestion_id}) via search_call operation ${step.tool}`,
     `Purpose: ${step.purpose}`,
     `Query: ${step.query}`,
     `Params: ${JSON.stringify(step.params)}`,
@@ -834,7 +834,7 @@ function renderResearchPlanTextUnbounded(value: ResearchPlanOutput): string {
     `Network access: ${plan.preflight.network_access}`,
     `Credential access: ${plan.preflight.credential_access}`,
     `Session/storage: ${plan.preflight.session_storage}`,
-    `web_map definition registered: ${plan.preflight.web_map_available ? 'yes' : 'no'} (final Agent visibility may be restricted)`,
+    `web_map operation active: ${plan.preflight.web_map_available ? 'yes' : 'no'}`,
     `Required tools: ${plan.preflight.required_tools.join(', ') || 'none'}`,
     `Unavailable tools: ${plan.preflight.unavailable_tools.join(', ') || 'none'}`,
     ...(plan.preflight.gaps.length === 0

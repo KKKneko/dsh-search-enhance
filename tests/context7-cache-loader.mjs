@@ -14,14 +14,7 @@ const expectedGlobalTools = [
   'docs_search',
   'web_extract',
   'search_tools',
-  'search_sources',
-  'web_map',
-  'research_plan',
-  'search_diagnostics',
-  'context7_resolve_library_id',
-  'context7_query_docs',
-  'context7_get_library_docs',
-  'context7_get_cached_doc_raw',
+  'search_call',
 ]
 const credentialNames = [
   'SEARCH_API_KEY',

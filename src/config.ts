@@ -27,7 +27,7 @@ export const TOOL_DISCOVERY_MODES = ['progressive', 'all'] as const
 export type ToolDiscoveryMode = (typeof TOOL_DISCOVERY_MODES)[number]
 
 export interface ToolDiscoveryConfig {
-  /** progressive applies per-Agent disclosure; all installs no plugin restriction. */
+  /** progressive gates deferred operations per Agent; all activates every operation. */
   readonly mode: ToolDiscoveryMode
 }
 

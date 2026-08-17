@@ -46,6 +46,8 @@ export interface DocsSearchToolDependencies {
   readonly getConfig: () => Config
   readonly documentation: Pick<DocumentationSearchService, 'search'>
   readonly operations: ForegroundOperationScope
+  /** Immutable append-only manifest text for source_ref auto-disclosure. */
+  readonly sourceOperationNotice: string
   readonly sources: Pick<SearchEnhanceSourceService, 'record'>
 }
 
@@ -291,7 +293,10 @@ export function createDocsSearchTool(
     parameters: DOCS_SEARCH_PARAMETERS,
     output: {
       schema: DOCS_SEARCH_OUTPUT_SCHEMA,
-      render: (_args, value) => [{ type: 'text', text: renderDocsSearchText(value) }],
+      render: (_args, value) => [{
+        type: 'text',
+        text: renderDocsSearchText(value, dependencies.sourceOperationNotice),
+      }],
       presentationMeta: docsSearchPresentationMeta,
     },
     async execute(args, exec) {
