@@ -50,7 +50,7 @@ DSH Agent
 | `search_tools` | 直接调用。按需返回延迟能力的 operation manifest，不注册新的模型工具 |
 | `search_call` | 固定网关。通过 `search_call({ operation, arguments })` 调用已经激活的延迟 operation |
 
-这里的“延迟”指 operation 是否处于 active 状态，而不是工具是否出现在列表中。延迟 operation 的参数和输出 schema 通过工具结果中的 manifest 披露，不会作为独立工具加入模型 surface。
+这里的“延迟”指 operation 是否处于 active 状态，而不是工具是否出现在列表中。延迟 operation 的参数 schema 通过工具结果中的 manifest 披露；输出 schema 只保存在内部 registry，用于校验规范执行结果，不会追加到模型历史，也不会作为独立工具加入模型 surface。
 
 ### 渐进式披露
 
@@ -66,7 +66,7 @@ DSH Agent
 
 披露与调用遵循以下规则：
 
-1. `search_tools` 返回所请求能力组的 operation manifest，其中包含真实的参数 schema、输出 schema 和 `search_call` 路由；它不会增加、删除或改写模型工具 schema。
+1. `search_tools` 返回所请求能力组的 operation manifest，其中包含真实的参数 schema 和 `search_call` 路由，但不包含内部输出 schema；它不会增加、删除或改写模型工具 schema。`search_call` 仍使用 registry 保存的输出 schema 校验规范结果。
 2. 在 `progressive` 模式下，新披露的能力组从下一模型 step 开始 active；同一步内提前调用会失败。激活范围属于当前 Agent，重复请求会再次返回同一 manifest，但不会创建第二套状态或入口。
 3. 在 `all` 模式下，唯一变化是所有延迟 operation 从一开始就 active；`search_tools` 仍按需返回 manifest。`all` 不会“显示全部 12 个工具”，两种模式的五个模型工具及其 schema 完全相同。
 4. 延迟 operation 只能通过 `search_call({ operation, arguments })` 调用，不能直接调用 `search_sources`、`web_map` 等名称；resident 的 `web_search`、`docs_search` 和 `web_extract` 仍然直接调用。

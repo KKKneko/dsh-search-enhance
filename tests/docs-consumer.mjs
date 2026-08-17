@@ -436,7 +436,7 @@ try {
     : ''
   assert.match(nativeDocsText, /Source reference: src_[A-Za-z0-9_-]{32}/)
   assert.match(nativeDocsText, /"operation":"search_sources"/)
-  assert.match(nativeDocsText, /"output_schema"/)
+  assert.doesNotMatch(nativeDocsText, /"output_schema"/)
   assert.ok(Buffer.byteLength(nativeDocsText, 'utf8') <= nativeDocs.result.value.model_text_max_bytes)
   assert.deepEqual(
     normalizedCanonical(nativeDocs.result.value, origin),

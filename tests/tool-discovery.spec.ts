@@ -45,6 +45,7 @@ import {
 } from '../src/tools/search-call.js'
 import {
   SEARCH_TOOLS_CANONICAL_MAX_BYTES,
+  SEARCH_TOOLS_MODEL_TEXT_MAX_BYTES,
   SEARCH_TOOLS_OUTPUT_SCHEMA,
   SEARCH_TOOLS_PARAMETERS,
   boundSearchToolsOutput,
@@ -304,7 +305,7 @@ describe('progressive capability definitions and folding', () => {
 })
 
 describe('search_tools operation manifest', () => {
-  it('keeps the stable closed input schema and returns replayable real operation schemas', async () => {
+  it('keeps the stable closed input schema and returns replayable parameter schemas', async () => {
     const registry = operationRegistry()
     const tool = createSearchToolsTool({ mode: 'progressive', registry })
     expect(SEARCH_TOOLS_PARAMETERS).toMatchObject({
@@ -343,15 +344,6 @@ describe('search_tools operation manifest', () => {
         type: 'object',
         required: ['value'],
       }),
-      output_schema: {
-        type: 'object',
-        properties: {
-          operation: { type: 'string' },
-          value: { type: 'string' },
-        },
-        additionalProperties: false,
-        required: ['operation', 'value'],
-      },
       call: { tool: 'search_call', operation: 'web_map' },
     })
     expect(validateJsonSchemaValue(
@@ -364,19 +356,29 @@ describe('search_tools operation manifest', () => {
     const production = productionOperationRegistry()
     try {
       const value = projectSearchToolsOutput(CAPABILITY_GROUPS, [], production.registry)
-      expect(value.groups.flatMap(group => group.operations.map(operation => operation.name)))
-        .toEqual(DEFERRED_OPERATION_NAMES)
-      expect(value.groups.flatMap(group => group.operations).every(operation => (
+      const operations = value.groups.flatMap(group => group.operations)
+      expect(operations.map(operation => operation.name)).toEqual(DEFERRED_OPERATION_NAMES)
+      expect(operations.every(operation => (
         Buffer.byteLength(JSON.stringify(operation), 'utf8')
         <= DEFERRED_OPERATION_MANIFEST_MAX_BYTES
       ))).toBe(true)
+      const compact = JSON.stringify(value)
+      const rendered = renderSearchToolsText(value)
+      expect(compact).not.toContain('"output_schema"')
+      expect(production.registry.renderCapabilityDisclosure('context7'))
+        .not.toContain('"output_schema"')
+      expect(SEARCH_TOOLS_CANONICAL_MAX_BYTES).toBe(16 * 1024)
+      expect(SEARCH_TOOLS_MODEL_TEXT_MAX_BYTES).toBe(16 * 1024)
       expect(Buffer.byteLength(
         production.registry.renderCapabilityDisclosure('context7'),
         'utf8',
       )).toBeLessThanOrEqual(DEFERRED_CAPABILITY_NOTICE_MAX_BYTES)
       expect(() => boundSearchToolsOutput(value)).not.toThrow()
-      expect(Buffer.byteLength(JSON.stringify(value), 'utf8'))
+      expect(Buffer.byteLength(compact, 'utf8'))
         .toBeLessThanOrEqual(SEARCH_TOOLS_CANONICAL_MAX_BYTES)
+      expect(Buffer.byteLength(rendered, 'utf8'))
+        .toBeLessThanOrEqual(SEARCH_TOOLS_MODEL_TEXT_MAX_BYTES)
+      expect(JSON.parse(rendered)).toEqual(value)
     } finally {
       await production.operations.stop()
     }
@@ -448,7 +450,7 @@ describe('search_tools operation manifest', () => {
     expect(all.takes_effect).toBe('already_active')
   })
 
-  it('bounds complete canonical and model projections without splitting Unicode', () => {
+  it('bounds complete canonical and model projections without truncation', () => {
     const value = projectSearchToolsOutput(CAPABILITY_GROUPS, [], operationRegistry())
     const canonicalBytes = Buffer.byteLength(JSON.stringify(value), 'utf8')
     expect(boundSearchToolsOutput(value, canonicalBytes)).toBe(value)
@@ -463,10 +465,12 @@ describe('search_tools operation manifest', () => {
     }
     const complete = renderSearchToolsText(multibyte)
     expect(JSON.parse(complete)).toEqual(multibyte)
-    const compactBytes = Buffer.byteLength(JSON.stringify(multibyte), 'utf8')
-    const over = renderSearchToolsText(multibyte, compactBytes - 1)
-    expect(over).toContain('[search_tools model text truncated]')
-    expect(Buffer.from(over, 'utf8').toString('utf8')).toBe(over)
+    const compact = JSON.stringify(multibyte)
+    const compactBytes = Buffer.byteLength(compact, 'utf8')
+    expect(renderSearchToolsText(multibyte, compactBytes)).toBe(compact)
+    expect(() => renderSearchToolsText(multibyte, compactBytes - 1)).toThrow(
+      /search_tools model text/i,
+    )
   })
 })
 
@@ -708,7 +712,8 @@ describe('source-produced operation notice', () => {
     expect(notice).toContain('"gateway":"search_call"')
     expect(notice).toContain('"operation":"search_sources"')
     expect(notice).toContain('"parameters"')
-    expect(notice).toContain('"output_schema"')
+    expect(notice).not.toContain('"output_schema"')
+    expect(notice).toContain('through search_call')
 
     const web: WebSearchOutput = {
       state: 'complete',

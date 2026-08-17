@@ -35,7 +35,6 @@ export interface DeferredOperationManifest {
   readonly name: string
   readonly description: string
   readonly parameters: JsonValue
-  readonly output_schema: JsonValue
   readonly call: {
     readonly tool: 'search_call'
     readonly operation: string
@@ -48,7 +47,7 @@ interface DeferredOperationRecord {
   readonly manifest: DeferredOperationManifest
 }
 
-/** A single operation schema must stay small enough to disclose as one value. */
+/** Each parameter or internal output schema stays within the validation budget. */
 export const DEFERRED_OPERATION_SCHEMA_MAX_BYTES = 16 * 1024
 /** A complete operation manifest is bounded independently of the all-groups result. */
 export const DEFERRED_OPERATION_MANIFEST_MAX_BYTES = 32 * 1024
@@ -144,9 +143,10 @@ class SearchOperationUnavailableError extends HarnessError {
  * Fiber-local definitions for operations that never enter ctx.tools. The fixed
  * search_call wrapper is their sole public ToolRuntime boundary; invoke calls
  * one internal body after its own schema boundary rather than creating a
- * second dispatch or session event. The constructor snapshots the exact
- * schemas used by manifests and rejects an incomplete or ambiguous operation
- * set at plugin load time.
+ * second dispatch or session event. The constructor snapshots the parameter
+ * schemas used by manifests and the internal output schemas used to validate
+ * canonical results, and rejects an incomplete or ambiguous operation set at
+ * plugin load time.
  */
 export class DeferredOperationRegistry {
   private readonly records = new Map<string, DeferredOperationRecord>()
@@ -208,7 +208,6 @@ export class DeferredOperationRegistry {
         name,
         description: source.description,
         parameters,
-        output_schema: outputSchema,
         call: { tool: 'search_call' as const, operation: name },
       })
       assertJsonLimit(
@@ -384,7 +383,7 @@ const SEARCH_CALL_PARAMETER_SPEC = {
   },
 } as const
 
-/** Fixed model-facing gateway schema; operation-specific schemas stay in append-only results. */
+/** Fixed model-facing gateway; manifests disclose parameters while output schemas stay internal. */
 export const SEARCH_CALL_PARAMETERS = Object.freeze({
   ...parameterSchemaSpecToJsonSchema(SEARCH_CALL_PARAMETER_SPEC),
   additionalProperties: false,

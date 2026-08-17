@@ -621,7 +621,7 @@ try {
     : ''
   assert.match(fullModelText, /Source reference: src_[A-Za-z0-9_-]{32}/)
   assert.match(fullModelText, /"operation":"search_sources"/)
-  assert.match(fullModelText, /"output_schema"/)
+  assert.doesNotMatch(fullModelText, /"output_schema"/)
   assert.ok(Buffer.byteLength(fullModelText, 'utf8') <= fullResult.result.value.model_text_max_bytes)
 
   const codeActivateSiteMap = [

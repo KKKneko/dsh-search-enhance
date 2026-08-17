@@ -408,7 +408,7 @@ try {
   assert.deepEqual(Object.keys(mapManifest.parameters.properties), [
     'url', 'instructions', 'max_depth', 'max_breadth', 'limit',
   ])
-  assert.equal(mapManifest.output_schema.type, 'object')
+  assert.equal('output_schema' in mapManifest, false)
 
   const missingArgs = { operation: 'web_map', arguments: { url: `${origin}/site/missing` } }
   const missingCredential = await onCtx.tools.execute({

@@ -469,7 +469,7 @@ try {
   assert.deepEqual(Object.keys(diagnosticsManifest.parameters.properties), ['action'])
   assert.deepEqual(diagnosticsManifest.parameters.required, ['action'])
   assert.deepEqual(diagnosticsManifest.parameters.properties.action.enum, ['show', 'test'])
-  assert.equal(diagnosticsManifest.output_schema.type, 'object')
+  assert.equal('output_schema' in diagnosticsManifest, false)
 
   directShow = await ctx.tools.execute({
     callId: CallId('diagnostics-direct-show'),

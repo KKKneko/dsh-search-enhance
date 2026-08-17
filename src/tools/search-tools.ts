@@ -30,7 +30,6 @@ import type {
 import {
   assertUtf8WithinLimit,
   throwIfAborted,
-  truncateUtf8,
   utf8ByteLength,
 } from '../provider-runtime/index.js'
 
@@ -53,8 +52,8 @@ export interface SearchToolsOutput {
   readonly takes_effect: 'already_active' | 'next_step'
 }
 
-export const SEARCH_TOOLS_CANONICAL_MAX_BYTES = 64 * 1024
-export const SEARCH_TOOLS_MODEL_TEXT_MAX_BYTES = 64 * 1024
+export const SEARCH_TOOLS_CANONICAL_MAX_BYTES = 16 * 1024
+export const SEARCH_TOOLS_MODEL_TEXT_MAX_BYTES = 16 * 1024
 
 const CAPABILITIES_VALUE_SCHEMA = {
   type: 'array',
@@ -91,7 +90,6 @@ const groupOutputSchema = {
           name: { type: 'string', required: true },
           description: { type: 'string', required: true },
           parameters: { type: 'json', required: true },
-          output_schema: { type: 'json', required: true },
           call: {
             type: 'object',
             properties: {
@@ -195,9 +193,7 @@ export function boundSearchToolsOutput(
   return value
 }
 
-const TRUNCATION_MARKER = '[search_tools model text truncated]'
-
-/** Render a bounded UTF-8 projection without splitting a Unicode code point. */
+/** Render one complete JSON projection, preferring readable pretty output. */
 export function renderSearchToolsText(
   value: SearchToolsOutput,
   maximumBytes = SEARCH_TOOLS_MODEL_TEXT_MAX_BYTES,
@@ -205,17 +201,9 @@ export function renderSearchToolsText(
   const complete = JSON.stringify(value, null, 2)
   if (utf8ByteLength(complete) <= maximumBytes) return complete
 
-  // The canonical value is already bounded. Fall back to its compact form
-  // before truncating so a disclosed operation manifest remains parseable.
   const compact = JSON.stringify(value)
-  if (utf8ByteLength(compact) <= maximumBytes) return compact
-
-  const suffix = `\n${TRUNCATION_MARKER}`
-  const suffixBytes = utf8ByteLength(suffix)
-  if (suffixBytes <= maximumBytes) {
-    return `${truncateUtf8(complete, maximumBytes - suffixBytes).text}${suffix}`
-  }
-  return truncateUtf8(TRUNCATION_MARKER, maximumBytes).text
+  assertUtf8WithinLimit(compact, maximumBytes, 'search_tools model text')
+  return compact
 }
 
 interface SearchToolsCardMeta {
