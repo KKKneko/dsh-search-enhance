@@ -2,8 +2,6 @@
 
 `dsh-search-enhance` 是 DeepSeek Harness（DSH）的增强搜索插件。它使用 Grok 完成主搜索，并按需要补充文档、网页和站点信息，最后返回回答和来源链接。
 
-当前版本兼容 DeepSeek Harness `0.1.0-rc.6`。项目尚未发布到 npm，请从可信的源码目录安装。
-
 ## 架构与搜索流程
 
 ### 整体架构
@@ -85,57 +83,19 @@ DSH Agent
 
 ## 安装
 
-### 1. 准备环境
-
-请先确认以下命令可以使用：
+确保 `dsh` 和 `pnpm` 已经可以使用，然后直接安装到默认的 `web` 配置：
 
 ```bash
-dsh --version
-pnpm --version
-npm --version
+dsh plugin --profile web add dsh-search-enhance@latest
 ```
 
-当前建议安装到 DSH 的 `web` 配置中。
-
-### 2. 安装依赖并构建
-
-进入插件源码目录。首次使用先安装依赖；依赖已经安装时可以跳过 `npm ci`。
+安装完成后启动或重启 DSH：
 
 ```bash
-cd /path/to/dsh-search-enhance
-npm ci
-npm run build
+dsh web
 ```
 
-### 3. 添加到 DSH
-
-```bash
-PROFILE=web
-dsh plugin --profile "$PROFILE" add "$PWD"
-```
-
-这是本地源码安装：DSH 会继续使用当前目录，因此安装后不要移动或删除该目录。
-
-### 4. 检查安装结果
-
-```bash
-dsh --profile "$PROFILE" --dump-config
-```
-
-输出中应能看到：
-
-```text
-# == dsh-search-enhance
-name: dsh-search-enhance
-```
-
-### 5. 启动 DSH
-
-```bash
-dsh --profile "$PROFILE"
-```
-
-如果 DSH 已经在运行，请先重启，再对浏览器执行一次强制刷新。
+如果 DSH 已经在运行，请重启后再对浏览器执行一次强制刷新。
 
 ## 配置
 
@@ -212,7 +172,7 @@ http://127.0.0.1:7890
 点击“保存配置”后重启 DSH：
 
 ```bash
-dsh --profile web
+dsh web
 ```
 
 重启后，新配置才会用于搜索。
@@ -239,11 +199,10 @@ dsh --profile web
 
 ## 更新与卸载
 
-本地源码修改后，重新构建并重启 DSH：
+更新到 npm 上的最新版本：
 
 ```bash
-npm run build
-dsh --profile web
+dsh plugin --profile web add dsh-search-enhance@latest
 ```
 
 卸载插件：
@@ -256,4 +215,4 @@ dsh plugin --profile web remove dsh-search-enhance
 
 - 网页正文读取不会执行页面 JavaScript，也不能处理登录、验证码或浏览器会话。
 - 网页读取可以访问 DSH 所在机器能够访问的地址；在敏感网络中只处理可信链接，并配合网络访问限制。
-- 如果配置页面没有出现，先确认插件已经构建并安装，然后重启 DSH 并强制刷新浏览器。
+- 如果配置页面没有出现，先用 `dsh plugin --profile web list --depth 0` 确认 npm 包已经安装，然后重启 DSH 并强制刷新浏览器。
