@@ -40,6 +40,7 @@ import {
   createSearchCallTool,
 } from '../src/tools/search-call.js'
 import {
+  SEARCH_TOOLS_CANONICAL_MAX_BYTES,
   SEARCH_TOOLS_OUTPUT_SCHEMA,
   SEARCH_TOOLS_PARAMETERS,
   boundSearchToolsOutput,
@@ -334,6 +335,15 @@ describe('search_tools operation manifest', () => {
         type: 'object',
         required: ['value'],
       }),
+      output_schema: {
+        type: 'object',
+        properties: {
+          operation: { type: 'string' },
+          value: { type: 'string' },
+        },
+        additionalProperties: false,
+        required: ['operation', 'value'],
+      },
       call: { tool: 'search_call', operation: 'web_map' },
     })
     expect(validateJsonSchemaValue(
@@ -349,7 +359,8 @@ describe('search_tools operation manifest', () => {
       expect(value.groups.flatMap(group => group.operations.map(operation => operation.name)))
         .toEqual(DEFERRED_OPERATION_NAMES)
       expect(() => boundSearchToolsOutput(value)).not.toThrow()
-      expect(Buffer.byteLength(JSON.stringify(value), 'utf8')).toBeLessThanOrEqual(16 * 1024)
+      expect(Buffer.byteLength(JSON.stringify(value), 'utf8'))
+        .toBeLessThanOrEqual(SEARCH_TOOLS_CANONICAL_MAX_BYTES)
     } finally {
       await production.operations.stop()
     }
@@ -363,6 +374,7 @@ describe('search_tools operation manifest', () => {
       runContext('search_tools', args, agentWithEvents(completedDisclosureEvents(['site_map']))),
     ) as SearchToolsOutput
     expect(progressive.added_groups).toEqual([])
+    expect(progressive.takes_effect).toBe('already_active')
     expect(progressive.groups[0]?.operations.map(operation => operation.name)).toEqual(['web_map'])
 
     const all = await createSearchToolsTool({ mode: 'all', registry }).execute(
@@ -371,6 +383,7 @@ describe('search_tools operation manifest', () => {
     ) as SearchToolsOutput
     expect(all.added_groups).toEqual([])
     expect(all.active_groups).toEqual(CAPABILITY_GROUPS)
+    expect(all.takes_effect).toBe('already_active')
   })
 
   it('bounds complete canonical and model projections without splitting Unicode', () => {
@@ -421,6 +434,36 @@ describe('search_call gateway', () => {
       { type: 'text', text: 'web_map:docs' },
     ])
     expect(tool.isConcurrencySafe?.(args)).toBe(true)
+  })
+
+  it('uses real operation definitions for fail-closed concurrency classification', async () => {
+    const production = productionOperationRegistry()
+    try {
+      const tool = createSearchCallTool({ mode: 'all', registry: production.registry })
+      expect(tool.isConcurrencySafe?.({
+        operation: 'web_map',
+        arguments: { url: 'https://example.test' },
+      })).toBe(true)
+      expect(tool.isConcurrencySafe?.({
+        operation: 'research_plan',
+        arguments: { question: 'Plan a bounded comparison' },
+      })).toBe(true)
+      expect(tool.isConcurrencySafe?.({
+        operation: 'search_diagnostics',
+        arguments: { action: 'show' },
+      })).toBe(true)
+      expect(tool.isConcurrencySafe?.({
+        operation: 'search_sources',
+        arguments: { source_ref: 'src_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },
+      })).toBe(false)
+      expect(tool.isConcurrencySafe?.({
+        operation: 'context7_query_docs',
+        arguments: { library_id: '/acme/sdk', query: 'docs' },
+      })).toBe(false)
+      expect(tool.isConcurrencySafe?.({ operation: 'web_map', arguments: {} })).toBe(false)
+    } finally {
+      await production.operations.stop()
+    }
   })
 
   it('fails closed while inactive, for unknown operations, and during the disclosure step', async () => {
@@ -531,11 +574,14 @@ describe('search_call gateway', () => {
 })
 
 describe('source-produced operation notice', () => {
-  it('appends the real search_sources manifest within both resident result bounds', () => {
-    const notice = operationRegistry().renderCapabilityDisclosure('sources')
-    expect(notice).toContain('"gateway": "search_call"')
-    expect(notice).toContain('"operation": "search_sources"')
+  it('appends the real search_sources manifest within both resident result bounds', async () => {
+    const production = productionOperationRegistry()
+    const notice = production.registry.renderCapabilityDisclosure('sources')
+    expect(Buffer.byteLength(notice, 'utf8')).toBeLessThanOrEqual(4096)
+    expect(notice).toContain('"gateway":"search_call"')
+    expect(notice).toContain('"operation":"search_sources"')
     expect(notice).toContain('"parameters"')
+    expect(notice).toContain('"output_schema"')
 
     const web: WebSearchOutput = {
       state: 'complete',
@@ -550,15 +596,16 @@ describe('source-produced operation notice', () => {
       model_text_max_bytes: Buffer.byteLength(notice, 'utf8') + 256,
     }
     const webText = renderWebSearchText(web, notice)
-    expect(webText).toContain('"operation": "search_sources"')
+    expect(webText).toContain('"operation":"search_sources"')
     expect(Buffer.byteLength(webText, 'utf8')).toBeLessThanOrEqual(web.model_text_max_bytes)
 
     const multibyteNotice = `${notice}\n界🙂`
-    const exactNoticeBytes = Buffer.byteLength(multibyteNotice, 'utf8')
+    const sourceTail = `Source reference: ${web.source_ref}\n\n${multibyteNotice}`
+    const exactNoticeBytes = Buffer.byteLength(sourceTail, 'utf8')
     expect(renderWebSearchText({
       ...web,
       model_text_max_bytes: exactNoticeBytes,
-    }, multibyteNotice)).toBe(multibyteNotice)
+    }, multibyteNotice)).toBe(sourceTail)
     const over = renderWebSearchText({
       ...web,
       model_text_max_bytes: exactNoticeBytes - 1,
@@ -591,7 +638,8 @@ describe('source-produced operation notice', () => {
       model_text_max_bytes: Buffer.byteLength(notice, 'utf8') + 256,
     }
     const docsText = renderDocsSearchText(docs, notice)
-    expect(docsText).toContain('"operation": "search_sources"')
+    expect(docsText).toContain('"operation":"search_sources"')
     expect(Buffer.byteLength(docsText, 'utf8')).toBeLessThanOrEqual(docs.model_text_max_bytes)
+    await production.operations.stop()
   })
 })

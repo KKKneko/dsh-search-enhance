@@ -40,11 +40,10 @@ export interface ResearchPlanBuildOptions {
 
 const RESEARCH_PLAN_MAX_STEPS = 10
 const PLAN_BOUNDARY = 'Stay within this sub-question and do not infer unsupported claims.'
-const PLAN_RULE = 'Use the fixed search_call gateway with the listed operation names; inspect selected pages with web_extract before claim-level conclusions.'
 const PREFLIGHT_RULE = 'Planning is offline. A listed tool is an execution instruction, not an automatic call or claim verification.'
 const GAP_RULE = 'Discovery candidates are not claim evidence; fetch selected key pages, inspect route and truncation facts, and mark unresolved claims as unverified.'
 const PLANNING_BOUNDARY = 'Offline plan only: this call does not search, fetch pages, access credentials, verify claims, or write session/storage state.'
-const EXECUTION_BOUNDARY = 'Execute the listed operations through search_call. Fetch selected key pages with web_extract before claim-level conclusions.'
+const EXECUTION_BOUNDARY = 'Call listed resident operations directly. Invoke only deferred web_map steps through search_call after the site_map capability is active.'
 const FINAL_ANSWER_POLICY = 'Cite extracted evidence for claim-level statements, separate discovery candidates from extracted evidence, disclose truncation and route limitations, and state unresolved gaps.'
 
 const DOCS_INTENT_PATTERN = /\b(api|apis|sdk|docs?|documentation|reference|framework|library|libraries|github|readme|changelog|migration|migrate|release)\b|文档|文档库|接口|软件开发工具包|框架|库|代码库|迁移|版本说明/iu
@@ -491,7 +490,7 @@ function buildGapMessages(
 ): string[] {
   const gaps: string[] = []
   for (const tool of unavailableTools) {
-    gaps.push(`${tool} is not active for the current Agent; disclose its capability group before execution through search_call.`)
+    gaps.push(`${tool} is not active for the current Agent; disclose site_map with search_tools before invoking web_map through search_call.`)
   }
   for (const step of steps) {
     if ((step.tool === 'web_extract' || step.tool === 'web_map') && !validTargetUrl(step.query)) {
@@ -815,8 +814,11 @@ export function isResearchPlanModelTextTruncated(value: ResearchPlanOutput): boo
 }
 
 function stepText(step: ResearchPlanStep): string {
+  const route = step.tool === 'web_map'
+    ? 'via search_call operation web_map'
+    : `via resident tool ${step.tool}`
   return [
-    `${step.id} (${step.subquestion_id}) via search_call operation ${step.tool}`,
+    `${step.id} (${step.subquestion_id}) ${route}`,
     `Purpose: ${step.purpose}`,
     `Query: ${step.query}`,
     `Params: ${JSON.stringify(step.params)}`,

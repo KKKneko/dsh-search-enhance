@@ -1,229 +1,6 @@
 {
   "native_schema": [
     {
-      "name": "context7_get_cached_doc_raw",
-      "description": "Read this plugin's validated Context7 docs cache by exact doc_ref, or deterministically match at most 500 ordered records by query with an optional exact library_id filter. It performs no network request and never exposes storage paths, endpoints, credentials, raw errors, or unparsed bodies.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "doc_ref": {
-            "type": "string",
-            "description": "Exact opaque ctx7d_ reference returned by a Context7 docs tool."
-          },
-          "query": {
-            "type": "string",
-            "description": "Non-empty deterministic cache-match query used only when doc_ref is absent."
-          },
-          "library_id": {
-            "type": "string",
-            "description": "Optional exact Context7 id used only as a cache-record filter."
-          }
-        },
-        "additionalProperties": false
-      }
-    },
-    {
-      "name": "context7_get_library_docs",
-      "description": "Resolve a library name when needed, then query Context7 through the same persistent TTL cache and Provider client. An exact library_id strictly skips resolve. raw is a validated cache envelope; all results are discovery evidence.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "query": {
-            "type": "string",
-            "description": "Non-empty documentation task or question."
-          },
-          "library_name": {
-            "type": "string",
-            "description": "Package or product name to resolve when library_id is absent."
-          },
-          "library_id": {
-            "type": "string",
-            "description": "Exact Context7 id. When supplied, resolve is skipped even if library_name is also present."
-          },
-          "max_results": {
-            "type": "integer",
-            "description": "Maximum resolve candidates from 1 through 20; defaults to 8.",
-            "default": 8,
-            "enum": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8,
-              9,
-              10,
-              11,
-              12,
-              13,
-              14,
-              15,
-              16,
-              17,
-              18,
-              19,
-              20
-            ]
-          },
-          "max_snippets": {
-            "type": "integer",
-            "description": "Maximum snippets from 1 through 20; defaults to 8.",
-            "default": 8,
-            "enum": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8,
-              9,
-              10,
-              11,
-              12,
-              13,
-              14,
-              15,
-              16,
-              17,
-              18,
-              19,
-              20
-            ]
-          },
-          "raw": {
-            "type": "boolean",
-            "description": "Return the validated bounded cache envelope instead of the ordinary snippet projection.",
-            "default": false
-          },
-          "force_refresh": {
-            "type": "boolean",
-            "description": "Bypass fresh Context7 resolve/docs cache entries.",
-            "default": false
-          }
-        },
-        "required": [
-          "query"
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
-      "name": "context7_query_docs",
-      "description": "Query documentation for an exact Context7 /org/project[/version] id. raw=false returns structured snippets; raw=true returns only a validated bounded cache envelope, never a Provider body, path, endpoint, or credential. Discovery only; verify claims with web_extract.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "library_id": {
-            "type": "string",
-            "description": "Exact Context7 /org/project or /org/project/version id."
-          },
-          "query": {
-            "type": "string",
-            "description": "Non-empty documentation task or question."
-          },
-          "max_snippets": {
-            "type": "integer",
-            "description": "Maximum snippets from 1 through 20; defaults to 5.",
-            "default": 5,
-            "enum": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8,
-              9,
-              10,
-              11,
-              12,
-              13,
-              14,
-              15,
-              16,
-              17,
-              18,
-              19,
-              20
-            ]
-          },
-          "raw": {
-            "type": "boolean",
-            "description": "Return the validated bounded cache envelope, never an unparsed Provider body or backend file.",
-            "default": false
-          },
-          "force_refresh": {
-            "type": "boolean",
-            "description": "Bypass a fresh docs cache entry; expired transient failures may still use stale cache.",
-            "default": false
-          }
-        },
-        "required": [
-          "library_id",
-          "query"
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
-      "name": "context7_resolve_library_id",
-      "description": "Resolve a package/product name to an exact Context7 library id. Skip this tool when /org/project[/version] is already known. Returns bounded safe candidates and cache/Provider facts; discovery only.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "library_name": {
-            "type": "string",
-            "description": "Non-empty package or product name. If an exact /org/project[/version] id is already known, call context7_query_docs instead."
-          },
-          "query": {
-            "type": "string",
-            "description": "Optional non-empty task context used only to rank the bounded candidates."
-          },
-          "max_results": {
-            "type": "integer",
-            "description": "Maximum candidates from 1 through 20; defaults to 8.",
-            "default": 8,
-            "enum": [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8,
-              9,
-              10,
-              11,
-              12,
-              13,
-              14,
-              15,
-              16,
-              17,
-              18,
-              19,
-              20
-            ]
-          },
-          "force_refresh": {
-            "type": "boolean",
-            "description": "Bypass a fresh resolve cache entry; expired transient failures may still use stale cache.",
-            "default": false
-          }
-        },
-        "required": [
-          "library_name"
-        ],
-        "additionalProperties": false
-      }
-    },
-    {
       "name": "docs_search",
       "description": "High-level SDK/API/framework/README/release documentation search. Routes Context7 first and optionally Exa, returns discovery snippets and durable source_ref pagination; common documentation tasks do not need granular Context7 tools.",
       "parameters": {
@@ -285,177 +62,32 @@
       }
     },
     {
-      "name": "research_plan",
-      "description": "Generate one offline research plan only for explicit deep research, multi-source verification, or complex comparison. It does not search, fetch, or verify claims; execute only the listed stable plugin tools and fetch key pages with web_extract before claim-level conclusions.",
+      "name": "search_call",
+      "description": "Execute one deferred search operation from an append-only manifest. The operation must already be active for this Agent; arguments and canonical output are validated against that operation's real schemas.",
       "parameters": {
         "type": "object",
         "properties": {
-          "question": {
+          "operation": {
             "type": "string",
-            "description": "Non-empty research question to plan without searching or fetching."
+            "description": "Exact operation name from a search_tools or source-produced operation manifest."
           },
-          "budget": {
-            "type": "string",
-            "description": "Bounded planning breadth/depth intent; defaults to standard.",
-            "default": "standard",
-            "enum": [
-              "quick",
-              "standard",
-              "deep"
-            ]
-          },
-          "recency_requirement": {
-            "type": "string",
-            "default": "none",
-            "enum": [
-              "none",
-              "recent",
-              "current"
-            ]
-          },
-          "locale_domain_scope": {
-            "type": "string",
-            "default": "global",
-            "enum": [
-              "global",
-              "china",
-              "known_domains",
-              "mixed"
-            ]
-          },
-          "source_authority_need": {
-            "type": "string",
-            "default": "high",
-            "enum": [
-              "normal",
-              "high"
-            ]
-          },
-          "claim_risk": {
-            "type": "string",
-            "enum": [
-              "low",
-              "medium",
-              "high"
-            ]
-          },
-          "cross_validation_need": {
-            "type": "string",
-            "enum": [
-              "normal",
-              "high"
-            ]
-          },
-          "known_urls": {
-            "type": "array",
-            "description": "At most 10 known source URLs; a lower deployment cap may apply.",
-            "items": {
-              "type": "string",
-              "description": "Absolute HTTP(S) source URL without userinfo."
-            }
-          },
-          "sub_queries": {
-            "type": "array",
-            "description": "One through 6 focused sub-questions when supplied.",
-            "items": {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "type": "string",
-                  "description": "Stable caller-owned sub-question id such as sq1."
-                },
-                "question": {
-                  "type": "string",
-                  "description": "One focused, non-empty sub-question."
-                },
-                "reason": {
-                  "type": "string",
-                  "description": "Why this sub-question is necessary."
-                },
-                "tool": {
-                  "type": "string",
-                  "description": "Optional explicit plugin tool; deferred tools must be disclosed before execution.",
-                  "enum": [
-                    "web_search",
-                    "docs_search",
-                    "web_extract",
-                    "web_map"
-                  ]
-                },
-                "query": {
-                  "type": "string",
-                  "description": "Optional bounded tool query or URL; defaults deterministically."
-                }
-              },
-              "required": [
-                "id",
-                "question",
-                "reason"
-              ]
-            }
+          "arguments": {
+            "type": "object",
+            "description": "Arguments validated against the disclosed operation manifest before execution.",
+            "additionalProperties": true,
+            "properties": {}
           }
         },
         "required": [
-          "question"
-        ]
-      }
-    },
-    {
-      "name": "search_diagnostics",
-      "description": "Read-only masked search capability/config status. show is network-free. Use test only when the user explicitly requests connection diagnostics; test runs bounded fixed Provider health probes. API keys are never parameters or output, config writes happen only through DSH Settings/UI, and ordinary searches should not call this tool.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "action": {
-            "type": "string",
-            "description": "Use show for network-free masked capability/config status. Use test only after the user explicitly requests bounded connection diagnostics.",
-            "enum": [
-              "show",
-              "test"
-            ]
-          }
-        },
-        "required": [
-          "action"
-        ]
-      }
-    },
-    {
-      "name": "search_sources",
-      "description": "Page discovery sources retained by web_search or docs_search for the current Agent session or an inherited fork. The private search_enhance_sources storage must be backed up and restored together with the session.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "source_ref": {
-            "type": "string",
-            "description": "Opaque source reference returned by web_search or docs_search."
-          },
-          "offset": {
-            "type": "integer",
-            "description": "Zero-based source offset; defaults to 0."
-          },
-          "limit": {
-            "type": "integer",
-            "description": "Positive page size; defaults to 20 and is capped by Settings."
-          },
-          "format": {
-            "type": "string",
-            "description": "compact (default) or full with bounded snippets.",
-            "enum": [
-              "compact",
-              "full"
-            ]
-          }
-        },
-        "required": [
-          "source_ref"
-        ]
+          "operation",
+          "arguments"
+        ],
+        "additionalProperties": false
       }
     },
     {
       "name": "search_tools",
-      "description": "Disclose one or more deferred search capability groups for the current Agent. Use only when the resident search tools cannot complete the task; do not activate every group preemptively. A successful call takes effect on the next model step and does not bypass restrictions from other Presets.",
+      "description": "Disclose one or more deferred search capability groups and return their operation manifests. Use only when resident search tools cannot complete the task. Operations remain behind search_call; in progressive mode a newly disclosed capability takes effect on the next model step, while all mode keeps deferred operations active immediately.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -507,48 +139,6 @@
           "url"
         ]
       }
-    },
-    {
-      "name": "web_map",
-      "description": "Discover a bounded set of links under a known HTTP(S) website. Results are discovery candidates, not fetched page-body evidence.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "url": {
-            "type": "string",
-            "description": "Absolute HTTP(S) root URL to map through Tavily; userinfo is rejected."
-          },
-          "instructions": {
-            "type": "string",
-            "description": "Optional natural-language filter for the website crawl."
-          },
-          "max_depth": {
-            "type": "integer",
-            "description": "Maximum traversal depth (1-5); defaults to 1.",
-            "default": 1,
-            "enum": [
-              1,
-              2,
-              3,
-              4,
-              5
-            ]
-          },
-          "max_breadth": {
-            "type": "integer",
-            "description": "Maximum links followed per level (1-500); defaults to 10 and must not exceed the deployment cap.",
-            "default": 10
-          },
-          "limit": {
-            "type": "integer",
-            "description": "Total links processed (1-500); defaults to 30 and must not exceed the deployment cap.",
-            "default": 30
-          }
-        },
-        "required": [
-          "url"
-        ]
-      }
     }
   ],
   "native_result": {
@@ -557,7 +147,7 @@
     "content": [
       {
         "type": "text",
-        "text": "Documentation search (complete)\nDocumentation discovery completed; bounded discovery results follow.\n\nTop sources\n1. Acme SDK repository\n   URL: https://github.com/acme/sdk\n   Snippet: Acme SDK release and source repository.\n2. Acme SDK documentation\n   URL: https://docs.acme.test/sdk\n   Date: 2026-08-01\n   Snippet: Official Acme SDK discovery summary.\n\nSources shown: 2/2\nSnippets shown: 0/0\nSource reference: <source-ref>\n\nContext7 resolve cache: skipped, provider_not_selected\nContext7 docs cache: skipped, provider_not_selected\nProviders\n- context7: skipped\n- exa: complete\n\nEvidence level: discovery. Documentation snippets and source summaries are discovery metadata, not verified fetched page-body evidence; inspect an exact source page before relying on a claim."
+        "text": "Documentation search (complete)\nDocumentation discovery completed; bounded discovery results follow.\n\nTop sources\n1. Acme SDK repository\n   URL: https://github.com/acme/sdk\n   Snippet: Acme SDK release and source repository.\n2. Acme SDK documentation\n   URL: https://docs.acme.test/sdk\n   Date: 2026-08-01\n   Snippet: Official Acme SDK discovery summary.\n\nSources shown: 2/2\nSnippets shown: 0/0\n\nContext7 resolve cache: skipped, provider_not_selected\nContext7 docs cache: skipped, provider_not_selected\nProviders\n- context7: skipped\n- exa: complete\n\nEvidence level: discovery. Documentation snippets and source summaries are discovery metadata, not verified fetched page-body evidence; inspect an exact source page before relying on a claim.\n\nSource reference: <source-ref>\n\n{\"capability\":\"sources\",\"gateway\":\"search_call\",\"operations\":[{\"name\":\"search_sources\",\"description\":\"Page discovery sources retained by web_search or docs_search for the current Agent session or an inherited fork. The private search_enhance_sources storage must be backed up and restored together with the session.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"source_ref\":{\"type\":\"string\",\"description\":\"Opaque source reference returned by web_search or docs_search.\"},\"offset\":{\"type\":\"integer\",\"description\":\"Zero-based source offset; defaults to 0.\"},\"limit\":{\"type\":\"integer\",\"description\":\"Positive page size; defaults to 20 and is capped by Settings.\"},\"format\":{\"type\":\"string\",\"description\":\"compact (default) or full with bounded snippets.\",\"enum\":[\"compact\",\"full\"]}},\"required\":[\"source_ref\"]},\"output_schema\":{\"oneOf\":[{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"state\":{\"type\":\"string\",\"const\":\"found\"},\"source_ref\":{\"type\":\"string\"},\"offset\":{\"type\":\"integer\"},\"limit\":{\"type\":\"integer\"},\"format\":{\"type\":\"string\",\"enum\":[\"compact\",\"full\"]},\"total\":{\"type\":\"integer\"},\"returned\":{\"type\":\"integer\"},\"sources\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"url\":{\"type\":\"string\"},\"title\":{\"type\":\"string\"},\"date\":{\"type\":\"string\"},\"category\":{\"type\":\"string\",\"enum\":[\"official\",\"primary\",\"documentation\",\"code\",\"academic\",\"news\",\"community\",\"aggregate\",\"unknown\"]},\"snippet\":{\"type\":\"string\",\"description\":\"Bounded discovery snippet; not fetched page-body evidence.\"},\"snippet_truncated\":{\"type\":\"boolean\",\"const\":true}},\"required\":[\"url\",\"category\"]}},\"has_more\":{\"type\":\"boolean\"},\"next_offset\":{\"type\":\"integer\"},\"total_before_retention\":{\"type\":\"integer\"},\"truncated\":{\"type\":\"boolean\"},\"page_byte_limited\":{\"type\":\"boolean\"}},\"required\":[\"state\",\"source_ref\",\"offset\",\"limit\",\"format\",\"total\",\"returned\",\"sources\",\"has_more\",\"total_before_retention\",\"truncated\",\"page_byte_limited\"]},{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"state\":{\"type\":\"string\",\"const\":\"not_found\"},\"code\":{\"type\":\"string\",\"const\":\"SOURCE_REF_NOT_FOUND\"}},\"required\":[\"state\",\"code\"]}]},\"call\":{\"tool\":\"search_call\",\"operation\":\"search_sources\"}}]}\nCapability \"sources\" is active for this Agent. Invoke only the manifested deferred operations through search_call."
       }
     ],
     "meta": {
@@ -670,7 +260,7 @@
       "content": [
         {
           "type": "text",
-          "text": "Documentation search (complete)\nDocumentation discovery completed; bounded discovery results follow.\n\nSelected library: /acme/sdk\nLibrary id: /acme/sdk\nDocumentation cache reference: <doc-ref>\n\nDocumentation snippets\n1. Lifecycle\n   Library: /acme/sdk\nInitialize the SDK with createClient and dispose it during cleanup.\n2. Migration\n   Library: /acme/sdk\nUse the v4 migration helper before replacing legacy adapters.\n\nTop sources\n1. /acme/sdk\n   URL: <fixture-origin>/context7/acme/sdk\n   Snippet: Initialize the SDK with createClient and dispose it during cleanup.\n\nSources shown: 1/1\nSnippets shown: 2/2\nSource reference: <source-ref>\n\nContext7 resolve cache: skipped, known_library_id\nContext7 docs cache: miss\nProviders\n- context7: complete\n- exa: skipped\n\nEvidence level: discovery. Documentation snippets and source summaries are discovery metadata, not verified fetched page-body evidence; inspect an exact source page before relying on a claim."
+          "text": "Documentation search (complete)\nDocumentation discovery completed; bounded discovery results follow.\n\nSelected library: /acme/sdk\nLibrary id: /acme/sdk\nDocumentation cache reference: <doc-ref>\n\nDocumentation snippets\n1. Lifecycle\n   Library: /acme/sdk\nInitialize the SDK with createClient and dispose it during cleanup.\n2. Migration\n   Library: /acme/sdk\nUse the v4 migration helper before replacing legacy adapters.\n\nTop sources\n1. /acme/sdk\n   URL: <fixture-origin>/context7/acme/sdk\n   Snippet: Initialize the SDK with createClient and dispose it during cleanup.\n\nSources shown: 1/1\nSnippets shown: 2/2\n\nContext7 resolve cache: skipped, known_library_id\nContext7 docs cache: miss\nProviders\n- context7: complete\n- exa: skipped\n\nEvidence level: discovery. Documentation snippets and source summaries are discovery metadata, not verified fetched page-body evidence; inspect an exact source page before relying on a claim.\n\nSource reference: <source-ref>\n\n{\"capability\":\"sources\",\"gateway\":\"search_call\",\"operations\":[{\"name\":\"search_sources\",\"description\":\"Page discovery sources retained by web_search or docs_search for the current Agent session or an inherited fork. The private search_enhance_sources storage must be backed up and restored together with the session.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"source_ref\":{\"type\":\"string\",\"description\":\"Opaque source reference returned by web_search or docs_search.\"},\"offset\":{\"type\":\"integer\",\"description\":\"Zero-based source offset; defaults to 0.\"},\"limit\":{\"type\":\"integer\",\"description\":\"Positive page size; defaults to 20 and is capped by Settings.\"},\"format\":{\"type\":\"string\",\"description\":\"compact (default) or full with bounded snippets.\",\"enum\":[\"compact\",\"full\"]}},\"required\":[\"source_ref\"]},\"output_schema\":{\"oneOf\":[{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"state\":{\"type\":\"string\",\"const\":\"found\"},\"source_ref\":{\"type\":\"string\"},\"offset\":{\"type\":\"integer\"},\"limit\":{\"type\":\"integer\"},\"format\":{\"type\":\"string\",\"enum\":[\"compact\",\"full\"]},\"total\":{\"type\":\"integer\"},\"returned\":{\"type\":\"integer\"},\"sources\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"url\":{\"type\":\"string\"},\"title\":{\"type\":\"string\"},\"date\":{\"type\":\"string\"},\"category\":{\"type\":\"string\",\"enum\":[\"official\",\"primary\",\"documentation\",\"code\",\"academic\",\"news\",\"community\",\"aggregate\",\"unknown\"]},\"snippet\":{\"type\":\"string\",\"description\":\"Bounded discovery snippet; not fetched page-body evidence.\"},\"snippet_truncated\":{\"type\":\"boolean\",\"const\":true}},\"required\":[\"url\",\"category\"]}},\"has_more\":{\"type\":\"boolean\"},\"next_offset\":{\"type\":\"integer\"},\"total_before_retention\":{\"type\":\"integer\"},\"truncated\":{\"type\":\"boolean\"},\"page_byte_limited\":{\"type\":\"boolean\"}},\"required\":[\"state\",\"source_ref\",\"offset\",\"limit\",\"format\",\"total\",\"returned\",\"sources\",\"has_more\",\"total_before_retention\",\"truncated\",\"page_byte_limited\"]},{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"state\":{\"type\":\"string\",\"const\":\"not_found\"},\"code\":{\"type\":\"string\",\"const\":\"SOURCE_REF_NOT_FOUND\"}},\"required\":[\"state\",\"code\"]}]},\"call\":{\"tool\":\"search_call\",\"operation\":\"search_sources\"}}]}\nCapability \"sources\" is active for this Agent. Invoke only the manifested deferred operations through search_call."
         }
       ],
       "metadata": {
@@ -728,7 +318,7 @@
       "content": [
         {
           "type": "text",
-          "text": "Documentation search (partial)\nSome documentation paths failed or stale cache data was used; available discovery results follow.\n\nTop sources\n1. Acme SDK repository\n   URL: https://github.com/acme/sdk\n   Snippet: Acme SDK release and source repository.\n2. Acme SDK documentation\n   URL: https://docs.acme.test/sdk\n   Date: 2026-08-01\n   Snippet: Official Acme SDK discovery summary.\n\nSources shown: 2/2\nSnippets shown: 0/0\nSource reference: <source-ref>\n\nContext7 resolve cache: miss\nContext7 docs cache: skipped, upstream_failed\nProviders\n- context7: failed\n- exa: complete\n\nLimitations\n- A documentation Provider failed (context7/resolve, http).\n\nEvidence level: discovery. Documentation snippets and source summaries are discovery metadata, not verified fetched page-body evidence; inspect an exact source page before relying on a claim."
+          "text": "Documentation search (partial)\nSome documentation paths failed or stale cache data was used; available discovery results follow.\n\nTop sources\n1. Acme SDK repository\n   URL: https://github.com/acme/sdk\n   Snippet: Acme SDK release and source repository.\n2. Acme SDK documentation\n   URL: https://docs.acme.test/sdk\n   Date: 2026-08-01\n   Snippet: Official Acme SDK discovery summary.\n\nSources shown: 2/2\nSnippets shown: 0/0\n\nContext7 resolve cache: miss\nContext7 docs cache: skipped, upstream_failed\nProviders\n- context7: failed\n- exa: complete\n\nLimitations\n- A documentation Provider failed (context7/resolve, http).\n\nEvidence level: discovery. Documentation snippets and source summaries are discovery metadata, not verified fetched page-body evidence; inspect an exact source page before relying on a claim.\n\nSource reference: <source-ref>\n\n{\"capability\":\"sources\",\"gateway\":\"search_call\",\"operations\":[{\"name\":\"search_sources\",\"description\":\"Page discovery sources retained by web_search or docs_search for the current Agent session or an inherited fork. The private search_enhance_sources storage must be backed up and restored together with the session.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"source_ref\":{\"type\":\"string\",\"description\":\"Opaque source reference returned by web_search or docs_search.\"},\"offset\":{\"type\":\"integer\",\"description\":\"Zero-based source offset; defaults to 0.\"},\"limit\":{\"type\":\"integer\",\"description\":\"Positive page size; defaults to 20 and is capped by Settings.\"},\"format\":{\"type\":\"string\",\"description\":\"compact (default) or full with bounded snippets.\",\"enum\":[\"compact\",\"full\"]}},\"required\":[\"source_ref\"]},\"output_schema\":{\"oneOf\":[{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"state\":{\"type\":\"string\",\"const\":\"found\"},\"source_ref\":{\"type\":\"string\"},\"offset\":{\"type\":\"integer\"},\"limit\":{\"type\":\"integer\"},\"format\":{\"type\":\"string\",\"enum\":[\"compact\",\"full\"]},\"total\":{\"type\":\"integer\"},\"returned\":{\"type\":\"integer\"},\"sources\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"url\":{\"type\":\"string\"},\"title\":{\"type\":\"string\"},\"date\":{\"type\":\"string\"},\"category\":{\"type\":\"string\",\"enum\":[\"official\",\"primary\",\"documentation\",\"code\",\"academic\",\"news\",\"community\",\"aggregate\",\"unknown\"]},\"snippet\":{\"type\":\"string\",\"description\":\"Bounded discovery snippet; not fetched page-body evidence.\"},\"snippet_truncated\":{\"type\":\"boolean\",\"const\":true}},\"required\":[\"url\",\"category\"]}},\"has_more\":{\"type\":\"boolean\"},\"next_offset\":{\"type\":\"integer\"},\"total_before_retention\":{\"type\":\"integer\"},\"truncated\":{\"type\":\"boolean\"},\"page_byte_limited\":{\"type\":\"boolean\"}},\"required\":[\"state\",\"source_ref\",\"offset\",\"limit\",\"format\",\"total\",\"returned\",\"sources\",\"has_more\",\"total_before_retention\",\"truncated\",\"page_byte_limited\"]},{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"state\":{\"type\":\"string\",\"const\":\"not_found\"},\"code\":{\"type\":\"string\",\"const\":\"SOURCE_REF_NOT_FOUND\"}},\"required\":[\"state\",\"code\"]}]},\"call\":{\"tool\":\"search_call\",\"operation\":\"search_sources\"}}]}\nCapability \"sources\" is active for this Agent. Invoke only the manifested deferred operations through search_call."
         }
       ],
       "metadata": {
@@ -786,7 +376,7 @@
       "content": [
         {
           "type": "text",
-          "text": "Documentation search (partial)\nSome documentation paths failed or stale cache data was used; available discovery results follow.\n\nSelected library: Acme SDK\nLibrary id: /acme/sdk\nLibrary summary: Official Acme SDK documentation\nDocumentation cache reference: <doc-ref>\n\nDocumentation snippets\n1. Lifecycle\n   Library: /acme/sdk\nInitialize the SDK with createClient and dispose it during cleanup.\n2. Migration\n   Library: /acme/sdk\nUse the v4 migration helper before replacing legacy adapters.\n\nTop sources\n1. Acme SDK\n   URL: <fixture-origin>/context7/acme/sdk\n   Snippet: Initialize the SDK with createClient and dispose it during cleanup.\n\nSources shown: 1/1\nSnippets shown: 2/2\nSource reference: <source-ref>\n\nContext7 resolve cache: stale\nContext7 docs cache: stale\nProviders\n- context7: complete\n- exa: skipped\n\nLimitations\n- Expired Context7 cache data was used after a temporary Provider failure (context7-cache/resolve, http).\n- Expired Context7 cache data was used after a temporary Provider failure (context7-cache/docs, http).\n\nEvidence level: discovery. Documentation snippets and source summaries are discovery metadata, not verified fetched page-body evidence; inspect an exact source page before relying on a claim."
+          "text": "Documentation search (partial)\nSome documentation paths failed or stale cache data was used; available discovery results follow.\n\nSelected library: Acme SDK\nLibrary id: /acme/sdk\nLibrary summary: Official Acme SDK documentation\nDocumentation cache reference: <doc-ref>\n\nDocumentation snippets\n1. Lifecycle\n   Library: /acme/sdk\nInitialize the SDK with createClient and dispose it during cleanup.\n2. Migration\n   Library: /acme/sdk\nUse the v4 migration helper before replacing legacy adapters.\n\nTop sources\n1. Acme SDK\n   URL: <fixture-origin>/context7/acme/sdk\n   Snippet: Initialize the SDK with createClient and dispose it during cleanup.\n\nSources shown: 1/1\nSnippets shown: 2/2\n\nContext7 resolve cache: stale\nContext7 docs cache: stale\nProviders\n- context7: complete\n- exa: skipped\n\nLimitations\n- Expired Context7 cache data was used after a temporary Provider failure (context7-cache/resolve, http).\n- Expired Context7 cache data was used after a temporary Provider failure (context7-cache/docs, http).\n\nEvidence level: discovery. Documentation snippets and source summaries are discovery metadata, not verified fetched page-body evidence; inspect an exact source page before relying on a claim.\n\nSource reference: <source-ref>\n\n{\"capability\":\"sources\",\"gateway\":\"search_call\",\"operations\":[{\"name\":\"search_sources\",\"description\":\"Page discovery sources retained by web_search or docs_search for the current Agent session or an inherited fork. The private search_enhance_sources storage must be backed up and restored together with the session.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"source_ref\":{\"type\":\"string\",\"description\":\"Opaque source reference returned by web_search or docs_search.\"},\"offset\":{\"type\":\"integer\",\"description\":\"Zero-based source offset; defaults to 0.\"},\"limit\":{\"type\":\"integer\",\"description\":\"Positive page size; defaults to 20 and is capped by Settings.\"},\"format\":{\"type\":\"string\",\"description\":\"compact (default) or full with bounded snippets.\",\"enum\":[\"compact\",\"full\"]}},\"required\":[\"source_ref\"]},\"output_schema\":{\"oneOf\":[{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"state\":{\"type\":\"string\",\"const\":\"found\"},\"source_ref\":{\"type\":\"string\"},\"offset\":{\"type\":\"integer\"},\"limit\":{\"type\":\"integer\"},\"format\":{\"type\":\"string\",\"enum\":[\"compact\",\"full\"]},\"total\":{\"type\":\"integer\"},\"returned\":{\"type\":\"integer\"},\"sources\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"url\":{\"type\":\"string\"},\"title\":{\"type\":\"string\"},\"date\":{\"type\":\"string\"},\"category\":{\"type\":\"string\",\"enum\":[\"official\",\"primary\",\"documentation\",\"code\",\"academic\",\"news\",\"community\",\"aggregate\",\"unknown\"]},\"snippet\":{\"type\":\"string\",\"description\":\"Bounded discovery snippet; not fetched page-body evidence.\"},\"snippet_truncated\":{\"type\":\"boolean\",\"const\":true}},\"required\":[\"url\",\"category\"]}},\"has_more\":{\"type\":\"boolean\"},\"next_offset\":{\"type\":\"integer\"},\"total_before_retention\":{\"type\":\"integer\"},\"truncated\":{\"type\":\"boolean\"},\"page_byte_limited\":{\"type\":\"boolean\"}},\"required\":[\"state\",\"source_ref\",\"offset\",\"limit\",\"format\",\"total\",\"returned\",\"sources\",\"has_more\",\"total_before_retention\",\"truncated\",\"page_byte_limited\"]},{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"state\":{\"type\":\"string\",\"const\":\"not_found\"},\"code\":{\"type\":\"string\",\"const\":\"SOURCE_REF_NOT_FOUND\"}},\"required\":[\"state\",\"code\"]}]},\"call\":{\"tool\":\"search_call\",\"operation\":\"search_sources\"}}]}\nCapability \"sources\" is active for this Agent. Invoke only the manifested deferred operations through search_call."
         }
       ],
       "metadata": {
@@ -1535,11 +1125,16 @@
         ],
         "meta": {
           "version": 1,
-          "type": "context7_resolve_library_id",
-          "state": "found",
-          "returned": 1,
-          "canonical_output_truncated": false,
-          "model_text_truncated": false
+          "type": "search_call",
+          "operation": "context7_resolve_library_id",
+          "operation_meta": {
+            "version": 1,
+            "type": "context7_resolve_library_id",
+            "state": "found",
+            "returned": 1,
+            "canonical_output_truncated": false,
+            "model_text_truncated": false
+          }
         },
         "value": {
           "state": "found",
@@ -1607,11 +1202,16 @@
         ],
         "meta": {
           "version": 1,
-          "type": "context7_query_docs",
-          "state": "found",
-          "returned": 2,
-          "canonical_output_truncated": false,
-          "model_text_truncated": false
+          "type": "search_call",
+          "operation": "context7_query_docs",
+          "operation_meta": {
+            "version": 1,
+            "type": "context7_query_docs",
+            "state": "found",
+            "returned": 2,
+            "canonical_output_truncated": false,
+            "model_text_truncated": false
+          }
         },
         "value": {
           "state": "found",
@@ -1671,11 +1271,16 @@
         ],
         "meta": {
           "version": 1,
-          "type": "context7_get_library_docs",
-          "state": "found",
-          "returned": 2,
-          "canonical_output_truncated": false,
-          "model_text_truncated": false
+          "type": "search_call",
+          "operation": "context7_get_library_docs",
+          "operation_meta": {
+            "version": 1,
+            "type": "context7_get_library_docs",
+            "state": "found",
+            "returned": 2,
+            "canonical_output_truncated": false,
+            "model_text_truncated": false
+          }
         },
         "value": {
           "state": "found",
@@ -1775,11 +1380,16 @@
         ],
         "meta": {
           "version": 1,
-          "type": "context7_get_cached_doc_raw",
-          "state": "found",
-          "returned": 1,
-          "canonical_output_truncated": false,
-          "model_text_truncated": false
+          "type": "search_call",
+          "operation": "context7_get_cached_doc_raw",
+          "operation_meta": {
+            "version": 1,
+            "type": "context7_get_cached_doc_raw",
+            "state": "found",
+            "returned": 1,
+            "canonical_output_truncated": false,
+            "model_text_truncated": false
+          }
         },
         "value": {
           "lookup": "doc_ref",
@@ -1909,7 +1519,11 @@
       "content": [
         {
           "type": "text",
-          "text": "Documentation search (complete)\nDocumentation discovery completed; bounded discovery results follow.\n\nTop sources\n1. Acme SDK repository\n   URL: https://github.com/acme/sdk\n   Snippet: Acme SDK release and source repository.\n2. Acme SDK documentation\n   URL: https://docs.acme.test/sdk\n   Date: 2026-08-01\n   Snippet: Official Acme SDK discovery summary.\n\nSources shown: 2/2\nSnippets shown: 0/0\nSource reference: <source-ref>\n\nContext7 resolve cache: skipped, provider_not_selected\nContext7 docs cache: skipped, provider_not_selected\nProviders\n- context7: skipped\n- exa: complete\n\nEvidence level: discovery. Documentation snippets and source summaries are discovery metadata, not verified fetched page-body evidence; inspect an exact source page before relying on a claim."
+          "text": "Documentation search (complete)\nDocumentation discovery completed; bounded discovery results follow.\n\nTop sources\n1. Acme SDK repository\n   URL: https://github.com/acme/sdk\n   Snippet: Acme SDK release and source repository.\n2. Acme SDK documentation\n   URL: https://docs.acme.test/sdk\n   Date: 2026-08-01\n   Snippet: Official Acme SDK discovery summary.\n\nSources shown: 2/2\nSnippets shown: 0/0\n\nContext7 resolve cache: skipped, provider_not_selected\nContext7 docs cache: skipped, provider_not_selected\nProviders\n- context7: skipped\n- exa: complete\n\nEvidence level: discovery. Documentation snippets and source summaries are discovery metadata, not verified fetched page-body evidence; inspect an exact source page before relying on a claim.\n\nSource reference: <source-ref>\n\n{\"capability\":\"sources\",\"gateway\":\"search_call\",\"operations\":[{\"name\":\"search_sources\",\"description\":\"Page discovery sources retained by web_search or docs_search for the current Agent session or an inherited fork. The private search_enhance_sources storage must be backed up and restored together with the session.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"source_ref\":{\"type\":\"string\",\"description\":\"Opaque source reference returned by web_search or docs_search.\"},\"offset\":{\"type\":\"integer\",\"description\":\"Zero-based source offset; defaults to 0.\"},\"limit\":{\"type\":\"integer\",\"description\":\"Positive page size; defaults to 20 and is capped by Settings.\"},\"format\":{\"type\":\"string\",\"description\":\"compact (default) or full with bounded snippets.\",\"enum\":[\"compact\",\"full\"]}},\"required\":[\"source_ref\"]},\"output_schema\":{\"oneOf\":[{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"state\":{\"type\":\"string\",\"const\":\"found\"},\"source_ref\":{\"type\":\"string\"},\"offset\":{\"type\":\"integer\"},\"limit\":{\"type\":\"integer\"},\"format\":{\"type\":\"string\",\"enum\":[\"compact\",\"full\"]},\"total\":{\"type\":\"integer\"},\"returned\":{\"type\":\"integer\"},\"sources\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"url\":{\"type\":\"string\"},\"title\":{\"type\":\"string\"},\"date\":{\"type\":\"string\"},\"category\":{\"type\":\"string\",\"enum\":[\"official\",\"primary\",\"documentation\",\"code\",\"academic\",\"news\",\"community\",\"aggregate\",\"unknown\"]},\"snippet\":{\"type\":\"string\",\"description\":\"Bounded discovery snippet; not fetched page-body evidence.\"},\"snippet_truncated\":{\"type\":\"boolean\",\"const\":true}},\"required\":[\"url\",\"category\"]}},\"has_more\":{\"type\":\"boolean\"},\"next_offset\":{\"type\":\"integer\"},\"total_before_retention\":{\"type\":\"integer\"},\"truncated\":{\"type\":\"boolean\"},\"page_byte_limited\":{\"type\":\"boolean\"}},\"required\":[\"state\",\"source_ref\",\"offset\",\"limit\",\"format\",\"total\",\"returned\",\"sources\",\"has_more\",\"total_before_retention\",\"truncated\",\"page_byte_limited\"]},{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"state\":{\"type\":\"string\",\"const\":\"not_found\"},\"code\":{\"type\":\"string\",\"const\":\"SOURCE_REF_NOT_FOUND\"}},\"required\":[\"state\",\"code\"]}]},\"call\":{\"tool\":\"search_call\",\"operation\":\"search_sources\"}}]}\nCapability \"sources\" is active for this Agent. Invoke only the manifested deferred operations through search_call."
+        },
+        {
+          "type": "search-enhance/source-produced",
+          "version": 1
         }
       ]
     },
@@ -1917,12 +1531,15 @@
       "rootCallId": "code-docs-call",
       "parentCallId": "code-docs-call",
       "subCallId": "code-docs-call:code:2",
-      "name": "search_sources",
+      "name": "search_call",
       "arguments": {
-        "source_ref": "<source-ref>",
-        "offset": 0,
-        "limit": 1,
-        "format": "full"
+        "operation": "search_sources",
+        "arguments": {
+          "source_ref": "<source-ref>",
+          "offset": 0,
+          "limit": 1,
+          "format": "full"
+        }
       },
       "isError": false,
       "content": [

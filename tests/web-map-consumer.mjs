@@ -22,14 +22,7 @@ const globalDefinitions = [
   'docs_search',
   'web_extract',
   'search_tools',
-  'search_sources',
-  'web_map',
-  'research_plan',
-  'search_diagnostics',
-  'context7_resolve_library_id',
-  'context7_query_docs',
-  'context7_get_library_docs',
-  'context7_get_cached_doc_raw',
+  'search_call',
 ]
 const modelTools = [...globalDefinitions].sort()
 const credentialNames = [
@@ -317,25 +310,39 @@ try {
   await offEntry.fiber.await()
   const progressiveGlobalSchemas = schemaNames(offCtx)
   assert.deepEqual(progressiveGlobalSchemas, globalDefinitions)
-  assert.equal(offCtx.tools.get('web_map')?.name, 'web_map')
-  assert.equal(offCtx.tools.get('research_plan')?.name, 'research_plan')
-  assert.equal(offCtx.tools.get('search_diagnostics')?.name, 'search_diagnostics')
+  assert.equal(offCtx.tools.get('search_call')?.name, 'search_call')
+  assert.equal(offCtx.tools.get('web_map'), undefined)
+  assert.equal(offCtx.tools.get('research_plan'), undefined)
+  assert.equal(offCtx.tools.get('search_diagnostics'), undefined)
   await offCtx.fiber.dispose()
   disposedOff = true
 
   process.env.DSH_HOME = onHome
+  const nativeMapArgs = {
+    operation: 'web_map',
+    arguments: {
+      url: `${origin}/site/native`,
+      instructions: '  only documentation pages  ',
+      max_depth: 2,
+      max_breadth: 3,
+      limit: 3,
+    },
+  }
+  const codeMapArgs = {
+    operation: 'web_map',
+    arguments: {
+      url: `${origin}/site/code`,
+      max_depth: 1,
+      max_breadth: 2,
+      limit: 2,
+    },
+  }
   scriptedModule.setScript([
     {
       kind: 'tool',
       id: 'native-map-call',
-      name: 'web_map',
-      arguments: {
-        url: `${origin}/site/native`,
-        instructions: '  only documentation pages  ',
-        max_depth: 2,
-        max_breadth: 3,
-        limit: 3,
-      },
+      name: 'search_call',
+      arguments: nativeMapArgs,
     },
     { kind: 'text', text: 'Native map fixture complete.' },
     {
@@ -343,7 +350,7 @@ try {
       id: 'code-map-call',
       name: 'run_code',
       arguments: {
-        code: `return await tools.web_map({ url: ${JSON.stringify(`${origin}/site/code`)}, max_depth: 1, max_breadth: 2, limit: 2 });`,
+        code: `return await tools.search_call(${JSON.stringify(codeMapArgs)});`,
         description: 'Discover two candidate pages under the fixture site',
       },
     },
@@ -364,14 +371,13 @@ try {
   const expectedOnNames = globalDefinitions
   const expectedNativeWireNames = modelTools
   assert.deepEqual(schemaNames(onCtx), expectedOnNames)
-  assert.equal(onCtx.tools.get('research_plan')?.name, 'research_plan')
-  assert.equal(onCtx.tools.get('search_diagnostics')?.name, 'search_diagnostics')
+  assert.equal(onCtx.tools.get('search_call')?.name, 'search_call')
+  assert.equal(onCtx.tools.get('web_map'), undefined)
+  assert.equal(onCtx.tools.get('research_plan'), undefined)
+  assert.equal(onCtx.tools.get('search_diagnostics'), undefined)
   assert.equal(onCtx.tools.get('diagnostics'), undefined)
-  const mapSchema = onCtx.tools.schemas().find(schema => schema.name === 'web_map')
-  assert.ok(mapSchema)
-  assert.deepEqual(Object.keys(mapSchema.parameters.properties), [
-    'url', 'instructions', 'max_depth', 'max_breadth', 'limit',
-  ])
+  const gatewaySchema = onCtx.tools.schemas().find(schema => schema.name === 'search_call')
+  assert.ok(gatewaySchema)
 
   const namespace = String(configModule.SEARCH_ENHANCE_SETTINGS_NAMESPACE)
   const descriptors = () => onCtx.settings.describe({ redactSecrets: true })
@@ -381,11 +387,35 @@ try {
   assert.equal(descriptors()[0].value.optionalTools.webMap, true)
   assert.equal(descriptors()[0].applies, 'restart')
 
-  const missingArgs = { url: `${origin}/site/missing` }
+  const nativeHandle = await onCtx.agents.create({
+    sessionId: SessionId('web-map-native-session'),
+    agentOptions: { provider: 'search-enhance-scripted', model: 'fixture-model' },
+  })
+  handles.push(nativeHandle)
+  const nativeAgent = nativeHandle.agent
+
+  const manifestResult = await onCtx.tools.execute({
+    callId: CallId('web-map-manifest'),
+    name: 'search_tools',
+    arguments: { capabilities: ['site_map'] },
+    agent: nativeAgent,
+    signal: new AbortController().signal,
+  })
+  assert.equal(manifestResult.isError, false)
+  assert.equal(manifestResult.value.takes_effect, 'already_active')
+  const mapManifest = manifestResult.value.groups[0].operations[0]
+  assert.equal(mapManifest.name, 'web_map')
+  assert.deepEqual(Object.keys(mapManifest.parameters.properties), [
+    'url', 'instructions', 'max_depth', 'max_breadth', 'limit',
+  ])
+  assert.equal(mapManifest.output_schema.type, 'object')
+
+  const missingArgs = { operation: 'web_map', arguments: { url: `${origin}/site/missing` } }
   const missingCredential = await onCtx.tools.execute({
     callId: CallId('missing-map-credential'),
-    name: 'web_map',
+    name: 'search_call',
     arguments: missingArgs,
+    agent: nativeAgent,
     signal: new AbortController().signal,
   })
   assert.equal(missingCredential.isError, true)
@@ -398,7 +428,7 @@ try {
   const observedResults = []
   const observedCards = []
   onCtx.on('tools/result', (exec, result) => {
-    if (exec.name !== 'web_map') return
+    if (exec.name !== 'search_call' || exec.arguments?.operation !== 'web_map') return
     observedResults.push({
       agentId: String(exec.agent?.id ?? ''),
       callId: String(exec.callId),
@@ -424,12 +454,11 @@ try {
     return handle.agent
   }
 
-  const nativeAgent = await createAgent('web-map-native-session')
-  await followup(nativeAgent, 'Map the fixture documentation website.')
   const codeAgent = await createAgent(
     'web-map-code-session',
     agentCtx => { agentCtx.tools.presentAs('code') },
   )
+  await followup(nativeAgent, 'Map the fixture documentation website.')
   await followup(codeAgent, 'Use Code Mode to map the fixture website.')
   assert.equal(scriptedModule.remainingResponses(), 0)
 
@@ -443,7 +472,9 @@ try {
     { code: 'invalid_result_url_omitted', count: 2 },
     { code: 'duplicate_result_url_omitted', count: 1 },
   ])
-  assert.equal(nativeObserved.result.meta.type, 'web_map')
+  assert.equal(nativeObserved.result.meta.type, 'search_call')
+  assert.equal(nativeObserved.result.meta.operation, 'web_map')
+  assert.equal(nativeObserved.result.meta.operation_meta.type, 'web_map')
   assert.equal(nestedObserved.result.meta, undefined)
   assert.deepEqual(nestedObserved.result.value.results, nativeObserved.result.value.results)
 
@@ -458,7 +489,7 @@ try {
   assert.ok(nativeResultEvent && nativeResultEvent.type === 'tool/result')
   const nativeBlock = nativeResultEvent.data.message.content[0]
   assert.equal(nativeBlock?.type, 'tool-result')
-  const mapDefinition = onCtx.tools.get('web_map', nativeAgent)
+  const mapDefinition = onCtx.tools.get('search_call', nativeAgent)
   assert.ok(mapDefinition?.presentResult)
   const replayCard = mapDefinition.presentResult(
     JSON.parse(nativeCallEvent.data.arguments),
@@ -477,14 +508,14 @@ try {
   assert.equal(modelRequests.length, 4)
   assert.deepEqual(modelRequests[0].tools.map(schema => schema.name), expectedNativeWireNames)
   assert.deepEqual(modelRequests[2].tools.map(schema => schema.name), ['run_code'])
-  assert.match(modelRequests[2].system, /web_map:/)
-  assert.match(modelRequests[2].system, /results: string\[\]/)
+  assert.match(modelRequests[2].system, /search_call:/)
+  assert.doesNotMatch(modelRequests[2].system, /\n\s+web_map: \{/u)
   const dispatchEvents = codeDispatches(codeAgent.session)
   assert.deepEqual(dispatchEvents.map(event => event.type), [
     'tool/code-dispatch-start',
     'tool/code-dispatch',
   ])
-  assert.equal(dispatchEvents[1].data.name, 'web_map')
+  assert.equal(dispatchEvents[1].data.name, 'search_call')
   assert.equal('meta' in dispatchEvents[1].data, false)
 
   const sessions = JSON.stringify([
@@ -496,11 +527,15 @@ try {
   assert.ok(httpRequests.every(request => request.url === '/tavily/map'))
   assert.ok(httpRequests.every(request => request.authorization === `Bearer ${tavilySecret}`))
 
-  const oldDefinition = onCtx.tools.get('web_map')
+  const oldDefinition = onCtx.tools.get('search_call')
   const activeMap = onCtx.tools.execute({
     callId: CallId('active-map-restart'),
-    name: 'web_map',
-    arguments: { url: `${origin}/site/slow`, limit: 1 },
+    name: 'search_call',
+    arguments: {
+      operation: 'web_map',
+      arguments: { url: `${origin}/site/slow`, limit: 1 },
+    },
+    agent: nativeAgent,
     signal: new AbortController().signal,
   })
   await waitFor(() => slowRequests === 1, 'web_map did not dispatch the slow fixture request')
@@ -510,14 +545,18 @@ try {
   assert.equal('value' in stoppedMap, false)
   assert.doesNotMatch(JSON.stringify(stoppedMap), /site\/slow|authorization|bearer/i)
   await waitFor(() => slowSocket?.destroyed === true, 'web_map restart left its active socket open')
-  assert.notEqual(onCtx.tools.get('web_map'), oldDefinition)
-  assert.equal(onCtx.tools.schemas().filter(schema => schema.name === 'web_map').length, 1)
+  assert.notEqual(onCtx.tools.get('search_call'), oldDefinition)
+  assert.equal(onCtx.tools.schemas().filter(schema => schema.name === 'search_call').length, 1)
   assert.equal(descriptors().length, 1)
 
   const postRestart = await onCtx.tools.execute({
     callId: CallId('post-restart-map'),
-    name: 'web_map',
-    arguments: { url: `${origin}/site/post-restart`, limit: 2 },
+    name: 'search_call',
+    arguments: {
+      operation: 'web_map',
+      arguments: { url: `${origin}/site/post-restart`, limit: 2 },
+    },
+    agent: nativeAgent,
     signal: new AbortController().signal,
   })
   assert.equal(postRestart.isError, false)
@@ -533,18 +572,20 @@ try {
     },
   }, true)
   assert.deepEqual(schemaNames(onCtx), expectedOnNames)
-  assert.equal(onCtx.tools.get('web_map')?.name, 'web_map')
-  assert.equal(onCtx.tools.get('research_plan')?.name, 'research_plan')
-  assert.equal(onCtx.tools.get('search_diagnostics')?.name, 'search_diagnostics')
+  assert.equal(onCtx.tools.get('search_call')?.name, 'search_call')
+  assert.equal(onCtx.tools.get('web_map'), undefined)
+  assert.equal(onCtx.tools.get('research_plan'), undefined)
+  assert.equal(onCtx.tools.get('search_diagnostics'), undefined)
   await pluginEntry.fiber.update(enabledConfig, true)
   assert.deepEqual(schemaNames(onCtx), expectedOnNames)
-  assert.equal(onCtx.tools.schemas().filter(schema => schema.name === 'web_map').length, 1)
+  assert.equal(onCtx.tools.schemas().filter(schema => schema.name === 'search_call').length, 1)
   assert.equal(descriptors().length, 1)
 
   const snapshot = normalize({
     progressive_global_schemas: progressiveGlobalSchemas,
     all_mode_global_schemas: expectedOnNames,
-    web_map_native_schema: mapSchema,
+    gateway_schema: gatewaySchema,
+    web_map_manifest: mapManifest,
     native_wire_tools: modelRequests[0].tools.map(schema => schema.name),
     code_wire_tools: modelRequests[2].tools.map(schema => schema.name),
     code_system_prompt: modelRequests[2].system,
@@ -581,6 +622,7 @@ try {
   await pluginEntry.fiber.dispose()
   assert.deepEqual(schemaNames(onCtx), [])
   assert.equal(descriptors().length, 0)
+  assert.equal(onCtx.tools.get('search_call'), undefined)
   assert.equal(onCtx.tools.get('web_map'), undefined)
 
   for (const handle of handles.reverse()) await handle.dispose()

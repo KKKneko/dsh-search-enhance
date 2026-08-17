@@ -21,14 +21,7 @@ const globalDefinitions = [
   'docs_search',
   'web_extract',
   'search_tools',
-  'search_sources',
-  'web_map',
-  'research_plan',
-  'search_diagnostics',
-  'context7_resolve_library_id',
-  'context7_query_docs',
-  'context7_get_library_docs',
-  'context7_get_cached_doc_raw',
+  'search_call',
 ]
 const modelTools = [...globalDefinitions].sort()
 const credentialNames = [
@@ -307,7 +300,7 @@ try {
   const code = [
     "const docs = await tools.docs_search({ query: 'canonical equality docs', provider: 'exa', max_results: 2 });",
     "if (!docs.source_ref) throw new Error('missing docs source_ref');",
-    "const page = await tools.search_sources({ source_ref: docs.source_ref, offset: 0, limit: 1, format: 'full' });",
+    "const page = await tools.search_call({ operation: 'search_sources', arguments: { source_ref: docs.source_ref, offset: 0, limit: 1, format: 'full' } });",
     'return { docs, page };',
   ].join('\n')
   scriptedModule.setScript([
@@ -339,8 +332,17 @@ try {
   assert.ok(pluginEntry?.fiber, 'Loader did not create the search-enhance fiber')
   await pluginEntry.fiber.await()
   assert.deepEqual(ctx.tools.schemas().map(schema => schema.name), globalDefinitions)
-  for (const name of globalDefinitions.filter(name => name.startsWith('context7_'))) {
-    assert.equal(ctx.tools.get(name)?.name, name)
+  for (const name of [
+    'context7_resolve_library_id',
+    'context7_query_docs',
+    'context7_get_library_docs',
+    'context7_get_cached_doc_raw',
+    'search_sources',
+    'web_map',
+    'research_plan',
+    'search_diagnostics',
+  ]) {
+    assert.equal(ctx.tools.get(name), undefined)
   }
   assert.equal(ctx.tools.get('web_search'), undefined)
   assert.equal(ctx.tools.get('web_fetch'), undefined)
@@ -358,7 +360,7 @@ try {
   const observed = []
   const durabilityChecks = []
   ctx.on('tools/result', (exec, result) => {
-    if (!['docs_search', 'search_sources', 'run_code'].includes(exec.name)) return
+    if (!['docs_search', 'search_call', 'run_code'].includes(exec.name)) return
     const definition = ctx.tools.get(exec.name, exec.agent)
     const card = definition?.presentResult?.(exec.arguments, {
       content: result.content,
@@ -420,7 +422,7 @@ try {
     'nested code docs',
   )
   const codePage = findObserved(
-    item => item.agentId === 'docs-code-session' && item.name === 'search_sources' && item.nested,
+    item => item.agentId === 'docs-code-session' && item.name === 'search_call' && item.nested,
     'nested code page',
   )
   assert.equal(nativeDocs.result.isError, false)
@@ -429,6 +431,13 @@ try {
   assert.equal(nativeDocs.result.meta?.type, 'docs_search')
   assert.equal(codeDocs.result.meta, undefined)
   assert.equal(codePage.result.meta, undefined)
+  const nativeDocsText = nativeDocs.result.content[0]?.type === 'text'
+    ? nativeDocs.result.content[0].text
+    : ''
+  assert.match(nativeDocsText, /Source reference: src_[A-Za-z0-9_-]{32}/)
+  assert.match(nativeDocsText, /"operation":"search_sources"/)
+  assert.match(nativeDocsText, /"output_schema"/)
+  assert.ok(Buffer.byteLength(nativeDocsText, 'utf8') <= nativeDocs.result.value.model_text_max_bytes)
   assert.deepEqual(
     normalizedCanonical(nativeDocs.result.value, origin),
     normalizedCanonical(codeDocs.result.value, origin),
@@ -476,10 +485,11 @@ try {
   }
   async function executeSources(argumentsValue) {
     directCounter += 1
+    const gatewayArgs = { operation: 'search_sources', arguments: argumentsValue }
     const result = await ctx.tools.execute({
       callId: CallId(`direct-sources-${directCounter}`),
-      name: 'search_sources',
-      arguments: argumentsValue,
+      name: 'search_call',
+      arguments: gatewayArgs,
       agent: nativeAgent,
       signal: new AbortController().signal,
     })
@@ -488,16 +498,17 @@ try {
   }
   async function executeGranular(name, argumentsValue) {
     directCounter += 1
+    const gatewayArgs = { operation: name, arguments: argumentsValue }
     const result = await ctx.tools.execute({
       callId: CallId(`direct-context7-${directCounter}`),
-      name,
-      arguments: argumentsValue,
+      name: 'search_call',
+      arguments: gatewayArgs,
       agent: nativeAgent,
       signal: new AbortController().signal,
     })
     assert.equal(result.isError, false, `${name} failed: ${JSON.stringify(result.content)}`)
-    const definition = ctx.tools.get(name, nativeAgent)
-    const card = definition?.presentResult?.(argumentsValue, {
+    const definition = ctx.tools.get('search_call', nativeAgent)
+    const card = definition?.presentResult?.(gatewayArgs, {
       content: result.content,
       isError: result.isError,
       ...(result.meta === undefined ? {} : { meta: result.meta }),
@@ -674,7 +685,7 @@ try {
   assert.match(staleObserved.card?.title ?? '', /stale cache/)
 
   const codeDispatches = codeAgent.session.events.filter(event => event.type === 'tool/code-dispatch')
-  assert.deepEqual(codeDispatches.map(event => event.data.name), ['docs_search', 'search_sources'])
+  assert.deepEqual(codeDispatches.map(event => event.data.name), ['docs_search', 'search_call'])
   assert.ok(codeDispatches.every(event => !('meta' in event.data)))
 
   const requests = scriptedModule.requests()
@@ -683,16 +694,21 @@ try {
   assert.deepEqual(nativeSchema.map(schema => schema.name), modelTools)
   assert.deepEqual(requests[2].tools.map(schema => schema.name), ['run_code'])
   assert.match(requests[2].system, /docs_search:/)
-  assert.match(requests[2].system, /research_plan:/)
-  assert.match(requests[2].system, /search_diagnostics:/)
-  assert.match(requests[2].system, /search_sources:/)
+  assert.match(requests[2].system, /search_call:/)
   assert.match(requests[2].system, /search_tools:/)
   assert.match(requests[2].system, /web_extract:/)
-  assert.match(requests[2].system, /web_map:/)
-  assert.match(requests[2].system, /context7_resolve_library_id:/)
-  assert.match(requests[2].system, /context7_query_docs:/)
-  assert.match(requests[2].system, /context7_get_library_docs:/)
-  assert.match(requests[2].system, /context7_get_cached_doc_raw:/)
+  for (const operation of [
+    'research_plan',
+    'search_diagnostics',
+    'search_sources',
+    'web_map',
+    'context7_resolve_library_id',
+    'context7_query_docs',
+    'context7_get_library_docs',
+    'context7_get_cached_doc_raw',
+  ]) {
+    assert.doesNotMatch(requests[2].system, new RegExp(`\\n\\s+${operation}: \\{`, 'u'))
+  }
 
   const context7Requests = httpRequests.filter(item => item.url?.startsWith('/context7/'))
   const exaRequests = httpRequests.filter(item => item.url === '/exa/search')

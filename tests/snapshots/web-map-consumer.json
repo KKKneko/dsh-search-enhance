@@ -3,29 +3,39 @@
     "docs_search",
     "web_extract",
     "search_tools",
-    "search_sources",
-    "web_map",
-    "research_plan",
-    "search_diagnostics",
-    "context7_resolve_library_id",
-    "context7_query_docs",
-    "context7_get_library_docs",
-    "context7_get_cached_doc_raw"
+    "search_call"
   ],
   "all_mode_global_schemas": [
     "docs_search",
     "web_extract",
     "search_tools",
-    "search_sources",
-    "web_map",
-    "research_plan",
-    "search_diagnostics",
-    "context7_resolve_library_id",
-    "context7_query_docs",
-    "context7_get_library_docs",
-    "context7_get_cached_doc_raw"
+    "search_call"
   ],
-  "web_map_native_schema": {
+  "gateway_schema": {
+    "name": "search_call",
+    "description": "Execute one deferred search operation from an append-only manifest. The operation must already be active for this Agent; arguments and canonical output are validated against that operation's real schemas.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "operation": {
+          "type": "string",
+          "description": "Exact operation name from a search_tools or source-produced operation manifest."
+        },
+        "arguments": {
+          "type": "object",
+          "description": "Arguments validated against the disclosed operation manifest before execution.",
+          "additionalProperties": true,
+          "properties": {}
+        }
+      },
+      "required": [
+        "operation",
+        "arguments"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "web_map_manifest": {
     "name": "web_map",
     "description": "Discover a bounded set of links under a known HTTP(S) website. Results are discovery candidates, not fetched page-body evidence.",
     "parameters": {
@@ -65,25 +75,146 @@
       "required": [
         "url"
       ]
+    },
+    "output_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "requested_url": {
+          "type": "string"
+        },
+        "base_url": {
+          "type": "string"
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "total_results": {
+          "type": "integer"
+        },
+        "returned_results": {
+          "type": "integer"
+        },
+        "max_depth": {
+          "type": "integer"
+        },
+        "max_breadth": {
+          "type": "integer"
+        },
+        "limit": {
+          "type": "integer"
+        },
+        "response_time": {
+          "type": "number"
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "evidence_level": {
+          "type": "string",
+          "const": "discovery"
+        },
+        "provider": {
+          "type": "string",
+          "const": "tavily"
+        },
+        "attempts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "provider": {
+                "type": "string",
+                "const": "tavily"
+              },
+              "outcome": {
+                "type": "string",
+                "const": "success"
+              },
+              "count": {
+                "type": "integer"
+              },
+              "duration_ms": {
+                "type": "integer"
+              },
+              "fallback": {
+                "type": "boolean",
+                "const": false
+              }
+            },
+            "required": [
+              "provider",
+              "outcome",
+              "count",
+              "duration_ms",
+              "fallback"
+            ]
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "invalid_result_url_omitted",
+                  "duplicate_result_url_omitted",
+                  "results_truncated",
+                  "canonical_output_truncated"
+                ]
+              },
+              "count": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          }
+        },
+        "model_text_max_bytes": {
+          "type": "integer",
+          "description": "Applied UTF-8 ceiling for the Native model-text projection."
+        }
+      },
+      "required": [
+        "requested_url",
+        "results",
+        "total_results",
+        "returned_results",
+        "max_depth",
+        "max_breadth",
+        "limit",
+        "truncated",
+        "evidence_level",
+        "provider",
+        "attempts",
+        "warnings",
+        "model_text_max_bytes"
+      ]
+    },
+    "call": {
+      "tool": "search_call",
+      "operation": "web_map"
     }
   },
   "native_wire_tools": [
-    "context7_get_cached_doc_raw",
-    "context7_get_library_docs",
-    "context7_query_docs",
-    "context7_resolve_library_id",
     "docs_search",
-    "research_plan",
-    "search_diagnostics",
-    "search_sources",
+    "search_call",
     "search_tools",
-    "web_extract",
-    "web_map"
+    "web_extract"
   ],
   "code_wire_tools": [
     "run_code"
   ],
-  "code_system_prompt": "You are an AI agent powered by DeepSeek Harness.\n\n`run_code` is the only tool you can call directly — a tool call naming any other tool fails. Reach every tool the SDK declares below from inside the program.\n\nFor current or external SDK/API documentation questions, start with one focused docs_search; do not inspect local files, settings, sessions, or credentials unless the user explicitly asks about local state.\nTreat docs_search answers, snippets, and source metadata as discovery, not claim-level evidence.\nBefore asserting decisive factual or causal conclusions, inspect selected authoritative URLs with web_extract; never present an inferred mechanism as source-stated fact, and label unestablished mechanisms as inference or unconfirmed.\n\n## Writing code for run_code\n\n`run_code` takes two required arguments: `code` — the body of an async TypeScript function (erasable syntax only — no `enum` or namespaces; type annotations are advisory, the code runs type-stripped) — and `description`, a short summary of what the program does. Inside the program:\n\n- Call tools as `await tools.name(args)` — quoted access for exotic names: `tools[\"my-tool\"](args)`. Every call resolves to the tool's typed canonical JSON value. Tool arguments must be lossless JSON.\n- A FAILED tool call rejects with `ToolCallError`, whose `toolName` identifies the failed tool and whose `message` is human-readable — `try/catch` it to handle and continue.\n- Independent read-only calls MAY overlap under `Promise.all` (safe calls run concurrently; mutating calls run alone, in submission order). Sequence dependent work with `await`.\n- Emit results with `return` and/or `console.log(...)`. ONLY what you print or return comes back to you — intermediate tool results never enter the conversation, so extract just what you need.\n\nThe available tools:\n\n```ts\ntype JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }\n\ninterface ToolArgsMap {\n  /** Read this plugin's validated Context7 docs cache by exact doc_ref, or deterministically match at most 500 ordered records by query with an optional exact library_id filter. It performs no network request and never exposes storage paths, endpoints, credentials, raw errors, or unparsed bodies. */\n  context7_get_cached_doc_raw: {\n    /** Exact opaque ctx7d_ reference returned by a Context7 docs tool. */\n    doc_ref?: string;\n    /** Non-empty deterministic cache-match query used only when doc_ref is absent. */\n    query?: string;\n    /** Optional exact Context7 id used only as a cache-record filter. */\n    library_id?: string;\n  };\n  /** Resolve a library name when needed, then query Context7 through the same persistent TTL cache and Provider client. An exact library_id strictly skips resolve. raw is a validated cache envelope; all results are discovery evidence. */\n  context7_get_library_docs: {\n    /** Non-empty documentation task or question. */\n    query: string;\n    /** Package or product name to resolve when library_id is absent. */\n    library_name?: string;\n    /** Exact Context7 id. When supplied, resolve is skipped even if library_name is also present. */\n    library_id?: string;\n    /** Maximum resolve candidates from 1 through 20; defaults to 8. */\n    max_results?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20;\n    /** Maximum snippets from 1 through 20; defaults to 8. */\n    max_snippets?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20;\n    /** Return the validated bounded cache envelope instead of the ordinary snippet projection. */\n    raw?: boolean;\n    /** Bypass fresh Context7 resolve/docs cache entries. */\n    force_refresh?: boolean;\n  };\n  /** Query documentation for an exact Context7 /org/project[/version] id. raw=false returns structured snippets; raw=true returns only a validated bounded cache envelope, never a Provider body, path, endpoint, or credential. Discovery only; verify claims with web_extract. */\n  context7_query_docs: {\n    /** Exact Context7 /org/project or /org/project/version id. */\n    library_id: string;\n    /** Non-empty documentation task or question. */\n    query: string;\n    /** Maximum snippets from 1 through 20; defaults to 5. */\n    max_snippets?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20;\n    /** Return the validated bounded cache envelope, never an unparsed Provider body or backend file. */\n    raw?: boolean;\n    /** Bypass a fresh docs cache entry; expired transient failures may still use stale cache. */\n    force_refresh?: boolean;\n  };\n  /** Resolve a package/product name to an exact Context7 library id. Skip this tool when /org/project[/version] is already known. Returns bounded safe candidates and cache/Provider facts; discovery only. */\n  context7_resolve_library_id: {\n    /** Non-empty package or product name. If an exact /org/project[/version] id is already known, call context7_query_docs instead. */\n    library_name: string;\n    /** Optional non-empty task context used only to rank the bounded candidates. */\n    query?: string;\n    /** Maximum candidates from 1 through 20; defaults to 8. */\n    max_results?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20;\n    /** Bypass a fresh resolve cache entry; expired transient failures may still use stale cache. */\n    force_refresh?: boolean;\n  };\n  /** High-level SDK/API/framework/README/release documentation search. Routes Context7 first and optionally Exa, returns discovery snippets and durable source_ref pagination; common documentation tasks do not need granular Context7 tools. */\n  docs_search: {\n    /** A non-empty SDK, API, framework, README, release, or documentation question. */\n    query: string;\n    /** auto (default), Context7, Exa, or both documentation discovery routes. */\n    provider?: \"auto\" | \"context7\" | \"exa\" | \"all\";\n    /** Optional exact Context7 /org/project or /org/project/version id; valid ids skip resolve. */\n    library_id?: string;\n    /** Maximum results (1-20); defaults to 6 and may be lowered by Settings. */\n    max_results?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20;\n    /** Bypass fresh Context7 cache entries and request current Provider data. */\n    force_refresh?: boolean;\n  } & Record<string, JsonValue>;\n  /** Generate one offline research plan only for explicit deep research, multi-source verification, or complex comparison. It does not search, fetch, or verify claims; execute only the listed stable plugin tools and fetch key pages with web_extract before claim-level conclusions. */\n  research_plan: {\n    /** Non-empty research question to plan without searching or fetching. */\n    question: string;\n    /** Bounded planning breadth/depth intent; defaults to standard. */\n    budget?: \"quick\" | \"standard\" | \"deep\";\n    recency_requirement?: \"none\" | \"recent\" | \"current\";\n    locale_domain_scope?: \"global\" | \"china\" | \"known_domains\" | \"mixed\";\n    source_authority_need?: \"normal\" | \"high\";\n    claim_risk?: \"low\" | \"medium\" | \"high\";\n    cross_validation_need?: \"normal\" | \"high\";\n    /** At most 10 known source URLs; a lower deployment cap may apply. */\n    known_urls?: string[];\n    /** One through 6 focused sub-questions when supplied. */\n    sub_queries?: ({\n      /** Stable caller-owned sub-question id such as sq1. */\n      id: string;\n      /** One focused, non-empty sub-question. */\n      question: string;\n      /** Why this sub-question is necessary. */\n      reason: string;\n      /** Optional explicit plugin tool; deferred tools must be disclosed before execution. */\n      tool?: \"web_search\" | \"docs_search\" | \"web_extract\" | \"web_map\";\n      /** Optional bounded tool query or URL; defaults deterministically. */\n      query?: string;\n    })[];\n  } & Record<string, JsonValue>;\n  /** Read-only masked search capability/config status. show is network-free. Use test only when the user explicitly requests connection diagnostics; test runs bounded fixed Provider health probes. API keys are never parameters or output, config writes happen only through DSH Settings/UI, and ordinary searches should not call this tool. */\n  search_diagnostics: {\n    /** Use show for network-free masked capability/config status. Use test only after the user explicitly requests bounded connection diagnostics. */\n    action: \"show\" | \"test\";\n  } & Record<string, JsonValue>;\n  /** Page discovery sources retained by web_search or docs_search for the current Agent session or an inherited fork. The private search_enhance_sources storage must be backed up and restored together with the session. */\n  search_sources: {\n    /** Opaque source reference returned by web_search or docs_search. */\n    source_ref: string;\n    /** Zero-based source offset; defaults to 0. */\n    offset?: number;\n    /** Positive page size; defaults to 20 and is capped by Settings. */\n    limit?: number;\n    /** compact (default) or full with bounded snippets. */\n    format?: \"compact\" | \"full\";\n  } & Record<string, JsonValue>;\n  /** Disclose one or more deferred search capability groups for the current Agent. Use only when the resident search tools cannot complete the task; do not activate every group preemptively. A successful call takes effect on the next model step and does not bypass restrictions from other Presets. */\n  search_tools: {\n    /** One to five deferred search capability groups to disclose for this Agent. */\n    capabilities: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n  };\n  /** Read a specific HTTP(S) URL through independent extraction/direct routes. No JavaScript or login; host-reachable addresses may be accessed, and evidence differs by route. */\n  web_extract: {\n    /** A non-empty concrete HTTP(S) URL to read. */\n    url: string;\n    /** Output format; defaults to markdown. */\n    format?: \"markdown\" | \"text\" | \"html\" | \"json\" | \"raw\";\n  } & Record<string, JsonValue>;\n  /** Discover a bounded set of links under a known HTTP(S) website. Results are discovery candidates, not fetched page-body evidence. */\n  web_map: {\n    /** Absolute HTTP(S) root URL to map through Tavily; userinfo is rejected. */\n    url: string;\n    /** Optional natural-language filter for the website crawl. */\n    instructions?: string;\n    /** Maximum traversal depth (1-5); defaults to 1. */\n    max_depth?: 1 | 2 | 3 | 4 | 5;\n    /** Maximum links followed per level (1-500); defaults to 10 and must not exceed the deployment cap. */\n    max_breadth?: number;\n    /** Total links processed (1-500); defaults to 30 and must not exceed the deployment cap. */\n    limit?: number;\n  } & Record<string, JsonValue>;\n}\n\ninterface ToolOutputMap {\n  context7_get_cached_doc_raw: {\n    state: \"found\" | \"not_found\";\n    code?: \"CONTEXT7_CACHE_NOT_FOUND\";\n    lookup: \"doc_ref\" | \"query\";\n    cache: \"hit\" | \"miss\";\n    requested_doc_ref?: string;\n    query?: string;\n    library_id?: string;\n    doc_ref?: string;\n    raw_envelope?: {\n      version: number;\n      kind: \"docs\";\n      cache_key: string;\n      doc_ref: string;\n      library_id: string;\n      created_at_ms: number;\n      expires_at_ms: number;\n      max_results: number;\n      response_bytes: number;\n      total_items: number;\n      returned_items: number;\n      truncated: boolean;\n      snippets: {\n        content: string;\n        title?: string;\n        library_id?: string;\n      }[];\n    };\n    scan_limit: number;\n    scanned_records: number;\n    matched_records: number;\n    warnings: ({\n      code: \"provider_failed\" | \"provider_not_configured\" | \"cache_stale\" | \"cache_evicted\" | \"provider_result_truncated\" | \"no_results\" | \"canonical_output_truncated\";\n      provider?: string;\n      path?: \"resolve\" | \"docs\";\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n      count?: number;\n    })[];\n    canonical_output_truncated: boolean;\n    model_text_truncated: boolean;\n    model_text_max_bytes: number;\n    evidence_level: \"discovery\";\n  };\n  context7_get_library_docs: {\n    state: \"found\" | \"not_found\";\n    query: string;\n    library_name?: string;\n    library_id?: string;\n    selected_library?: {\n      id?: string;\n      title?: string;\n      description?: string;\n      trust_score?: number;\n      benchmark_score?: number;\n      total_snippets?: number;\n      stars?: number;\n      versions: string[];\n      versions_truncated: boolean;\n    };\n    raw: boolean;\n    snippets: {\n      content: string;\n      title?: string;\n      library_id?: string;\n    }[];\n    raw_envelope?: {\n      version: number;\n      kind: \"docs\";\n      cache_key: string;\n      doc_ref: string;\n      library_id: string;\n      created_at_ms: number;\n      expires_at_ms: number;\n      max_results: number;\n      response_bytes: number;\n      total_items: number;\n      returned_items: number;\n      truncated: boolean;\n      snippets: {\n        content: string;\n        title?: string;\n        library_id?: string;\n      }[];\n    };\n    doc_ref?: string;\n    cache: {\n      resolve: {\n        state: \"hit\" | \"miss\" | \"refresh\" | \"stale\" | \"skipped\" | \"failed\";\n        evicted_entries: number;\n        reason?: \"provider_not_selected\" | \"known_library_id\" | \"library_not_found\" | \"upstream_failed\";\n      };\n      docs: {\n        state: \"hit\" | \"miss\" | \"refresh\" | \"stale\" | \"skipped\" | \"failed\";\n        evicted_entries: number;\n        reason?: \"provider_not_selected\" | \"known_library_id\" | \"library_not_found\" | \"upstream_failed\";\n      };\n    };\n    attempts: ({\n      provider: string;\n      outcome: \"success\" | \"failed\" | \"aborted\" | \"skipped\";\n      count: number;\n      duration_ms: number;\n      fallback: boolean;\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n      retryable?: boolean;\n      http_status?: number;\n      skip_reason?: \"not_configured\" | \"not_applicable\" | \"budget_zero\" | \"format_unsupported\" | \"disabled\";\n    })[];\n    warnings: ({\n      code: \"provider_failed\" | \"provider_not_configured\" | \"cache_stale\" | \"cache_evicted\" | \"provider_result_truncated\" | \"no_results\" | \"canonical_output_truncated\";\n      provider?: string;\n      path?: \"resolve\" | \"docs\";\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n      count?: number;\n    })[];\n    resolve_total_candidates: number;\n    resolve_returned_candidates: number;\n    total_snippets: number;\n    returned_snippets: number;\n    response_bytes: number;\n    resolve_cache_entry_truncated: boolean;\n    docs_cache_entry_truncated: boolean;\n    canonical_output_truncated: boolean;\n    model_text_truncated: boolean;\n    model_text_max_bytes: number;\n    evidence_level: \"discovery\";\n  };\n  context7_query_docs: {\n    state: \"found\" | \"not_found\";\n    library_id: string;\n    query: string;\n    raw: boolean;\n    snippets: {\n      content: string;\n      title?: string;\n      library_id?: string;\n    }[];\n    raw_envelope?: {\n      version: number;\n      kind: \"docs\";\n      cache_key: string;\n      doc_ref: string;\n      library_id: string;\n      created_at_ms: number;\n      expires_at_ms: number;\n      max_results: number;\n      response_bytes: number;\n      total_items: number;\n      returned_items: number;\n      truncated: boolean;\n      snippets: {\n        content: string;\n        title?: string;\n        library_id?: string;\n      }[];\n    };\n    doc_ref: string;\n    cache: {\n      state: \"hit\" | \"miss\" | \"refresh\" | \"stale\" | \"skipped\" | \"failed\";\n      evicted_entries: number;\n      reason?: \"provider_not_selected\" | \"known_library_id\" | \"library_not_found\" | \"upstream_failed\";\n    };\n    attempts: ({\n      provider: string;\n      outcome: \"success\" | \"failed\" | \"aborted\" | \"skipped\";\n      count: number;\n      duration_ms: number;\n      fallback: boolean;\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n      retryable?: boolean;\n      http_status?: number;\n      skip_reason?: \"not_configured\" | \"not_applicable\" | \"budget_zero\" | \"format_unsupported\" | \"disabled\";\n    })[];\n    warnings: ({\n      code: \"provider_failed\" | \"provider_not_configured\" | \"cache_stale\" | \"cache_evicted\" | \"provider_result_truncated\" | \"no_results\" | \"canonical_output_truncated\";\n      provider?: string;\n      path?: \"resolve\" | \"docs\";\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n      count?: number;\n    })[];\n    total_snippets: number;\n    returned_snippets: number;\n    response_bytes: number;\n    cache_entry_truncated: boolean;\n    canonical_output_truncated: boolean;\n    model_text_truncated: boolean;\n    model_text_max_bytes: number;\n    evidence_level: \"discovery\";\n  };\n  context7_resolve_library_id: {\n    state: \"found\" | \"not_found\";\n    library_name: string;\n    query: string;\n    selected_library?: {\n      id?: string;\n      title?: string;\n      description?: string;\n      trust_score?: number;\n      benchmark_score?: number;\n      total_snippets?: number;\n      stars?: number;\n      versions: string[];\n      versions_truncated: boolean;\n    };\n    candidates: {\n      id?: string;\n      title?: string;\n      description?: string;\n      trust_score?: number;\n      benchmark_score?: number;\n      total_snippets?: number;\n      stars?: number;\n      versions: string[];\n      versions_truncated: boolean;\n    }[];\n    cache: {\n      state: \"hit\" | \"miss\" | \"refresh\" | \"stale\" | \"skipped\" | \"failed\";\n      evicted_entries: number;\n      reason?: \"provider_not_selected\" | \"known_library_id\" | \"library_not_found\" | \"upstream_failed\";\n    };\n    attempts: ({\n      provider: string;\n      outcome: \"success\" | \"failed\" | \"aborted\" | \"skipped\";\n      count: number;\n      duration_ms: number;\n      fallback: boolean;\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n      retryable?: boolean;\n      http_status?: number;\n      skip_reason?: \"not_configured\" | \"not_applicable\" | \"budget_zero\" | \"format_unsupported\" | \"disabled\";\n    })[];\n    warnings: ({\n      code: \"provider_failed\" | \"provider_not_configured\" | \"cache_stale\" | \"cache_evicted\" | \"provider_result_truncated\" | \"no_results\" | \"canonical_output_truncated\";\n      provider?: string;\n      path?: \"resolve\" | \"docs\";\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n      count?: number;\n    })[];\n    total_candidates: number;\n    returned_candidates: number;\n    response_bytes: number;\n    cache_entry_truncated: boolean;\n    canonical_output_truncated: boolean;\n    model_text_truncated: boolean;\n    model_text_max_bytes: number;\n    evidence_level: \"discovery\";\n  };\n  docs_search: {\n    state: \"complete\" | \"partial\";\n    provider: \"auto\" | \"context7\" | \"exa\" | \"all\";\n    providers: ({\n      provider: \"context7\" | \"exa\";\n      state: \"complete\" | \"partial\" | \"failed\" | \"skipped\";\n    })[];\n    selected_library?: {\n      id: string;\n      title?: string;\n      description?: string;\n    };\n    snippets: {\n      /** Bounded Context7 documentation snippet; discovery metadata, not a fetched page body. */\n      content: string;\n      title?: string;\n      library_id?: string;\n    }[];\n    sources: {\n      /** HTTP(S) source URL. */\n      url: string;\n      /** Source title when supplied by a search Provider. */\n      title?: string;\n      /** Discovery snippet; not fetched page-body evidence. */\n      snippet?: string;\n      /** Provider-supplied publication or crawl timestamp. */\n      publishedAt?: string;\n    }[];\n    /** Opaque private-storage reference for search_sources. */\n    source_ref?: string;\n    /** Opaque, evictable reference to the plugin-private Context7 docs cache. */\n    doc_ref?: string;\n    cache: {\n      resolve: {\n        state: \"hit\" | \"miss\" | \"refresh\" | \"stale\" | \"skipped\" | \"failed\";\n        evicted_entries: number;\n        reason?: \"provider_not_selected\" | \"known_library_id\" | \"library_not_found\" | \"upstream_failed\";\n      };\n      docs: {\n        state: \"hit\" | \"miss\" | \"refresh\" | \"stale\" | \"skipped\" | \"failed\";\n        evicted_entries: number;\n        reason?: \"provider_not_selected\" | \"known_library_id\" | \"library_not_found\" | \"upstream_failed\";\n      };\n    };\n    total_sources: number;\n    returned_sources: number;\n    total_snippets: number;\n    returned_snippets: number;\n    truncated: boolean;\n    evidence_level: \"discovery\";\n    warnings: ({\n      code: \"provider_failed\" | \"provider_not_configured\" | \"cache_stale\" | \"cache_evicted\" | \"provider_result_truncated\" | \"no_results\" | \"sources_truncated\" | \"canonical_output_truncated\";\n      provider?: \"context7\" | \"exa\" | \"context7-cache\";\n      path?: \"resolve\" | \"docs\";\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n      count?: number;\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n  research_plan: {\n    plan_complete: true;\n    research_plan: {\n      mode: \"deep_research\";\n      query_mode: \"quick\" | \"standard\" | \"deep\";\n      question: string;\n      trigger_source: \"explicit_tool\";\n      difficulty: \"low\" | \"standard\" | \"high\";\n      canonical_output_truncated: boolean;\n      intent_signals: {\n        recency_requirement: \"none\" | \"recent\" | \"current\";\n        docs_api_intent: boolean;\n        locale_domain_scope: \"global\" | \"china\" | \"known_domains\" | \"mixed\";\n        known_url: boolean;\n        source_authority_need: \"normal\" | \"high\";\n        claim_risk: \"low\" | \"medium\" | \"high\";\n        cross_validation_need: \"normal\" | \"high\";\n        breadth_depth_budget: \"quick\" | \"standard\" | \"deep\";\n      };\n      decomposition: ({\n        id: string;\n        goal: string;\n        reason: string;\n        expected_output: string;\n        boundary: string;\n        tool_hint: \"web_search\" | \"docs_search\" | \"web_extract\" | \"web_map\";\n        query: string;\n      })[];\n      capability_plan: ({\n        capability: \"web_search\" | \"docs_search\" | \"web_extract\" | \"web_map\";\n        tools: (\"web_search\" | \"docs_search\" | \"web_extract\" | \"web_map\")[];\n        reason: string;\n      })[];\n      preflight: {\n        network_access: \"not_used\";\n        credential_access: \"not_used\";\n        session_storage: \"not_used\";\n        /** Whether this plugin globally registered web_map; final Agent visibility may be restricted. */\n        web_map_available: boolean;\n        required_tools: (\"web_search\" | \"docs_search\" | \"web_extract\" | \"web_map\")[];\n        unavailable_tools: (\"web_search\" | \"docs_search\" | \"web_extract\" | \"web_map\")[];\n        gaps: string[];\n        rule: string;\n      };\n      steps: ({\n        id: string;\n        subquestion_id: string;\n        tool: \"web_search\" | \"docs_search\" | \"web_extract\" | \"web_map\";\n        capability: \"web_search\" | \"docs_search\" | \"web_extract\" | \"web_map\";\n        purpose: string;\n        query: string;\n        params: {\n          query: string;\n          profile?: \"auto\" | \"coding_docs\" | \"code_examples\" | \"project_research\" | \"academic\" | \"fact_check\";\n          depth: \"compact\" | \"normal\" | \"deep\";\n        } | {\n          query: string;\n        } | {\n          url: string;\n          format: \"markdown\";\n        } | {\n          url: string;\n          max_depth: number;\n          max_breadth: number;\n          limit: number;\n        };\n        evidence_requirement: string;\n      })[];\n      execution_order: {\n        parallel: string[][];\n        sequential: string[];\n        estimated_rounds: number;\n      };\n      evidence_policy: \"fetch_before_claim\";\n      gap_check: {\n        required: true;\n        gaps: string[];\n        rule: string;\n      };\n      final_answer_policy: string;\n      usage_boundary: {\n        planning: string;\n        execution: string;\n      };\n    };\n    /** Applied UTF-8 ceiling for the Native offline-plan projection. */\n    model_text_max_bytes: number;\n  };\n  search_diagnostics: {\n    tested: boolean;\n    action: \"show\" | \"test\";\n    capability_status: ({\n      capability: \"main_search\" | \"docs_search\" | \"web_extract\" | \"site_map\";\n      available: boolean;\n      required: boolean;\n      providers: ({\n        provider: \"search_api\" | \"tavily_search\" | \"firecrawl_search\" | \"context7\" | \"exa\" | \"tavily_extract\" | \"firecrawl_scrape\" | \"smart_direct\" | \"direct\" | \"tavily_map\";\n        state: \"configured\" | \"missing\" | \"disabled\" | \"unsupported\" | \"unavailable\";\n      })[];\n    })[];\n    provider_attempts: ({\n      capability: \"main_search\" | \"docs_search\" | \"web_extract\" | \"site_map\";\n      provider: \"search_api\" | \"tavily_search\" | \"firecrawl_search\" | \"context7\" | \"exa\" | \"tavily_extract\" | \"firecrawl_scrape\" | \"smart_direct\" | \"direct\" | \"tavily_map\";\n      outcome: \"success\" | \"failed\" | \"not_configured\" | \"disabled\" | \"unsupported\" | \"cancelled\";\n      duration_ms: number;\n      attempts: number;\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n    })[];\n    providers_used: (\"search_api\" | \"tavily_search\" | \"firecrawl_search\" | \"context7\" | \"exa\" | \"tavily_extract\" | \"firecrawl_scrape\" | \"smart_direct\" | \"direct\" | \"tavily_map\")[];\n    fallback_used: false;\n    minimum_profile: {\n      profile: \"standard\" | \"off\";\n      satisfied: boolean;\n    };\n    configuration: {\n      default_profile: \"auto\" | \"coding_docs\" | \"code_examples\" | \"project_research\" | \"academic\" | \"fact_check\";\n      default_depth: \"compact\" | \"normal\" | \"deep\";\n      search_api_protocol: \"completions\" | \"responses\";\n      search_model_configured: boolean;\n      thinking_level: \"off\" | \"minimal\" | \"low\" | \"medium\" | \"high\" | \"xhigh\" | \"max\";\n      fallback_mode: \"auto\" | \"off\";\n      /** Whether this plugin globally registered web_map; final Agent visibility may be restricted. */\n      web_map_enabled: boolean;\n      /** Whether this plugin globally registered research_plan; final Agent visibility may be restricted. */\n      research_plan_enabled: boolean;\n      /** Whether this plugin globally registered search_diagnostics; final Agent visibility may be restricted. */\n      diagnostics_enabled: boolean;\n      tavily_search_enabled: boolean;\n      firecrawl_search_enabled: boolean;\n      tavily_extract_enabled: boolean;\n      firecrawl_scrape_enabled: boolean;\n      smart_direct_enabled: boolean;\n      direct_enabled: boolean;\n    };\n    warnings: ({\n      code: \"not_configured\" | \"probe_failed\" | \"unsupported\" | \"configuration_unavailable\" | \"bounded\";\n      count?: number;\n    })[];\n    limitations: string[];\n    canonical_output_truncated: boolean;\n    /** Applied independent UTF-8 ceiling for Native diagnostic text. */\n    model_text_max_bytes: number;\n  };\n  search_sources: {\n    state: \"found\";\n    source_ref: string;\n    offset: number;\n    limit: number;\n    format: \"compact\" | \"full\";\n    total: number;\n    returned: number;\n    sources: ({\n      url: string;\n      title?: string;\n      date?: string;\n      category: \"official\" | \"primary\" | \"documentation\" | \"code\" | \"academic\" | \"news\" | \"community\" | \"aggregate\" | \"unknown\";\n      /** Bounded discovery snippet; not fetched page-body evidence. */\n      snippet?: string;\n      snippet_truncated?: true;\n    })[];\n    has_more: boolean;\n    next_offset?: number;\n    total_before_retention: number;\n    truncated: boolean;\n    page_byte_limited: boolean;\n  } | {\n    state: \"not_found\";\n    code: \"SOURCE_REF_NOT_FOUND\";\n  };\n  search_tools: {\n    requested_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    added_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    active_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    groups: ({\n      group: \"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\";\n      description: string;\n      tools: string[];\n    })[];\n    added_tools: string[];\n    disclosed_tools: string[];\n    takes_effect: \"next_step\";\n  };\n  web_extract: {\n    requested_url: string;\n    final_url?: string;\n    content: string;\n    format: \"markdown\" | \"text\" | \"html\" | \"json\" | \"raw\";\n    title?: string;\n    author?: string;\n    published_at?: string;\n    canonical_url?: string;\n    content_type?: string;\n    content_length?: number;\n    content_disposition?: string;\n    content_encoding?: string;\n    status_code?: number;\n    encoded_bytes?: number;\n    decompressed_bytes?: number;\n    metadata_only_reason?: \"attachment\" | \"binary_content_type\" | \"binary_body\" | \"declared_too_large\" | \"unsupported_content_encoding\" | \"empty_body\" | \"encoded_limit\" | \"decompressed_limit\";\n    content_transform?: \"html_to_markdown\" | \"html_to_text\" | \"json_pretty\";\n    encoded_body_truncated?: true;\n    decompressed_body_truncated?: true;\n    output_truncated?: true;\n    metadata_truncated?: true;\n    canonical_output_truncated?: true;\n    retrieval_route: \"tavily_extract\" | \"firecrawl_scrape\" | \"smart_direct\" | \"direct\";\n    evidence_level: \"extracted_content\" | \"direct_http_content\";\n    truncated: boolean;\n    attempts: ({\n      route: \"tavily_extract\" | \"firecrawl_scrape\" | \"smart_direct\" | \"direct\";\n      outcome: \"success\" | \"failed\" | \"aborted\" | \"skipped\";\n      count: number;\n      duration_ms: number;\n      fallback: boolean;\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n      http_status?: number;\n      retryable?: boolean;\n      skip_reason?: \"not_configured\" | \"not_applicable\" | \"budget_zero\" | \"format_unsupported\" | \"disabled\";\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n  web_map: {\n    requested_url: string;\n    base_url?: string;\n    results: string[];\n    total_results: number;\n    returned_results: number;\n    max_depth: number;\n    max_breadth: number;\n    limit: number;\n    response_time?: number;\n    truncated: boolean;\n    evidence_level: \"discovery\";\n    provider: \"tavily\";\n    attempts: {\n      provider: \"tavily\";\n      outcome: \"success\";\n      count: number;\n      duration_ms: number;\n      fallback: false;\n    }[];\n    warnings: ({\n      code: \"invalid_result_url_omitted\" | \"duplicate_result_url_omitted\" | \"results_truncated\" | \"canonical_output_truncated\";\n      count?: number;\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n}\n\ntype ToolName = keyof ToolOutputMap\n\ndeclare class ToolCallError extends Error {\n  readonly name: \"ToolCallError\";\n  readonly toolName: ToolName;\n}\n\ndeclare const tools: {\n  [K in ToolName]: (args: ToolArgsMap[K]) => Promise<ToolOutputMap[K]>;\n}\n```",
+  "code_system_prompt": "You are an AI agent powered by DeepSeek Harness.\n\n`run_code` is the only tool you can call directly — a tool call naming any other tool fails. Reach every tool the SDK declares below from inside the program.\n\nSearch Enhance keeps a fixed model-facing surface: web_search, docs_search, web_extract, search_tools, and search_call.\nUse search_tools only when the resident search tools cannot complete the task. It returns append-only capability and operation manifests; do not activate every capability preemptively.\nRun a manifested deferred operation with search_call({ operation, arguments }). In progressive mode, a newly disclosed capability is callable on the next model step; in all mode, deferred operations are active immediately. search_call fails closed while an operation is inactive.\nActivate planning only for explicit deep research, multi-source verification, or complex comparison. Activate diagnostics only when the user asks about Provider configuration or connectivity.\nA successful web_search or docs_search result with source_ref activates the sources capability. Use the appended search_sources manifest, or call search_tools for sources to replay that manifest before search_call.\n\nFor current or external factual questions, start with one focused web_search (use docs_search for SDK/API documentation); do not inspect local files, settings, sessions, or credentials unless the user explicitly asks about local state.\nTreat web_search/docs_search answers, snippets, and source metadata as discovery, not claim-level evidence.\nBefore asserting decisive factual or causal conclusions, inspect selected authoritative URLs with web_extract; never present an inferred mechanism as source-stated fact, and label unestablished mechanisms as inference or unconfirmed.\n\n## Writing code for run_code\n\n`run_code` takes two required arguments: `code` — the body of an async TypeScript function (erasable syntax only — no `enum` or namespaces; type annotations are advisory, the code runs type-stripped) — and `description`, a short summary of what the program does. Inside the program:\n\n- Call tools as `await tools.name(args)` — quoted access for exotic names: `tools[\"my-tool\"](args)`. Every call resolves to the tool's typed canonical JSON value. Tool arguments must be lossless JSON.\n- A FAILED tool call rejects with `ToolCallError`, whose `toolName` identifies the failed tool and whose `message` is human-readable — `try/catch` it to handle and continue.\n- Independent read-only calls MAY overlap under `Promise.all` (safe calls run concurrently; mutating calls run alone, in submission order). Sequence dependent work with `await`.\n- Emit results with `return` and/or `console.log(...)`. ONLY what you print or return comes back to you — intermediate tool results never enter the conversation, so extract just what you need.\n\nThe available tools:\n\n```ts\ntype JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }\n\ninterface ToolArgsMap {\n  /** High-level SDK/API/framework/README/release documentation search. Routes Context7 first and optionally Exa, returns discovery snippets and durable source_ref pagination; common documentation tasks do not need granular Context7 tools. */\n  docs_search: {\n    /** A non-empty SDK, API, framework, README, release, or documentation question. */\n    query: string;\n    /** auto (default), Context7, Exa, or both documentation discovery routes. */\n    provider?: \"auto\" | \"context7\" | \"exa\" | \"all\";\n    /** Optional exact Context7 /org/project or /org/project/version id; valid ids skip resolve. */\n    library_id?: string;\n    /** Maximum results (1-20); defaults to 6 and may be lowered by Settings. */\n    max_results?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20;\n    /** Bypass fresh Context7 cache entries and request current Provider data. */\n    force_refresh?: boolean;\n  } & Record<string, JsonValue>;\n  /** Execute one deferred search operation from an append-only manifest. The operation must already be active for this Agent; arguments and canonical output are validated against that operation's real schemas. */\n  search_call: {\n    /** Exact operation name from a search_tools or source-produced operation manifest. */\n    operation: string;\n    /** Arguments validated against the disclosed operation manifest before execution. */\n    arguments: Record<string, JsonValue>;\n  };\n  /** Disclose one or more deferred search capability groups and return their operation manifests. Use only when resident search tools cannot complete the task. Operations remain behind search_call; in progressive mode a newly disclosed capability takes effect on the next model step, while all mode keeps deferred operations active immediately. */\n  search_tools: {\n    /** One to five deferred search capability groups to disclose for this Agent. */\n    capabilities: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n  };\n  /** Read a specific HTTP(S) URL through independent extraction/direct routes. No JavaScript or login; host-reachable addresses may be accessed, and evidence differs by route. */\n  web_extract: {\n    /** A non-empty concrete HTTP(S) URL to read. */\n    url: string;\n    /** Output format; defaults to markdown. */\n    format?: \"markdown\" | \"text\" | \"html\" | \"json\" | \"raw\";\n  } & Record<string, JsonValue>;\n}\n\ninterface ToolOutputMap {\n  docs_search: {\n    state: \"complete\" | \"partial\";\n    provider: \"auto\" | \"context7\" | \"exa\" | \"all\";\n    providers: ({\n      provider: \"context7\" | \"exa\";\n      state: \"complete\" | \"partial\" | \"failed\" | \"skipped\";\n    })[];\n    selected_library?: {\n      id: string;\n      title?: string;\n      description?: string;\n    };\n    snippets: {\n      /** Bounded Context7 documentation snippet; discovery metadata, not a fetched page body. */\n      content: string;\n      title?: string;\n      library_id?: string;\n    }[];\n    sources: {\n      /** HTTP(S) source URL. */\n      url: string;\n      /** Source title when supplied by a search Provider. */\n      title?: string;\n      /** Discovery snippet; not fetched page-body evidence. */\n      snippet?: string;\n      /** Provider-supplied publication or crawl timestamp. */\n      publishedAt?: string;\n    }[];\n    /** Opaque private-storage reference for search_sources. */\n    source_ref?: string;\n    /** Opaque, evictable reference to the plugin-private Context7 docs cache. */\n    doc_ref?: string;\n    cache: {\n      resolve: {\n        state: \"hit\" | \"miss\" | \"refresh\" | \"stale\" | \"skipped\" | \"failed\";\n        evicted_entries: number;\n        reason?: \"provider_not_selected\" | \"known_library_id\" | \"library_not_found\" | \"upstream_failed\";\n      };\n      docs: {\n        state: \"hit\" | \"miss\" | \"refresh\" | \"stale\" | \"skipped\" | \"failed\";\n        evicted_entries: number;\n        reason?: \"provider_not_selected\" | \"known_library_id\" | \"library_not_found\" | \"upstream_failed\";\n      };\n    };\n    total_sources: number;\n    returned_sources: number;\n    total_snippets: number;\n    returned_snippets: number;\n    truncated: boolean;\n    evidence_level: \"discovery\";\n    warnings: ({\n      code: \"provider_failed\" | \"provider_not_configured\" | \"cache_stale\" | \"cache_evicted\" | \"provider_result_truncated\" | \"no_results\" | \"sources_truncated\" | \"canonical_output_truncated\";\n      provider?: \"context7\" | \"exa\" | \"context7-cache\";\n      path?: \"resolve\" | \"docs\";\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n      count?: number;\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n  search_call: JsonValue;\n  search_tools: {\n    requested_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    added_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    active_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    groups: ({\n      group: \"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\";\n      description: string;\n      operations: {\n        name: string;\n        description: string;\n        parameters: JsonValue;\n        output_schema: JsonValue;\n        call: {\n          tool: \"search_call\";\n          operation: string;\n        };\n      }[];\n    })[];\n    gateway: \"search_call\";\n    takes_effect: \"already_active\" | \"next_step\";\n  };\n  web_extract: {\n    requested_url: string;\n    final_url?: string;\n    content: string;\n    format: \"markdown\" | \"text\" | \"html\" | \"json\" | \"raw\";\n    title?: string;\n    author?: string;\n    published_at?: string;\n    canonical_url?: string;\n    content_type?: string;\n    content_length?: number;\n    content_disposition?: string;\n    content_encoding?: string;\n    status_code?: number;\n    encoded_bytes?: number;\n    decompressed_bytes?: number;\n    metadata_only_reason?: \"attachment\" | \"binary_content_type\" | \"binary_body\" | \"declared_too_large\" | \"unsupported_content_encoding\" | \"empty_body\" | \"encoded_limit\" | \"decompressed_limit\";\n    content_transform?: \"html_to_markdown\" | \"html_to_text\" | \"json_pretty\";\n    encoded_body_truncated?: true;\n    decompressed_body_truncated?: true;\n    output_truncated?: true;\n    metadata_truncated?: true;\n    canonical_output_truncated?: true;\n    retrieval_route: \"tavily_extract\" | \"firecrawl_scrape\" | \"smart_direct\" | \"direct\";\n    evidence_level: \"extracted_content\" | \"direct_http_content\";\n    truncated: boolean;\n    attempts: ({\n      route: \"tavily_extract\" | \"firecrawl_scrape\" | \"smart_direct\" | \"direct\";\n      outcome: \"success\" | \"failed\" | \"aborted\" | \"skipped\";\n      count: number;\n      duration_ms: number;\n      fallback: boolean;\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n      http_status?: number;\n      retryable?: boolean;\n      skip_reason?: \"not_configured\" | \"not_applicable\" | \"budget_zero\" | \"format_unsupported\" | \"disabled\";\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n}\n\ntype ToolName = keyof ToolOutputMap\n\ndeclare class ToolCallError extends Error {\n  readonly name: \"ToolCallError\";\n  readonly toolName: ToolName;\n}\n\ndeclare const tools: {\n  [K in ToolName]: (args: ToolArgsMap[K]) => Promise<ToolOutputMap[K]>;\n}\n```",
   "missing_credential": {
     "isError": true,
     "error": {
@@ -100,13 +231,16 @@
     {
       "type": "tool/call",
       "callId": "native-map-call",
-      "name": "web_map",
+      "name": "search_call",
       "arguments": {
-        "url": "<fixture-origin>/site/native",
-        "instructions": "  only documentation pages  ",
-        "max_depth": 2,
-        "max_breadth": 3,
-        "limit": 3
+        "operation": "web_map",
+        "arguments": {
+          "url": "<fixture-origin>/site/native",
+          "instructions": "  only documentation pages  ",
+          "max_depth": 2,
+          "max_breadth": 3,
+          "limit": 3
+        }
       }
     },
     {
@@ -121,16 +255,21 @@
       ],
       "meta": {
         "version": 1,
-        "type": "web_map",
-        "sources": [
-          {
-            "url": "<fixture-origin>/site/page-a"
-          },
-          {
-            "url": "<fixture-origin>/site/界🙂"
-          }
-        ],
-        "truncated": true
+        "type": "search_call",
+        "operation": "web_map",
+        "operation_meta": {
+          "version": 1,
+          "type": "web_map",
+          "sources": [
+            {
+              "url": "<fixture-origin>/site/page-a"
+            },
+            {
+              "url": "<fixture-origin>/site/界🙂"
+            }
+          ],
+          "truncated": true
+        }
       }
     }
   ],
@@ -202,16 +341,21 @@
     },
     "metadata": {
       "version": 1,
-      "type": "web_map",
-      "sources": [
-        {
-          "url": "<fixture-origin>/site/page-a"
-        },
-        {
-          "url": "<fixture-origin>/site/界🙂"
-        }
-      ],
-      "truncated": true
+      "type": "search_call",
+      "operation": "web_map",
+      "operation_meta": {
+        "version": 1,
+        "type": "web_map",
+        "sources": [
+          {
+            "url": "<fixture-origin>/site/page-a"
+          },
+          {
+            "url": "<fixture-origin>/site/界🙂"
+          }
+        ],
+        "truncated": true
+      }
     }
   },
   "code_mode": {
@@ -260,12 +404,15 @@
           "rootCallId": "code-map-call",
           "parentCallId": "code-map-call",
           "subCallId": "code-map-call:code:1",
-          "name": "web_map",
+          "name": "search_call",
           "arguments": {
-            "url": "<fixture-origin>/site/code",
-            "max_depth": 1,
-            "max_breadth": 2,
-            "limit": 2
+            "operation": "web_map",
+            "arguments": {
+              "url": "<fixture-origin>/site/code",
+              "max_depth": 1,
+              "max_breadth": 2,
+              "limit": 2
+            }
           }
         }
       },
@@ -275,12 +422,15 @@
           "rootCallId": "code-map-call",
           "parentCallId": "code-map-call",
           "subCallId": "code-map-call:code:1",
-          "name": "web_map",
+          "name": "search_call",
           "arguments": {
-            "url": "<fixture-origin>/site/code",
-            "max_depth": 1,
-            "max_breadth": 2,
-            "limit": 2
+            "operation": "web_map",
+            "arguments": {
+              "url": "<fixture-origin>/site/code",
+              "max_depth": 1,
+              "max_breadth": 2,
+              "limit": 2
+            }
           },
           "isError": false,
           "content": [
@@ -351,27 +501,13 @@
       "docs_search",
       "web_extract",
       "search_tools",
-      "search_sources",
-      "web_map",
-      "research_plan",
-      "search_diagnostics",
-      "context7_resolve_library_id",
-      "context7_query_docs",
-      "context7_get_library_docs",
-      "context7_get_cached_doc_raw"
+      "search_call"
     ],
     "restored_names": [
       "docs_search",
       "web_extract",
       "search_tools",
-      "search_sources",
-      "web_map",
-      "research_plan",
-      "search_diagnostics",
-      "context7_resolve_library_id",
-      "context7_query_docs",
-      "context7_get_library_docs",
-      "context7_get_cached_doc_raw"
+      "search_call"
     ]
   },
   "http_requests": [

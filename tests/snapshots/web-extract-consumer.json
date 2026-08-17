@@ -62,8 +62,32 @@
       }
     },
     {
+      "name": "search_call",
+      "description": "Execute one deferred search operation from an append-only manifest. The operation must already be active for this Agent; arguments and canonical output are validated against that operation's real schemas.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "description": "Exact operation name from a search_tools or source-produced operation manifest."
+          },
+          "arguments": {
+            "type": "object",
+            "description": "Arguments validated against the disclosed operation manifest before execution.",
+            "additionalProperties": true,
+            "properties": {}
+          }
+        },
+        "required": [
+          "operation",
+          "arguments"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
       "name": "search_tools",
-      "description": "Disclose one or more deferred search capability groups for the current Agent. Use only when the resident search tools cannot complete the task; do not activate every group preemptively. A successful call takes effect on the next model step and does not bypass restrictions from other Presets.",
+      "description": "Disclose one or more deferred search capability groups and return their operation manifests. Use only when resident search tools cannot complete the task. Operations remain behind search_call; in progressive mode a newly disclosed capability takes effect on the next model step, while all mode keeps deferred operations active immediately.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -722,31 +746,17 @@
   },
   "independence": {
     "with_stub_tools": [
-      "context7_get_cached_doc_raw",
-      "context7_get_library_docs",
-      "context7_query_docs",
-      "context7_resolve_library_id",
       "docs_search",
-      "research_plan",
-      "search_diagnostics",
-      "search_sources",
+      "search_call",
       "search_tools",
       "web_extract",
-      "web_fetch",
-      "web_map"
+      "web_fetch"
     ],
     "without_stub_tools": [
-      "context7_get_cached_doc_raw",
-      "context7_get_library_docs",
-      "context7_query_docs",
-      "context7_resolve_library_id",
       "docs_search",
-      "research_plan",
-      "search_diagnostics",
-      "search_sources",
+      "search_call",
       "search_tools",
-      "web_extract",
-      "web_map"
+      "web_extract"
     ],
     "direct_canonical_equal": true,
     "stub_calls": 0,

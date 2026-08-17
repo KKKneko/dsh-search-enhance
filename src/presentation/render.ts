@@ -39,6 +39,17 @@ function renderWithBoundedNotice(
   return prefix.length === 0 ? notice : `${prefix}${separator}${notice}`
 }
 
+function sourceDisclosureTail(
+  sourceRef: string | undefined,
+  operationNotice: string | undefined,
+): string | undefined {
+  if (sourceRef === undefined) return undefined
+  return [
+    `Source reference: ${sourceRef}`,
+    operationNotice,
+  ].filter((line): line is string => line !== undefined && line.length > 0).join('\n\n')
+}
+
 function warningText(warning: WebSearchWarning): string {
   const subject = [warning.provider, warning.capability].filter(Boolean).join('/')
   const suffix = [subject, warning.error_kind].filter(Boolean).join(', ')
@@ -93,11 +104,7 @@ function sourceSection(value: WebSearchOutput): string | undefined {
 }
 
 function sourceSummary(value: WebSearchOutput): string {
-  const lines = [`Sources shown: ${value.returned_sources}/${value.total_sources}`]
-  if (value.source_ref !== undefined) {
-    lines.push(`Source reference: ${value.source_ref}`)
-  }
-  return lines.join('\n')
+  return `Sources shown: ${value.returned_sources}/${value.total_sources}`
 }
 
 function limitationsSection(value: WebSearchOutput): string | undefined {
@@ -133,7 +140,7 @@ export function renderWebSearchText(
     : 0
   return renderWithBoundedNotice(
     complete,
-    value.source_ref === undefined ? undefined : sourceOperationNotice,
+    sourceDisclosureTail(value.source_ref, sourceOperationNotice),
     maximumBytes,
   )
 }
@@ -233,8 +240,7 @@ export function renderDocsSearchText(
     [
       `Sources shown: ${value.returned_sources}/${value.total_sources}`,
       `Snippets shown: ${value.returned_snippets}/${value.total_snippets}`,
-      value.source_ref === undefined ? undefined : `Source reference: ${value.source_ref}`,
-    ].filter((line): line is string => line !== undefined).join('\n'),
+    ].join('\n'),
     [
       docsCachePathText('Context7 resolve cache', value.cache.resolve),
       docsCachePathText('Context7 docs cache', value.cache.docs),
@@ -258,7 +264,7 @@ export function renderDocsSearchText(
     : 0
   return renderWithBoundedNotice(
     complete,
-    value.source_ref === undefined ? undefined : sourceOperationNotice,
+    sourceDisclosureTail(value.source_ref, sourceOperationNotice),
     maximumBytes,
   )
 }

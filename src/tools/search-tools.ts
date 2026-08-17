@@ -50,11 +50,11 @@ export interface SearchToolsOutput {
   readonly active_groups: CapabilityGroup[]
   readonly groups: SearchToolsGroupOutput[]
   readonly gateway: 'search_call'
-  readonly takes_effect: 'next_step'
+  readonly takes_effect: 'already_active' | 'next_step'
 }
 
-export const SEARCH_TOOLS_CANONICAL_MAX_BYTES = 16 * 1024
-export const SEARCH_TOOLS_MODEL_TEXT_MAX_BYTES = 16 * 1024
+export const SEARCH_TOOLS_CANONICAL_MAX_BYTES = 64 * 1024
+export const SEARCH_TOOLS_MODEL_TEXT_MAX_BYTES = 64 * 1024
 
 const CAPABILITIES_VALUE_SCHEMA = {
   type: 'array',
@@ -91,6 +91,7 @@ const groupOutputSchema = {
           name: { type: 'string', required: true },
           description: { type: 'string', required: true },
           parameters: { type: 'json', required: true },
+          output_schema: { type: 'json', required: true },
           call: {
             type: 'object',
             properties: {
@@ -133,7 +134,11 @@ export const SEARCH_TOOLS_OUTPUT_SCHEMA = {
       required: true,
     },
     gateway: { type: 'string', const: 'search_call', required: true },
-    takes_effect: { type: 'string', const: 'next_step', required: true },
+    takes_effect: {
+      type: 'string',
+      enum: ['already_active', 'next_step'],
+      required: true,
+    },
   },
   additionalProperties: false,
 } as const satisfies ValueSchemaSpec
@@ -177,7 +182,7 @@ export function projectSearchToolsOutput(
       operations: [...registry.manifestsForGroups([group])],
     })),
     gateway: 'search_call',
-    takes_effect: 'next_step',
+    takes_effect: addedGroups.length === 0 ? 'already_active' : 'next_step',
   }
 }
 
@@ -213,7 +218,7 @@ interface SearchToolsCardMeta {
   readonly requested_count: number
   readonly added_count: number
   readonly active_count: number
-  readonly takes_effect: 'next_step'
+  readonly takes_effect: 'already_active' | 'next_step'
 }
 
 function nonNegativeInteger(value: unknown): value is number {
@@ -226,7 +231,7 @@ function parseMeta(value: unknown): SearchToolsCardMeta | undefined {
   if (
     meta.version !== 1
     || meta.type !== 'search_tools'
-    || meta.takes_effect !== 'next_step'
+    || (meta.takes_effect !== 'already_active' && meta.takes_effect !== 'next_step')
   ) return undefined
   if (![
     meta.requested_count,
@@ -239,7 +244,7 @@ function parseMeta(value: unknown): SearchToolsCardMeta | undefined {
     requested_count: meta.requested_count as number,
     added_count: meta.added_count as number,
     active_count: meta.active_count as number,
-    takes_effect: 'next_step',
+    takes_effect: meta.takes_effect,
   }
 }
 
@@ -253,7 +258,7 @@ export function searchToolsPresentationMeta(
     requested_count: value.requested_groups.length,
     added_count: value.added_groups.length,
     active_count: value.active_groups.length,
-    takes_effect: 'next_step',
+    takes_effect: value.takes_effect,
   }
 }
 
@@ -275,7 +280,7 @@ export function presentSearchToolsResult(
   return {
     card: 'generic',
     title: meta.added_count === 0
-      ? `Search capabilities already disclosed (${meta.active_count} active)`
+      ? `Search capabilities already active (${meta.active_count})`
       : `Search capabilities disclosed (${meta.added_count} added; next step)`,
   }
 }
@@ -286,7 +291,7 @@ export function createSearchToolsTool(
 ): ToolDefinition {
   const definition = defineTool({
     name: 'search_tools',
-    description: 'Disclose one or more deferred search capability groups and return their operation manifests. Use only when resident search tools cannot complete the task. Operations remain behind search_call, and a newly disclosed capability takes effect on the next model step.',
+    description: 'Disclose one or more deferred search capability groups and return their operation manifests. Use only when resident search tools cannot complete the task. Operations remain behind search_call; in progressive mode a newly disclosed capability takes effect on the next model step, while all mode keeps deferred operations active immediately.',
     parameters: SEARCH_TOOLS_PARAMETER_SPEC,
     output: {
       schema: SEARCH_TOOLS_OUTPUT_SCHEMA,

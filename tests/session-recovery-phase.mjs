@@ -17,22 +17,18 @@ const fixturePath = join(packageRoot, 'tests/fixtures/scripted-llm.mjs')
 const packageJsonUrl = pathToFileURL(join(packageRoot, 'package.json')).href
 const [phase, loaderConfig, statePath] = process.argv.slice(2)
 const sessionId = SessionId('fresh-process-search-session')
-const coreTools = ['docs_search', 'search_tools', 'web_extract', 'web_search']
-const context7Tools = [
+const coreTools = ['docs_search', 'search_call', 'search_tools', 'web_extract', 'web_search'].sort()
+const deferredOperations = [
   'context7_get_cached_doc_raw',
   'context7_get_library_docs',
   'context7_query_docs',
   'context7_resolve_library_id',
-]
-const globalToolNames = [
-  ...coreTools,
-  ...context7Tools,
   'research_plan',
   'search_diagnostics',
   'search_sources',
   'web_map',
-].sort()
-const sorted = values => [...values].sort()
+]
+const globalToolNames = coreTools
 
 if (!['create', 'reopen'].includes(phase ?? '')) {
   throw new Error('session recovery phase must be create or reopen')
@@ -150,11 +146,14 @@ try {
       {
         kind: 'tool',
         id: 'fresh-process-context7-query',
-        name: 'context7_query_docs',
+        name: 'search_call',
         arguments: {
-          library_id: '/acme/sdk',
-          query: 'fresh process Context7 cache fixture',
-          max_snippets: 1,
+          operation: 'context7_query_docs',
+          arguments: {
+            library_id: '/acme/sdk',
+            query: 'fresh process Context7 cache fixture',
+            max_snippets: 1,
+          },
         },
       },
       { kind: 'text', text: 'Context7 cache fixture complete.' },
@@ -207,6 +206,7 @@ try {
   await ctx.loader.await()
 
   assert.deepEqual(ctx.tools.schemas().map(schema => schema.name).sort(), globalToolNames)
+  for (const operation of deferredOperations) assert.equal(ctx.tools.get(operation), undefined)
   const pluginToolsFor = agent => ctx.tools.schemas(agent).map(schema => schema.name).sort()
   const requestTools = request => (request.tools ?? []).map(schema => schema.name).sort()
 
@@ -235,16 +235,10 @@ try {
     const forkBoundaryEvent = handle.agent.session.events.at(-1)
     assert.equal(forkBoundaryEvent?.type, 'turn/end')
     const forkBoundary = forkBoundaryEvent.seq
-    assert.deepEqual(
-      pluginToolsFor(handle.agent),
-      sorted([...coreTools, ...context7Tools]),
-    )
+    assert.deepEqual(pluginToolsFor(handle.agent), coreTools)
 
     await followup(handle.agent, 'Activate site_map after the fork boundary.')
-    assert.deepEqual(
-      pluginToolsFor(handle.agent),
-      sorted([...coreTools, ...context7Tools, 'web_map']),
-    )
+    assert.deepEqual(pluginToolsFor(handle.agent), coreTools)
     await followup(handle.agent, 'Populate the Context7 cache through the granular public tool.')
     await followup(handle.agent, 'Run the fresh-process web_search fixture.')
     assert.equal(scriptedModule.remainingResponses(), 0)
@@ -257,24 +251,12 @@ try {
     assert.ok(observedResult && observedResult.isError === false, 'web_search did not complete')
     const sourceRef = observedResult.value?.source_ref
     assert.equal(typeof sourceRef, 'string', 'web_search did not publish source_ref')
-    assert.deepEqual(
-      pluginToolsFor(handle.agent),
-      sorted([...coreTools, ...context7Tools, 'search_sources', 'web_map']),
-    )
+    assert.deepEqual(pluginToolsFor(handle.agent), coreTools)
 
     const modelRequests = scriptedModule.requests()
     assert.equal(modelRequests.length, 8)
     const modelToolViews = modelRequests.map(requestTools)
-    assert.deepEqual(modelToolViews[0], coreTools)
-    assert.deepEqual(modelToolViews[1], sorted([...coreTools, ...context7Tools]))
-    assert.deepEqual(modelToolViews[2], sorted([...coreTools, ...context7Tools]))
-    assert.deepEqual(modelToolViews[3], sorted([...coreTools, ...context7Tools, 'web_map']))
-    assert.deepEqual(modelToolViews[7], sorted([
-      ...coreTools,
-      ...context7Tools,
-      'search_sources',
-      'web_map',
-    ]))
+    assert.ok(modelToolViews.every(view => JSON.stringify(view) === JSON.stringify(coreTools)))
 
     const participated = await ctx.sessions.flush(handle.agent.session)
     assert.equal(participated, true, 'JSONL persistence did not participate in flush')
@@ -405,12 +387,7 @@ try {
     assertSupported(handle.agent.session.events)
     assertNoPluginEvents(handle.agent.session.events)
 
-    const recoveredTools = sorted([
-      ...coreTools,
-      ...context7Tools,
-      'search_sources',
-      'web_map',
-    ])
+    const recoveredTools = coreTools
     const recoveredBeforeRequest = pluginToolsFor(handle.agent)
     assert.deepEqual(recoveredBeforeRequest, recoveredTools)
     await followup(handle.agent, 'Assemble the first request only after cold recovery.')
@@ -419,12 +396,15 @@ try {
 
     const page = await ctx.tools.execute({
       callId: CallId('fresh-process-page-call'),
-      name: 'search_sources',
+      name: 'search_call',
       arguments: {
-        source_ref: state.sourceRef,
-        offset: 0,
-        limit: 1,
-        format: 'full',
+        operation: 'search_sources',
+        arguments: {
+          source_ref: state.sourceRef,
+          offset: 0,
+          limit: 1,
+          format: 'full',
+        },
       },
       agent: handle.agent,
       signal: new AbortController().signal,
@@ -437,8 +417,11 @@ try {
 
     const cached = await ctx.tools.execute({
       callId: CallId('fresh-process-context7-cache-read'),
-      name: 'context7_get_cached_doc_raw',
-      arguments: { doc_ref: state.docRef },
+      name: 'search_call',
+      arguments: {
+        operation: 'context7_get_cached_doc_raw',
+        arguments: { doc_ref: state.docRef },
+      },
       agent: handle.agent,
       signal: new AbortController().signal,
     })
@@ -459,7 +442,7 @@ try {
     assert.ok(context7ResultEvent?.type === 'tool/result')
     const context7ResultBlock = context7ResultEvent.data.message.content[0]
     assert.equal(context7ResultBlock?.type, 'tool-result')
-    const context7Definition = ctx.tools.get('context7_query_docs', handle.agent)
+    const context7Definition = ctx.tools.get('search_call', handle.agent)
     const replayCard = context7Definition?.presentResult?.(
       JSON.parse(context7CallEvent.data.arguments),
       {
@@ -516,7 +499,7 @@ try {
 
     const childAgent = await createForkAgent('fork-child-session')
     const siblingAgent = await createForkAgent('fork-sibling-session')
-    const inheritedTools = sorted([...coreTools, ...context7Tools])
+    const inheritedTools = coreTools
     assert.deepEqual(pluginToolsFor(childAgent), inheritedTools)
     assert.deepEqual(pluginToolsFor(siblingAgent), inheritedTools)
 
@@ -527,19 +510,44 @@ try {
     handles.push(freshHandle)
     assert.deepEqual(pluginToolsFor(freshHandle.agent), coreTools)
 
-    await followup(childAgent, 'Activate child-only planning and source paging.')
-    const parentAfterChild = pluginToolsFor(handle.agent)
-    const siblingAfterChild = pluginToolsFor(siblingAgent)
-    assert.equal(parentAfterChild.includes('research_plan'), false)
-    assert.equal(siblingAfterChild.includes('research_plan'), false)
-    assert.equal(siblingAfterChild.includes('search_sources'), false)
-    const childSourceRead = await ctx.tools.execute({
-      callId: CallId('fork-child-parent-source-read'),
-      name: 'search_sources',
-      arguments: { source_ref: state.sourceRef, offset: 0, limit: 1, format: 'compact' },
-      agent: childAgent,
+    let operationCall = 0
+    const callOperation = (agent, operation, argumentsValue) => ctx.tools.execute({
+      callId: CallId(`recovery-operation-${++operationCall}`),
+      name: 'search_call',
+      arguments: { operation, arguments: argumentsValue },
+      agent,
       signal: new AbortController().signal,
     })
+    const unavailableCode = result => result.error?.info?.code
+
+    const parentPlanningBefore = await callOperation(
+      handle.agent,
+      'research_plan',
+      { question: 'parent planning before activation' },
+    )
+    const siblingPlanningBefore = await callOperation(
+      siblingAgent,
+      'research_plan',
+      { question: 'sibling planning before activation' },
+    )
+    assert.equal(unavailableCode(parentPlanningBefore), 'SEARCH_OPERATION_UNAVAILABLE')
+    assert.equal(unavailableCode(siblingPlanningBefore), 'SEARCH_OPERATION_UNAVAILABLE')
+
+    await followup(childAgent, 'Activate child-only planning and source paging.')
+    assert.deepEqual(pluginToolsFor(handle.agent), coreTools)
+    assert.deepEqual(pluginToolsFor(siblingAgent), coreTools)
+    const childPlan = await callOperation(
+      childAgent,
+      'research_plan',
+      { question: 'child planning after activation' },
+    )
+    assert.equal(childPlan.isError, false)
+    assert.equal(childPlan.value.research_plan.preflight.web_map_available, false)
+    const childSourceRead = await callOperation(
+      childAgent,
+      'search_sources',
+      { source_ref: state.sourceRef, offset: 0, limit: 1, format: 'compact' },
+    )
     assert.equal(childSourceRead.isError, false)
     assert.deepEqual(childSourceRead.value, {
       state: 'not_found',
@@ -547,12 +555,36 @@ try {
     })
 
     await followup(siblingAgent, 'Activate sibling-only diagnostics.')
-    assert.equal(pluginToolsFor(childAgent).includes('search_diagnostics'), false)
-    assert.equal(pluginToolsFor(handle.agent).includes('search_diagnostics'), false)
+    const siblingDiagnostics = await callOperation(siblingAgent, 'search_diagnostics', { action: 'show' })
+    const childDiagnostics = await callOperation(childAgent, 'search_diagnostics', { action: 'show' })
+    const parentDiagnostics = await callOperation(handle.agent, 'search_diagnostics', { action: 'show' })
+    assert.equal(siblingDiagnostics.isError, false)
+    assert.equal(unavailableCode(childDiagnostics), 'SEARCH_OPERATION_UNAVAILABLE')
+    assert.equal(unavailableCode(parentDiagnostics), 'SEARCH_OPERATION_UNAVAILABLE')
 
     await followup(handle.agent, 'Activate parent-only planning after both forks.')
-    assert.equal(pluginToolsFor(siblingAgent).includes('research_plan'), false)
-    assert.equal(pluginToolsFor(childAgent).includes('research_plan'), true)
+    const parentPlan = await callOperation(
+      handle.agent,
+      'research_plan',
+      { question: 'parent planning after activation' },
+    )
+    const siblingPlanAfter = await callOperation(
+      siblingAgent,
+      'research_plan',
+      { question: 'sibling planning remains inactive' },
+    )
+    const freshPlan = await callOperation(
+      freshHandle.agent,
+      'research_plan',
+      { question: 'fresh planning remains inactive' },
+    )
+    assert.equal(parentPlan.isError, false)
+    assert.equal(parentPlan.value.research_plan.preflight.web_map_available, true)
+    assert.equal(unavailableCode(siblingPlanAfter), 'SEARCH_OPERATION_UNAVAILABLE')
+    assert.equal(unavailableCode(freshPlan), 'SEARCH_OPERATION_UNAVAILABLE')
+    assert.deepEqual(pluginToolsFor(childAgent), coreTools)
+    assert.deepEqual(pluginToolsFor(siblingAgent), coreTools)
+    assert.deepEqual(pluginToolsFor(handle.agent), coreTools)
     assert.deepEqual(pluginToolsFor(freshHandle.agent), coreTools)
     assert.equal(scriptedModule.remainingResponses(), 0)
 
@@ -603,6 +635,19 @@ try {
         sibling_after_activation: pluginToolsFor(siblingAgent),
         parent_after_activation: pluginToolsFor(handle.agent),
         unrelated_fresh: pluginToolsFor(freshHandle.agent),
+      },
+      fork_operation_access: {
+        parent_planning_before: unavailableCode(parentPlanningBefore),
+        sibling_planning_before: unavailableCode(siblingPlanningBefore),
+        child_planning_after: childPlan.isError ? 'error' : 'active',
+        child_web_map_active: childPlan.value.research_plan.preflight.web_map_available,
+        sibling_diagnostics_after: siblingDiagnostics.isError ? 'error' : 'active',
+        child_diagnostics_after: unavailableCode(childDiagnostics),
+        parent_diagnostics_after: unavailableCode(parentDiagnostics),
+        parent_planning_after: parentPlan.isError ? 'error' : 'active',
+        parent_web_map_active: parentPlan.value.research_plan.preflight.web_map_available,
+        sibling_planning_after: unavailableCode(siblingPlanAfter),
+        unrelated_planning: unavailableCode(freshPlan),
       },
       source_isolation: childSourceRead.value.state === 'not_found',
       no_additional_http_dispatch: true,

@@ -807,9 +807,11 @@ describe('Native model text', () => {
     expect(Buffer.byteLength(over, 'utf8')).toBeLessThanOrEqual(exactBytes - 1)
     expect(over.length).toBeLessThan(unbounded.length)
 
-    expect(renderWebSearchText(resultWithLimit(1))).toBe('A')
-    expect(renderWebSearchText(resultWithLimit(2, '界面'))).toBe('')
-    expect(renderWebSearchText(resultWithLimit(3, '界面'))).toBe('界')
+    expect(renderWebSearchText(resultWithLimit(1))).toBe('S')
+    const { source_ref: _sourceRef, ...withoutSourceRef } = resultWithLimit(64 * 1024, '界面')
+    void _sourceRef
+    expect(renderWebSearchText({ ...withoutSourceRef, model_text_max_bytes: 2 })).toBe('')
+    expect(renderWebSearchText({ ...withoutSourceRef, model_text_max_bytes: 3 })).toBe('界')
   })
 
   it('renders library/doc_ref, snippets, sources, cache/provider status, and discovery limits in order', () => {

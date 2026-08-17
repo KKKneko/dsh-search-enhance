@@ -138,7 +138,10 @@ describe('research_plan schema and deterministic planner', () => {
       capability: 'docs_search',
       params: { query: baseArgs.sub_queries[0]!.question },
     })
-    expect(JSON.stringify(value)).not.toMatch(/web_search|web_fetch|search_planning|plan_intent|plan_complexity|plan_sub_query|plan_search_term|plan_tool_mapping|plan_execution/)
+    expect(JSON.stringify(value)).not.toMatch(/web_fetch|search_planning|plan_intent|plan_complexity|plan_sub_query|plan_search_term|plan_tool_mapping|plan_execution/)
+    expect(value.research_plan.usage_boundary.execution).toContain('resident operations directly')
+    expect(renderResearchPlanText(value)).toContain('via resident tool docs_search')
+    expect(renderResearchPlanText(value)).not.toContain('search_call operation docs_search')
     expect(validateJsonSchemaValue(
       valueSchemaSpecToJsonSchema(RESEARCH_PLAN_OUTPUT_SCHEMA),
       value,
@@ -168,7 +171,7 @@ describe('research_plan schema and deterministic planner', () => {
       }],
     }, options(undefined, false, 4))
     expect(unavailable.research_plan.preflight.unavailable_tools).toEqual(['web_map'])
-    expect(unavailable.research_plan.preflight.gaps.join('\n')).toMatch(/not active.*current Agent/i)
+    expect(unavailable.research_plan.preflight.gaps.join('\n')).toMatch(/disclose site_map.*search_call/i)
 
     const mapped = buildResearchPlan({
       question: 'Map the API site',
@@ -182,6 +185,7 @@ describe('research_plan schema and deterministic planner', () => {
     }, options(undefined, true, 4))
     expect(mapped.research_plan.preflight.unavailable_tools).toEqual([])
     expect(mapped.research_plan.preflight.web_map_available).toBe(true)
+    expect(renderResearchPlanText(mapped)).toContain('via search_call operation web_map')
     expect(mapped.research_plan.steps[0]?.params).toEqual({
       url: 'https://example.test',
       max_depth: 1,

@@ -70,7 +70,7 @@ export function createResearchPlanTool(
 ): ToolDefinition {
   return defineTool({
     name: 'research_plan',
-    description: 'Generate one offline research plan only for explicit deep research, multi-source verification, or complex comparison. It does not search, fetch, or verify claims; execute only the listed stable plugin tools and fetch key pages with web_extract before claim-level conclusions.',
+    description: 'Generate one offline research plan only for explicit deep research, multi-source verification, or complex comparison. It does not search, fetch, or verify claims. Call resident web_search/docs_search/web_extract directly; invoke a listed web_map step through search_call only when site_map is active.',
     parameters: RESEARCH_PLAN_PARAMETERS,
     output: {
       schema: RESEARCH_PLAN_OUTPUT_SCHEMA,

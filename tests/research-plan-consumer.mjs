@@ -19,14 +19,7 @@ const globalDefinitions = [
   'docs_search',
   'web_extract',
   'search_tools',
-  'search_sources',
-  'web_map',
-  'research_plan',
-  'search_diagnostics',
-  'context7_resolve_library_id',
-  'context7_query_docs',
-  'context7_get_library_docs',
-  'context7_get_cached_doc_raw',
+  'search_call',
 ]
 const modelTools = [...globalDefinitions].sort()
 const credentialNames = [
@@ -266,7 +259,7 @@ try {
 
   const observed = []
   ctx.on('tools/result', (exec, result) => {
-    if (!['research_plan', 'run_code'].includes(exec.name)) return
+    if (!['search_call', 'run_code'].includes(exec.name)) return
     const definition = ctx.tools.get(exec.name, exec.agent)
     const card = definition?.presentResult?.(exec.arguments, {
       content: result.content,
@@ -282,9 +275,10 @@ try {
     })
   })
 
-  const code = `return await tools.research_plan(${JSON.stringify(planArgs)});`
+  const gatewayArgs = { operation: 'research_plan', arguments: planArgs }
+  const code = `return await tools.search_call(${JSON.stringify(gatewayArgs)});`
   scriptedModule.setScript([
-    { kind: 'tool', id: 'native-plan-call', name: 'research_plan', arguments: planArgs },
+    { kind: 'tool', id: 'native-plan-call', name: 'search_call', arguments: gatewayArgs },
     { kind: 'text', text: 'Native offline plan fixture complete.' },
     {
       kind: 'tool',
@@ -312,7 +306,11 @@ try {
   assert.equal(scriptedModule.remainingResponses(), 0)
 
   const nativeObserved = observed.find(item => item.callId === 'native-plan-call')
-  const nestedObserved = observed.find(item => item.name === 'research_plan' && item.nested)
+  const nestedObserved = observed.find(item => (
+    item.name === 'search_call'
+    && item.nested
+    && item.result.value?.research_plan !== undefined
+  ))
   assert.ok(nativeObserved && !nativeObserved.result.isError)
   assert.ok(nestedObserved && !nestedObserved.result.isError)
   assert.deepEqual(nativeObserved.result.value, nestedObserved.result.value)
@@ -331,7 +329,7 @@ try {
   assert.ok(nativeCallEvent && nativeCallEvent.type === 'tool/call')
   assert.ok(nativeResultEvent && nativeResultEvent.type === 'tool/result')
   const resultBlock = nativeResultEvent.data.message.content[0]
-  const definition = ctx.tools.get('research_plan', nativeHandle.agent)
+  const definition = ctx.tools.get('search_call', nativeHandle.agent)
   assert.ok(definition?.presentResult)
   const replayCard = definition.presentResult(
     JSON.parse(nativeCallEvent.data.arguments),
@@ -351,28 +349,33 @@ try {
     'tool/code-dispatch-start',
     'tool/code-dispatch',
   ])
-  assert.equal(codeDispatches[1].data.name, 'research_plan')
+  assert.equal(codeDispatches[1].data.name, 'search_call')
   assert.equal('meta' in codeDispatches[1].data, false)
 
   const requests = scriptedModule.requests()
-  const nativeRequest = requests.find(request => request.tools.some(tool => tool.name === 'research_plan'))
+  const nativeRequest = requests.find(request => request.tools.some(tool => tool.name === 'search_call'))
   const codeRequest = requests.find(request => request.tools.some(tool => tool.name === 'run_code'))
   assert.ok(nativeRequest)
   assert.ok(codeRequest)
   assert.deepEqual(nativeRequest.tools.map(tool => tool.name), modelTools)
   assert.deepEqual(codeRequest.tools.map(tool => tool.name), ['run_code'])
-  assert.match(codeRequest.system, /research_plan:/)
+  assert.match(codeRequest.system, /search_call:/)
+  assert.doesNotMatch(codeRequest.system, /\n\s+research_plan: \{/u)
   assert.equal(fetchCalls, 0)
 
-  const oldDefinition = ctx.tools.get('research_plan')
+  const oldDefinition = ctx.tools.get('search_call')
   await pluginEntry.fiber.restart()
   assert.deepEqual(names(ctx), globalDefinitions)
-  assert.notEqual(ctx.tools.get('research_plan'), oldDefinition)
-  assert.equal(ctx.tools.schemas().filter(schema => schema.name === 'research_plan').length, 1)
+  assert.notEqual(ctx.tools.get('search_call'), oldDefinition)
+  assert.equal(ctx.tools.schemas().filter(schema => schema.name === 'search_call').length, 1)
   const afterRestart = await ctx.tools.execute({
     callId: CallId('research-plan-after-restart'),
-    name: 'research_plan',
-    arguments: { question: 'offline plan after restart' },
+    name: 'search_call',
+    arguments: {
+      operation: 'research_plan',
+      arguments: { question: 'offline plan after restart' },
+    },
+    agent: nativeHandle.agent,
     signal: new AbortController().signal,
   })
   assert.equal(afterRestart.isError, false)
@@ -383,11 +386,15 @@ try {
     optionalTools: { webMap: true, researchPlan: false, diagnostics: true },
   }, true)
   assert.deepEqual(names(ctx), globalDefinitions)
-  assert.equal(ctx.tools.get('research_plan')?.name, 'research_plan')
+  assert.equal(ctx.tools.get('search_call')?.name, 'search_call')
   const compatibilityCall = await ctx.tools.execute({
     callId: CallId('research-plan-compatibility-config'),
-    name: 'research_plan',
-    arguments: { question: 'deprecated optionalTools must not remove this definition' },
+    name: 'search_call',
+    arguments: {
+      operation: 'research_plan',
+      arguments: { question: 'deprecated optionalTools must not remove this operation' },
+    },
+    agent: nativeHandle.agent,
     signal: new AbortController().signal,
   })
   assert.equal(compatibilityCall.isError, false)
@@ -404,7 +411,8 @@ try {
   const snapshot = normalize({
     global_definitions: globalDefinitions,
     deprecated_optional_tools_ignored: names(ctx),
-    research_plan_schema: ctx.tools.schemas().find(schema => schema.name === 'research_plan'),
+    research_plan_manifest: nativeObserved.result.meta,
+    gateway_schema: ctx.tools.schemas().find(schema => schema.name === 'search_call'),
     native_wire_tools: nativeRequest.tools.map(tool => tool.name),
     code_wire_tools: codeRequest.tools.map(tool => tool.name),
     code_system_prompt: codeRequest.system,
@@ -437,7 +445,7 @@ try {
   handles.length = 0
   await ctx.fiber.dispose()
   disposed = true
-  process.stdout.write('research_plan headless snapshot: ok (all-mode visibility, Native/Code parity, generic replay card, offline/no-network, restart/update/dispose)\n')
+  process.stdout.write('research_plan headless snapshot: ok (fixed gateway all-mode execution, Native/Code parity, replay card, offline/no-network, restart/update/dispose)\n')
 } finally {
   for (const handle of handles.reverse()) {
     try {

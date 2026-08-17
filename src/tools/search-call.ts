@@ -32,6 +32,7 @@ export interface DeferredOperationManifest {
   readonly name: string
   readonly description: string
   readonly parameters: JsonValue
+  readonly output_schema: JsonValue
   readonly call: {
     readonly tool: 'search_call'
     readonly operation: string
@@ -143,6 +144,7 @@ export class DeferredOperationRegistry {
         name,
         description: source.description,
         parameters,
+        output_schema: outputSchema,
         call: { tool: 'search_call' as const, operation: name },
       })
       this.records.set(name, { capability, definition, manifest })
@@ -158,13 +160,14 @@ export class DeferredOperationRegistry {
   }
 
   renderCapabilityDisclosure(group: CapabilityGroup): string {
+    const manifest = {
+      capability: group,
+      gateway: 'search_call',
+      operations: this.manifestsForGroups([group]),
+    }
     return [
-      `Capability "${group}" is active for this Agent. Deferred operations remain behind the fixed search_call gateway.`,
-      JSON.stringify({
-        capability: group,
-        gateway: 'search_call',
-        operations: this.manifestsForGroups([group]),
-      }, null, 2),
+      JSON.stringify(manifest),
+      `Capability "${group}" is active for this Agent. Invoke only the manifested deferred operations through search_call.`,
     ].join('\n')
   }
 

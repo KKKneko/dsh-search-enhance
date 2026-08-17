@@ -289,7 +289,7 @@ async function executeWebMap(
   return projectWebMapOutput(result, request, config, elapsedMilliseconds(startedAt, now()))
 }
 
-/** Build the deferred global website-discovery Consumer. */
+/** Build the internal deferred website-discovery operation definition. */
 export function createWebMapTool(dependencies: WebMapToolDependencies): ToolDefinition {
   return defineTool({
     name: 'web_map',

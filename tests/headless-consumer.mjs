@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { createServer } from 'node:http'
 import { lstat, mkdir, mkdtemp, readFile, rm, symlink, unlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -10,6 +11,7 @@ import {
   createUserMessage,
 } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
+import { renderPrompt } from '@deepseek-ai/dsh-system-prompt'
 
 const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)))
 const fixturePath = join(packageRoot, 'tests/fixtures/scripted-llm.mjs')
@@ -27,21 +29,18 @@ const tavilySecret = 'headless-tavily-secret-value'
 const firecrawlSecret = 'headless-firecrawl-secret-value'
 const secrets = [searchSecret, context7Secret, exaSecret, tavilySecret, firecrawlSecret]
 const credentialNames = ['SEARCH_API_KEY', 'TAVILY_API_KEY', 'CONTEXT7_API_KEY', 'EXA_API_KEY', 'FIRECRAWL_API_KEY']
-const harnessIdentity = 'You are an AI agent powered by DeepSeek Harness.'
 const sourceProducedBlockType = 'search-enhance/source-produced'
 const fullResearchRouteGuidance = 'For current or external factual questions, start with one focused web_search (use docs_search for SDK/API documentation); do not inspect local files, settings, sessions, or credentials unless the user explicitly asks about local state.'
-const webSearchResearchRouteGuidance = 'For current or external factual questions, start with one focused web_search; do not inspect local files, settings, sessions, or credentials unless the user explicitly asks about local state.'
 const discoveryEvidenceGuidance = 'Treat web_search/docs_search answers, snippets, and source metadata as discovery, not claim-level evidence.'
-const webSearchDiscoveryEvidenceGuidance = 'Treat web_search answers, snippets, and source metadata as discovery, not claim-level evidence.'
 const extractedEvidenceGuidance = 'Before asserting decisive factual or causal conclusions, inspect selected authoritative URLs with web_extract; never present an inferred mechanism as source-stated fact, and label unestablished mechanisms as inference or unconfirmed.'
-const inferenceOnlyGuidance = 'Never present an inferred mechanism as source-stated fact; label unestablished mechanisms as inference or unconfirmed.'
 const corePluginToolNames = [
   'web_search',
   'docs_search',
   'web_extract',
   'search_tools',
+  'search_call',
 ]
-const deferredPluginToolNames = [
+const deferredOperationNames = [
   'search_sources',
   'web_map',
   'research_plan',
@@ -51,7 +50,7 @@ const deferredPluginToolNames = [
   'context7_get_library_docs',
   'context7_get_cached_doc_raw',
 ]
-const pluginToolNames = [...corePluginToolNames, ...deferredPluginToolNames]
+const pluginToolNames = corePluginToolNames
 const globalPluginToolNames = pluginToolNames.filter(name => name !== 'web_search')
 const officialToolNames = ['web_fetch', 'web_search']
 const allGlobalToolNames = [...globalPluginToolNames, ...officialToolNames].sort()
@@ -89,6 +88,47 @@ function normalize(value, origin) {
     .replace(/src_[A-Za-z0-9_-]{32}/g, '<source-ref>')
     .replace(/"duration_ms":\d+/g, '"duration_ms":"<duration-ms>"')
   return JSON.parse(serialized)
+}
+
+const sha256 = value => createHash('sha256')
+  .update(typeof value === 'string' ? value : JSON.stringify(value))
+  .digest('hex')
+
+function requestSurface(request) {
+  const tools = request.tools ?? []
+  return {
+    system_hash: sha256(request.system),
+    wire_names: tools.map(schema => schema.name),
+    wire_hash: sha256(tools),
+    top_level_schema_hash: sha256(tools[0] ?? null),
+  }
+}
+
+function activationSnapshot(value) {
+  return {
+    requested_groups: value.requested_groups,
+    added_groups: value.added_groups,
+    active_groups: value.active_groups,
+    groups: value.groups.map(group => ({
+      group: group.group,
+      operations: group.operations.map(operation => operation.name),
+      manifest_hash: sha256(group.operations),
+    })),
+    gateway: value.gateway,
+    takes_effect: value.takes_effect,
+  }
+}
+
+async function assembledSurface(ctx, agent) {
+  const assembly = await ctx.systemPrompt.assemble({ scope: agent, agent })
+  const sdkText = assembly.sections.find(section => section.name === 'tools:sdk')?.text ?? ''
+  return {
+    system_hash: sha256(renderPrompt(assembly)),
+    wire_names: assembly.tools.map(schema => schema.name),
+    wire_hash: sha256(assembly.tools),
+    sdk_hash: sha256(sdkText),
+    top_level_schema_hash: sha256(assembly.tools[0] ?? null),
+  }
 }
 
 function normalizedToolResult(event, origin) {
@@ -150,12 +190,14 @@ function snapshotHttpRequests(requests) {
 function responseScript() {
   const firstCode = [
     "const search = await tools.web_search({ query: 'code first-step fixture', profile: 'auto', depth: 'compact' });",
-    "return { search, search_sources_binding: typeof tools.search_sources };",
+    "let early = 'not-attempted';",
+    "try { await tools.search_call({ operation: 'search_sources', arguments: { source_ref: search.source_ref, offset: 0, limit: 1, format: 'full' } }); early = 'unexpected-success'; } catch { early = 'inactive'; }",
+    "return { search, search_call_binding: typeof tools.search_call, early };",
   ].join('\n')
   const nextCode = [
     "const search = await tools.web_search({ query: 'code next-SDK fixture', profile: 'auto', depth: 'compact' });",
-    "const page = await tools.search_sources({ source_ref: search.source_ref, offset: 0, limit: 1, format: 'full' });",
-    "return { search, page, search_sources_binding: typeof tools.search_sources };",
+    "const page = await tools.search_call({ operation: 'search_sources', arguments: { source_ref: search.source_ref, offset: 0, limit: 1, format: 'full' } });",
+    "return { search, page, search_call_binding: typeof tools.search_call };",
   ].join('\n')
   return [
     { kind: 'tool', id: 'native-full-call', name: 'web_search', arguments: { query: 'native full SDK v4 fixture', profile: 'auto', depth: 'compact' } },
@@ -492,10 +534,8 @@ try {
     if (![
       'web_search',
       'docs_search',
-      'search_sources',
+      'search_call',
       'search_tools',
-      'web_map',
-      'search_diagnostics',
       'run_code',
     ].includes(exec.name)) return
     observedResults.push({
@@ -575,28 +615,48 @@ try {
   assert.equal(webSearchModule.callCount(), 0, 'native web_search executed instead of the scoped rich definition')
   const fullSourceRef = fullResult.result.value.source_ref
   assert.equal(typeof fullSourceRef, 'string')
-  assert.deepEqual(
-    sorted(pluginNamesFor(nativeFull)),
-    sorted([...corePluginToolNames, 'search_sources']),
-  )
+  assert.deepEqual(sorted(pluginNamesFor(nativeFull)), expectedCoreTools)
+  const fullModelText = fullResult.result.content[0]?.type === 'text'
+    ? fullResult.result.content[0].text
+    : ''
+  assert.match(fullModelText, /Source reference: src_[A-Za-z0-9_-]{32}/)
+  assert.match(fullModelText, /"operation":"search_sources"/)
+  assert.match(fullModelText, /"output_schema"/)
+  assert.ok(Buffer.byteLength(fullModelText, 'utf8') <= fullResult.result.value.model_text_max_bytes)
 
   const codeActivateSiteMap = [
     "const activation = await tools.search_tools({ capabilities: ['site_map'] });",
-    'const candidate = (tools as any).web_map;',
+    'const candidate = tools.search_call;',
     "let early = 'not-attempted';",
-    "try { await candidate({ url: 'https://example.test' }); early = 'unexpected-success'; } catch { early = 'unavailable'; }",
+    "try { await candidate({ operation: 'web_map', arguments: { url: 'https://example.test' } }); early = 'unexpected-success'; } catch { early = 'inactive'; }",
     'return { activation, binding: typeof candidate, early };',
   ].join('\n')
   const codeUseSiteMap = [
-    "const map = await tools.web_map({ url: 'https://example.test', instructions: 'only docs', max_depth: 1, max_breadth: 2, limit: 2 });",
-    'return { binding: typeof tools.web_map, map };',
+    "const map = await tools.search_call({ operation: 'web_map', arguments: { url: 'https://example.test', instructions: 'only docs', max_depth: 1, max_breadth: 2, limit: 2 } });",
+    'return { binding: typeof tools.search_call, map };',
   ].join('\n')
   const codeCancel = "return await tools.web_search({ query: 'code cancel fixture', profile: 'auto', depth: 'compact' });"
 
   scriptedModule.appendScript(
-    { kind: 'tool', id: 'native-page-call', name: 'search_sources', arguments: { source_ref: fullSourceRef, offset: 0, limit: 1, format: 'full' } },
+    {
+      kind: 'tool',
+      id: 'native-page-call',
+      name: 'search_call',
+      arguments: {
+        operation: 'search_sources',
+        arguments: { source_ref: fullSourceRef, offset: 0, limit: 1, format: 'full' },
+      },
+    },
     { kind: 'text', text: 'Native source page fixture complete.' },
-    { kind: 'tool', id: 'native-not-found-call', name: 'search_sources', arguments: { source_ref: 'src_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' } },
+    {
+      kind: 'tool',
+      id: 'native-not-found-call',
+      name: 'search_call',
+      arguments: {
+        operation: 'search_sources',
+        arguments: { source_ref: 'src_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },
+      },
+    },
     { kind: 'text', text: 'Native source not-found fixture complete.' },
     ...scriptedResponses.slice(2),
     { kind: 'text', text: 'Only web_search prompt fixture complete.' },
@@ -605,11 +665,26 @@ try {
       kind: 'tools',
       calls: [
         { id: 'native-activate-batch', name: 'search_tools', arguments: { capabilities: ['site_map', 'planning', 'site_map'] } },
-        { id: 'native-early-web-map', name: 'web_map', arguments: { url: 'https://example.test', max_depth: 1, max_breadth: 2, limit: 2 } },
+        {
+          id: 'native-early-web-map',
+          name: 'search_call',
+          arguments: {
+            operation: 'web_map',
+            arguments: { url: 'https://example.test', max_depth: 1, max_breadth: 2, limit: 2 },
+          },
+        },
       ],
     },
     { kind: 'tool', id: 'native-repeat-activation', name: 'search_tools', arguments: { capabilities: ['site_map', 'context7'] } },
-    { kind: 'tool', id: 'native-web-map', name: 'web_map', arguments: { url: 'https://example.test', instructions: 'only docs', max_depth: 1, max_breadth: 2, limit: 2 } },
+    {
+      kind: 'tool',
+      id: 'native-web-map',
+      name: 'search_call',
+      arguments: {
+        operation: 'web_map',
+        arguments: { url: 'https://example.test', instructions: 'only docs', max_depth: 1, max_breadth: 2, limit: 2 },
+      },
+    },
     { kind: 'text', text: 'Native progressive activation fixture complete.' },
     { kind: 'tool', id: 'preset-activation', name: 'search_tools', arguments: { capabilities: ['site_map'] } },
     { kind: 'text', text: 'Preset cap fixture complete.' },
@@ -621,10 +696,23 @@ try {
     { kind: 'text', text: 'Malformed provider fixture complete.' },
     { kind: 'tool', id: 'diagnostics-activation', name: 'search_tools', arguments: { capabilities: ['diagnostics'] } },
     { kind: 'text', text: 'Diagnostics disclosure fixture complete.' },
-    { kind: 'tool', id: 'diagnostics-test', name: 'search_diagnostics', arguments: { action: 'test' } },
+    {
+      kind: 'tool',
+      id: 'diagnostics-test',
+      name: 'search_call',
+      arguments: { operation: 'search_diagnostics', arguments: { action: 'test' } },
+    },
     { kind: 'text', text: 'Diagnostics probe fixture complete.' },
     { kind: 'tool', id: 'isolated-sources-activation', name: 'search_tools', arguments: { capabilities: ['sources'] } },
-    { kind: 'tool', id: 'isolated-source-read', name: 'search_sources', arguments: { source_ref: fullSourceRef, offset: 0, limit: 1, format: 'compact' } },
+    {
+      kind: 'tool',
+      id: 'isolated-source-read',
+      name: 'search_call',
+      arguments: {
+        operation: 'search_sources',
+        arguments: { source_ref: fullSourceRef, offset: 0, limit: 1, format: 'compact' },
+      },
+    },
     { kind: 'text', text: 'Source isolation fixture complete.' },
     { kind: 'tool', id: 'code-activate-site-map', name: 'run_code', arguments: { code: codeActivateSiteMap, description: 'Activate a binding without mutating the current SDK' } },
     { kind: 'tool', id: 'code-use-site-map', name: 'run_code', arguments: { code: codeUseSiteMap, description: 'Use the regenerated site-map SDK binding' } },
@@ -644,7 +732,7 @@ try {
     'code-session',
     agentCtx => { agentCtx.tools.presentAs('code') },
   )
-  await followup(codeAgent, 'Verify that a nested source disclosure regenerates only the next Code SDK.')
+  await followup(codeAgent, 'Verify that source auto-disclosure changes capability state without changing the Code SDK.')
 
   const onlySearchAgent = await createAgent(
     'only-search-session',
@@ -689,8 +777,8 @@ try {
   const progressiveAgent = await createAgent('native-progressive-session')
   assert.deepEqual(sorted(pluginNamesFor(isolatedAgent)), expectedCoreTools)
   await followup(progressiveAgent, 'Activate multiple groups and try a hidden same-batch tool.')
-  const earlyMap = findResult('native-early-web-map', 'web_map')
-  assert.equal(earlyMap.result.error?.info?.code, 'UNKNOWN_TOOL')
+  const earlyMap = findResult('native-early-web-map', 'search_call')
+  assert.equal(earlyMap.result.error?.info?.code, 'SEARCH_OPERATION_UNAVAILABLE')
   const firstActivation = findResult('native-activate-batch', 'search_tools')
   const repeatActivation = findResult('native-repeat-activation', 'search_tools')
   assert.deepEqual(firstActivation.result.value.requested_groups, ['site_map', 'planning'])
@@ -698,22 +786,21 @@ try {
   assert.deepEqual(repeatActivation.result.value.added_groups, ['context7'])
   assert.equal(firstActivation.result.value.takes_effect, 'next_step')
   assert.equal(repeatActivation.result.value.takes_effect, 'next_step')
-  assert.deepEqual(
-    sorted(pluginNamesFor(progressiveAgent)),
-    sorted([
-      ...corePluginToolNames,
-      'web_map',
-      'research_plan',
-      ...deferredPluginToolNames.filter(name => name.startsWith('context7_')),
-    ]),
-  )
+  assert.deepEqual(sorted(pluginNamesFor(progressiveAgent)), expectedCoreTools)
   assert.deepEqual(sorted(pluginNamesFor(isolatedAgent)), expectedCoreTools)
-  const nativeMap = findResult('native-web-map', 'web_map')
+  const nativeMap = findResult('native-web-map', 'search_call')
   assert.equal(nativeMap.result.isError, false)
 
   const presetAgent = await createAgent(
     'preset-deny-session',
-    agentCtx => { agentCtx.tools.restrict({ deny: ['web_map'] }) },
+    agentCtx => {
+      agentCtx.tools.guard(exec => (
+        exec.name === 'search_call'
+        && exec.arguments?.operation === 'web_map'
+          ? 'web_map denied by preset policy'
+          : undefined
+      ))
+    },
   )
   await followup(presetAgent, 'Verify that a Preset deny caps progressive disclosure.')
   const presetActivation = findResult('preset-activation', 'search_tools')
@@ -721,19 +808,20 @@ try {
   assert.equal(ctx.tools.get('web_map', presetAgent), undefined)
   const presetHidden = await ctx.tools.execute({
     callId: CallId('preset-hidden-web-map'),
-    name: 'web_map',
-    arguments: { url: 'https://example.test' },
+    name: 'search_call',
+    arguments: { operation: 'web_map', arguments: { url: 'https://example.test' } },
     agent: presetAgent,
     signal: new AbortController().signal,
   })
-  assert.equal(presetHidden.error?.info?.code, 'UNKNOWN_TOOL')
+  assert.equal(presetHidden.isError, true)
+  assert.match(presetHidden.content[0]?.type === 'text' ? presetHidden.content[0].text : '', /denied by preset policy/)
 
   const docsSuccessAgent = await createAgent('docs-success-session')
   await followup(docsSuccessAgent, 'Run a source-producing documentation search.')
   const docsSuccess = findResult('docs-success', 'docs_search')
   assert.equal(docsSuccess.result.isError, false)
   assert.equal(typeof docsSuccess.result.value.source_ref, 'string')
-  assert.ok(pluginNamesFor(docsSuccessAgent).includes('search_sources'))
+  assert.deepEqual(sorted(pluginNamesFor(docsSuccessAgent)), expectedCoreTools)
 
   const docsFailureAgent = await createAgent('docs-failure-session')
   await followup(docsFailureAgent, 'Run a rejected documentation search.')
@@ -751,7 +839,7 @@ try {
   await followup(diagnosticsAgent, 'Disclose diagnostics without probing Providers.')
   assert.equal(httpRequests.length, requestsBeforeDisclosure)
   await followup(diagnosticsAgent, 'Run the explicitly requested diagnostics probe.')
-  const diagnosticsResult = findResult('diagnostics-test', 'search_diagnostics')
+  const diagnosticsResult = findResult('diagnostics-test', 'search_call')
   assert.equal(diagnosticsResult.result.isError, false)
   assert.equal(
     diagnosticsResult.result.value.provider_attempts.filter(attempt => attempt.attempts > 0).length,
@@ -761,7 +849,7 @@ try {
 
   assert.deepEqual(sorted(pluginNamesFor(isolatedAgent)), expectedCoreTools)
   await followup(isolatedAgent, 'Activate sources and try to read another Session source.')
-  const isolatedRead = findResult('isolated-source-read', 'search_sources')
+  const isolatedRead = findResult('isolated-source-read', 'search_call')
   assert.deepEqual(isolatedRead.result.value, {
     state: 'not_found',
     code: 'SOURCE_REF_NOT_FOUND',
@@ -786,7 +874,7 @@ try {
       early: codeActivation.result.value.result.early,
       takes_effect: codeActivation.result.value.result.activation.takes_effect,
     },
-    { binding: 'undefined', early: 'unavailable', takes_effect: 'next_step' },
+    { binding: 'function', early: 'inactive', takes_effect: 'next_step' },
   )
   assert.deepEqual(
     codeActivation.result.value.result.activation,
@@ -796,7 +884,7 @@ try {
   assert.equal(codeMapResult.result.isError, false)
   assert.equal(codeMapResult.result.value.result.binding, 'function')
   assert.ok(codePolicyCalls.some(item => item.name === 'search_tools' && item.nested))
-  assert.ok(codePolicyCalls.some(item => item.name === 'web_map' && item.nested))
+  assert.ok(codePolicyCalls.some(item => item.name === 'search_call' && item.nested))
 
   const nativeCancelAgent = await createAgent('native-cancel-session')
   const nativeSlowBefore = slowSearchRequests
@@ -828,8 +916,8 @@ try {
 
   await Promise.all(durabilityChecks)
 
-  const pageResult = findResult('native-page-call', 'search_sources')
-  const notFoundResult = findResult('native-not-found-call', 'search_sources')
+  const pageResult = findResult('native-page-call', 'search_call')
+  const notFoundResult = findResult('native-not-found-call', 'search_call')
   const partialResult = findResult('native-partial-call', 'web_search')
   const emptyResult = findResult('native-empty-call', 'web_search')
   assert.equal(pageResult.result.isError, false)
@@ -858,8 +946,8 @@ try {
   ]) {
     const invalid = await ctx.tools.execute({
       callId: CallId(callId),
-      name: 'search_sources',
-      arguments: argumentsValue,
+      name: 'search_call',
+      arguments: { operation: 'search_sources', arguments: argumentsValue },
       agent: nativeFull,
       signal: new AbortController().signal,
     })
@@ -930,7 +1018,10 @@ try {
     item => item.agentId === 'code-session' && item.name === 'web_search' && item.nested,
   )
   const codePage = observedResults.find(
-    item => item.agentId === 'code-session' && item.name === 'search_sources' && item.nested,
+    item => item.agentId === 'code-session'
+      && item.name === 'search_call'
+      && item.nested
+      && item.result.value?.state === 'found',
   )
   assert.equal(codeEnhances.length, 2)
   assert.ok(codeEnhances.every(item => !item.result.isError))
@@ -942,13 +1033,16 @@ try {
   assert.equal(codePage.result.meta, undefined)
   const firstCodeResult = findResult('code-first-call', 'run_code')
   const nextCodeResult = findResult('code-next-call', 'run_code')
-  assert.equal(firstCodeResult.result.value.result.search_sources_binding, 'undefined')
-  assert.equal(nextCodeResult.result.value.result.search_sources_binding, 'function')
+  assert.equal(firstCodeResult.result.value.result.search_call_binding, 'function')
+  assert.equal(firstCodeResult.result.value.result.early, 'inactive')
+  assert.equal(nextCodeResult.result.value.result.search_call_binding, 'function')
   const codeDispatches = codeAgent.session.events.filter(event => event.type === 'tool/code-dispatch')
   assert.deepEqual(
     codeDispatches.map(event => event.data.name),
-    ['web_search', 'web_search', 'search_sources'],
+    ['web_search', 'search_call', 'web_search', 'search_call'],
   )
+  assert.equal(codeDispatches[1].data.isError, true)
+  assert.equal(codeDispatches[3].data.isError, false)
   assert.ok(codeDispatches.every(event => !('meta' in event.data)))
   for (const event of codeDispatches) {
     const markerCount = event.data.content.filter(block => block.type === sourceProducedBlockType).length
@@ -1012,10 +1106,7 @@ try {
   for (const name of officialToolNames) assert.equal(ctx.tools.get(name), officialDefinitions[name])
   assert.notEqual(ctx.tools.get('web_search', nativeFull), officialDefinitions.web_search)
   assert.equal(ctx.tools.get('web_search', hiddenWebSearchAgent), undefined)
-  assert.deepEqual(
-    sorted(pluginNamesFor(nativeFull)),
-    sorted([...corePluginToolNames, 'search_sources']),
-  )
+  assert.deepEqual(sorted(pluginNamesFor(nativeFull)), expectedCoreTools)
   assert.deepEqual(sorted(pluginNamesFor(nativeEmpty)), expectedCoreTools)
   for (const sourceFreeAgent of [
     nativeCancelAgent,
@@ -1026,9 +1117,11 @@ try {
   ]) {
     assert.deepEqual(sorted(pluginNamesFor(sourceFreeAgent)), expectedCoreTools)
   }
-  assert.ok(pluginNamesFor(docsSuccessAgent).includes('search_sources'))
+  assert.deepEqual(sorted(pluginNamesFor(docsSuccessAgent)), expectedCoreTools)
 
   const initialPluginConfig = structuredClone(pluginEntry.options.config)
+  const progressiveNativeSurface = await assembledSurface(ctx, nativeEmpty)
+  const progressiveCodeSurface = await assembledSurface(ctx, codeAgent)
   const updateDiscoveryMode = async mode => {
     await ctx.loader.update(pluginEntry.id, {
       config: { ...initialPluginConfig, toolDiscovery: { mode } },
@@ -1044,12 +1137,38 @@ try {
 
   await updateDiscoveryMode('all')
   assert.equal(settingsDescriptors()[0].value.toolDiscovery.mode, 'all')
+  assert.deepEqual(await assembledSurface(ctx, nativeEmpty), progressiveNativeSurface)
+  assert.deepEqual(await assembledSurface(ctx, codeAgent), progressiveCodeSurface)
   const allModeView = sorted(pluginNamesFor(nativeEmpty))
-  assert.deepEqual(allModeView, sorted(pluginToolNames))
+  assert.deepEqual(allModeView, expectedCoreTools)
   assert.equal(ctx.tools.get('web_map', presetAgent), undefined)
+  const allModeMap = await ctx.tools.execute({
+    callId: CallId('all-mode-web-map'),
+    name: 'search_call',
+    arguments: {
+      operation: 'web_map',
+      arguments: { url: 'https://example.test', max_depth: 1, max_breadth: 2, limit: 2 },
+    },
+    agent: nativeEmpty,
+    signal: new AbortController().signal,
+  })
+  assert.equal(allModeMap.isError, false)
 
   await updateDiscoveryMode('progressive')
   assert.equal(settingsDescriptors()[0].value.toolDiscovery.mode, 'progressive')
+  assert.deepEqual(await assembledSurface(ctx, nativeEmpty), progressiveNativeSurface)
+  assert.deepEqual(await assembledSurface(ctx, codeAgent), progressiveCodeSurface)
+  const progressiveMap = await ctx.tools.execute({
+    callId: CallId('progressive-inactive-web-map'),
+    name: 'search_call',
+    arguments: {
+      operation: 'web_map',
+      arguments: { url: 'https://example.test', max_depth: 1, max_breadth: 2, limit: 2 },
+    },
+    agent: nativeEmpty,
+    signal: new AbortController().signal,
+  })
+  assert.equal(progressiveMap.error?.info?.code, 'SEARCH_OPERATION_UNAVAILABLE')
   const progressiveViews = {
     fresh: sorted(pluginNamesFor(nativeEmpty)),
     source_restored: sorted(pluginNamesFor(nativeFull)),
@@ -1057,20 +1176,9 @@ try {
     preset_capped: sorted(pluginNamesFor(presetAgent)),
   }
   assert.deepEqual(progressiveViews.fresh, expectedCoreTools)
-  assert.deepEqual(
-    progressiveViews.source_restored,
-    sorted([...corePluginToolNames, 'search_sources']),
-  )
-  assert.deepEqual(
-    progressiveViews.groups_restored,
-    sorted([
-      ...corePluginToolNames,
-      'web_map',
-      'research_plan',
-      ...deferredPluginToolNames.filter(name => name.startsWith('context7_')),
-    ]),
-  )
-  assert.equal(progressiveViews.preset_capped.includes('web_map'), false)
+  assert.deepEqual(progressiveViews.source_restored, expectedCoreTools)
+  assert.deepEqual(progressiveViews.groups_restored, expectedCoreTools)
+  assert.deepEqual(progressiveViews.preset_capped, expectedCoreTools)
 
   scriptedModule.appendScript(
     { kind: 'tool', id: 'post-hmr-activation', name: 'search_tools', arguments: { capabilities: ['diagnostics'] } },
@@ -1078,8 +1186,8 @@ try {
   )
   const changesBeforeActivation = toolChanges.count
   await followup(nativeEmpty, 'Activate one group after the restart cycle.')
-  assert.equal(toolChanges.count - changesBeforeActivation, 2)
-  assert.ok(pluginNamesFor(nativeEmpty).includes('search_diagnostics'))
+  assert.equal(toolChanges.count - changesBeforeActivation, 0)
+  assert.deepEqual(sorted(pluginNamesFor(nativeEmpty)), expectedCoreTools)
   assert.equal(scriptedModule.remainingResponses(), 0)
 
   const codeSourceRef = codeEnhances[1].result.value.source_ref
@@ -1087,7 +1195,7 @@ try {
     callId: CallId('post-restart-code'),
     name: 'run_code',
     arguments: {
-      code: `return await tools.search_sources({ source_ref: ${JSON.stringify(codeSourceRef)}, offset: 0, limit: 1, format: 'compact' });`,
+      code: `return await tools.search_call({ operation: 'search_sources', arguments: { source_ref: ${JSON.stringify(codeSourceRef)}, offset: 0, limit: 1, format: 'compact' } });`,
       description: 'Page a retained source after plugin and config restarts',
     },
     agent: codeAgent,
@@ -1112,8 +1220,10 @@ try {
   )
   assert.deepEqual(
     nativeFullRequests[1].tools.map(schema => schema.name),
-    sorted([...corePluginToolNames, 'search_sources', 'web_fetch']),
+    sorted([...corePluginToolNames, 'web_fetch']),
   )
+  assert.equal(nativeFullRequests[1].system, nativeFullRequests[0].system)
+  assert.equal(sha256(nativeFullRequests[1].tools), sha256(nativeFullRequests[0].tools))
   const nativeEmptyRequests = requestsFor(nativeEmpty)
   assert.deepEqual(
     nativeEmptyRequests.slice(0, 2).map(request => request.tools.map(schema => schema.name)),
@@ -1123,13 +1233,19 @@ try {
     ],
   )
   const nativePartialRequests = requestsFor(nativePartial)
-  assert.ok(nativePartialRequests[1].tools.some(schema => schema.name === 'search_sources'))
+  assert.ok(nativePartialRequests.every(request => (
+    sha256(request.tools) === sha256(nativePartialRequests[0].tools)
+    && request.system === nativePartialRequests[0].system
+  )))
   const docsSuccessRequests = requestsFor(docsSuccessAgent)
   const docsFailureRequests = requestsFor(docsFailureAgent)
   const malformedRequests = requestsFor(malformedAgent)
-  assert.ok(docsSuccessRequests[1].tools.some(schema => schema.name === 'search_sources'))
-  assert.equal(docsFailureRequests[1].tools.some(schema => schema.name === 'search_sources'), false)
-  assert.equal(malformedRequests[1].tools.some(schema => schema.name === 'search_sources'), false)
+  for (const requests of [docsSuccessRequests, docsFailureRequests, malformedRequests]) {
+    assert.ok(requests.every(request => (
+      sha256(request.tools) === sha256(requests[0].tools)
+      && request.system === requests[0].system
+    )))
+  }
   assert.equal(requestsFor(nativeCancelAgent).length, 1)
   assert.equal(requestsFor(codeCancelAgent).length, 1)
   assert.equal(requestsFor(reloadAgent).length, 1)
@@ -1137,53 +1253,35 @@ try {
   const progressiveRequests = requestsFor(progressiveAgent)
   assert.deepEqual(
     progressiveRequests.map(request => request.tools.map(schema => schema.name).filter(name => pluginToolNames.includes(name))),
-    [
-      expectedCoreTools,
-      sorted([...corePluginToolNames, 'research_plan', 'web_map']),
-      sorted([
-        ...corePluginToolNames,
-        'research_plan',
-        'web_map',
-        ...deferredPluginToolNames.filter(name => name.startsWith('context7_')),
-      ]),
-      sorted([
-        ...corePluginToolNames,
-        'research_plan',
-        'web_map',
-        ...deferredPluginToolNames.filter(name => name.startsWith('context7_')),
-      ]),
-    ],
+    progressiveRequests.map(() => expectedCoreTools),
   )
-  assert.deepEqual(sorted(pluginNamesFor(isolatedAgent)), sorted([...corePluginToolNames, 'search_sources']))
+  assert.ok(progressiveRequests.every(request => request.system === progressiveRequests[0].system))
+  assert.ok(progressiveRequests.every(request => sha256(request.tools) === sha256(progressiveRequests[0].tools)))
+  assert.deepEqual(sorted(pluginNamesFor(isolatedAgent)), expectedCoreTools)
 
   const codeRequests = requestsFor(codeAgent)
   const codeRequest = codeRequests[0]
   const codeNextRequest = codeRequests[1]
   assert.deepEqual(codeRequest.tools.map(schema => schema.name), ['run_code'])
   assert.deepEqual(codeNextRequest.tools.map(schema => schema.name), ['run_code'])
-  assert.doesNotMatch(codeRequest.system, /search_sources:/)
-  assert.match(codeNextRequest.system, /search_sources:/)
+  assert.equal(codeNextRequest.system, codeRequest.system)
+  assert.equal(sha256(codeNextRequest.tools), sha256(codeRequest.tools))
   const codeMapRequests = requestsFor(codeMapAgent)
-  assert.doesNotMatch(codeMapRequests[0].system, /web_map:/)
-  assert.match(codeMapRequests[1].system, /web_map:/)
+  assert.equal(codeMapRequests[1].system, codeMapRequests[0].system)
+  assert.equal(sha256(codeMapRequests[1].tools), sha256(codeMapRequests[0].tools))
 
   const onlySearchRequest = requestsFor(onlySearchAgent)[0]
   const noSearchRequest = requestsFor(noSearchAgent)[0]
   assert.deepEqual(onlySearchRequest.tools.map(schema => schema.name), ['web_search'])
   assert.deepEqual(noSearchRequest.tools ?? [], [])
+  assert.equal(onlySearchRequest.system, nativeFullRequests[0].system)
+  assert.equal(noSearchRequest.system, nativeFullRequests[0].system)
   assert.ok(nativeFullRequests[0].system.includes([
     fullResearchRouteGuidance,
     discoveryEvidenceGuidance,
     extractedEvidenceGuidance,
   ].join('\n')))
   assert.match(nativeFullRequests[0].system, /search_tools/)
-  assert.ok(onlySearchRequest.system.includes([
-    webSearchResearchRouteGuidance,
-    webSearchDiscoveryEvidenceGuidance,
-    inferenceOnlyGuidance,
-  ].join('\n')))
-  assert.equal(onlySearchRequest.system.includes('web_extract;'), false)
-  assert.equal(noSearchRequest.system, harnessIdentity)
   assert.ok(codeRequest.system.includes([
     fullResearchRouteGuidance,
     discoveryEvidenceGuidance,
@@ -1193,13 +1291,13 @@ try {
   assert.match(codeRequest.system, /profile\?: "auto"/)
   assert.match(codeRequest.system, /depth\?: "compact"/)
   assert.match(codeRequest.system, /docs_search:/)
-  assert.doesNotMatch(codeRequest.system, /research_plan:/)
-  assert.doesNotMatch(codeRequest.system, /search_diagnostics:/)
-  assert.doesNotMatch(codeRequest.system, /search_sources:/)
+  assert.match(codeRequest.system, /search_call:/)
   assert.match(codeRequest.system, /search_tools:/)
   assert.match(codeRequest.system, /web_extract:/)
-  assert.doesNotMatch(codeRequest.system, /web_map:/)
   assert.match(codeRequest.system, /web_fetch:/)
+  for (const operation of deferredOperationNames) {
+    assert.doesNotMatch(codeRequest.system, new RegExp(`\\n\\s+${operation}: \\{`, 'u'))
+  }
 
   await Promise.all(durabilityChecks)
   const persistedSessions = ctx.agents.list().map(agent => agent.session.events)
@@ -1240,19 +1338,24 @@ try {
         )),
       },
       same_batch_error: earlyMap.result.error?.info?.code,
-      first_activation: firstActivation.result.value,
-      repeated_activation: repeatActivation.result.value,
+      first_activation: activationSnapshot(firstActivation.result.value),
+      repeated_activation: activationSnapshot(repeatActivation.result.value),
       isolated_source_read: isolatedRead.result.value,
       preset_tools: progressiveViews.preset_capped,
       all_mode_tools: allModeView,
+      all_mode_immediate_call: allModeMap.value,
+      progressive_inactive_call: progressiveMap.error?.info?.code,
       progressive_after_restart: progressiveViews,
     },
-    model_prompts: {
-      native_initial: nativeFullRequests[0].system,
-      code_initial: codeRequest.system,
-      code_after_sources: codeNextRequest.system,
-      code_site_map_initial: codeMapRequests[0].system,
-      code_site_map_next: codeMapRequests[1].system,
+    model_surface_hashes: {
+      native_initial: requestSurface(nativeFullRequests[0]),
+      native_after_source: requestSurface(nativeFullRequests[1]),
+      code_initial: requestSurface(codeRequest),
+      code_after_source: requestSurface(codeNextRequest),
+      code_site_map_initial: requestSurface(codeMapRequests[0]),
+      code_site_map_next: requestSurface(codeMapRequests[1]),
+      progressive_native_assembly: progressiveNativeSurface,
+      progressive_code_assembly: progressiveCodeSurface,
     },
     search_surface_system_prompts: {
       native_default: nativeFullRequests[0].system,
@@ -1299,7 +1402,11 @@ try {
       outer_values: {
         first: firstCodeResult.result.value,
         next: nextCodeResult.result.value,
-        site_map_activation: codeActivation.result.value,
+        site_map_activation: {
+          binding: codeActivation.result.value.result.binding,
+          early: codeActivation.result.value.result.early,
+          activation: activationSnapshot(codeActivation.result.value.result.activation),
+        },
         site_map_next: codeMapResult.result.value,
       },
       dispatches: codeDispatches.map(event => ({
@@ -1381,7 +1488,7 @@ try {
   assert.equal(ctx.agents.list().length, 0)
   await ctx.fiber.dispose()
   disposed = true
-  process.stdout.write('headless consumer snapshot: ok (scoped Native/Code web_search, progressive disclosure, Preset deny, HMR/native restoration)\n')
+  process.stdout.write('headless consumer snapshot: ok (fixed Native/Code gateway, progressive/all operation state, Preset guard, HMR restoration)\n')
 } finally {
   for (const handle of handles.reverse()) {
     try {

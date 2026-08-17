@@ -19,14 +19,7 @@ const globalDefinitions = [
   'docs_search',
   'web_extract',
   'search_tools',
-  'search_sources',
-  'web_map',
-  'research_plan',
-  'search_diagnostics',
-  'context7_resolve_library_id',
-  'context7_query_docs',
-  'context7_get_library_docs',
-  'context7_get_cached_doc_raw',
+  'search_call',
 ]
 const modelTools = [...globalDefinitions].sort()
 const credentialNames = [
@@ -402,27 +395,14 @@ try {
 
   assert.equal(ctx.tools.get('search_config'), undefined)
   assert.equal(ctx.tools.get('diagnostics'), undefined)
-  const diagnosticsSchema = ctx.tools.schemas().find(schema => schema.name === 'search_diagnostics')
-  assert.ok(diagnosticsSchema)
-  assert.deepEqual(Object.keys(diagnosticsSchema.parameters.properties), ['action'])
-  assert.deepEqual(diagnosticsSchema.parameters.required, ['action'])
-  assert.deepEqual(diagnosticsSchema.parameters.properties.action.enum, ['show', 'test'])
+  const gatewaySchema = ctx.tools.schemas().find(schema => schema.name === 'search_call')
+  assert.ok(gatewaySchema)
+  assert.deepEqual(Object.keys(gatewaySchema.parameters.properties), ['operation', 'arguments'])
 
-  const directShow = await ctx.tools.execute({
-    callId: CallId('diagnostics-direct-show'),
-    name: 'search_diagnostics',
-    arguments: { action: 'show' },
-    signal: new AbortController().signal,
-  })
-  assert.equal(directShow.isError, false)
-  assert.equal(directShow.value.tested, false)
-  assert.deepEqual(directShow.value.provider_attempts, [])
-  assert.equal(httpRequests.length, 0, 'show performed an HTTP request')
-  assert.doesNotMatch(JSON.stringify(directShow), /diagnostics-secret|authorization|bearer/i)
-
+  let directShow
   const observed = []
   ctx.on('tools/result', (exec, result) => {
-    if (!['search_diagnostics', 'run_code'].includes(exec.name)) return
+    if (!['search_call', 'run_code'].includes(exec.name)) return
     const definition = ctx.tools.get(exec.name, exec.agent)
     const card = definition?.presentResult?.(exec.arguments, {
       content: result.content,
@@ -438,10 +418,12 @@ try {
     })
   })
 
-  const showCode = 'return await tools.search_diagnostics({ action: "show" });'
-  const testCode = 'return await tools.search_diagnostics({ action: "test" });'
+  const showGatewayArgs = { operation: 'search_diagnostics', arguments: { action: 'show' } }
+  const testGatewayArgs = { operation: 'search_diagnostics', arguments: { action: 'test' } }
+  const showCode = `return await tools.search_call(${JSON.stringify(showGatewayArgs)});`
+  const testCode = `return await tools.search_call(${JSON.stringify(testGatewayArgs)});`
   scriptedModule.setScript([
-    { kind: 'tool', id: 'native-diagnostics-show', name: 'search_diagnostics', arguments: { action: 'show' } },
+    { kind: 'tool', id: 'native-diagnostics-show', name: 'search_call', arguments: showGatewayArgs },
     { kind: 'text', text: 'Native diagnostics show complete.' },
     {
       kind: 'tool',
@@ -450,7 +432,7 @@ try {
       arguments: { code: showCode, description: 'Inspect masked search capability status' },
     },
     { kind: 'text', text: 'Code diagnostics show complete.' },
-    { kind: 'tool', id: 'native-diagnostics-test', name: 'search_diagnostics', arguments: { action: 'test' } },
+    { kind: 'tool', id: 'native-diagnostics-test', name: 'search_call', arguments: testGatewayArgs },
     { kind: 'text', text: 'Native diagnostics test complete.' },
     {
       kind: 'tool',
@@ -473,6 +455,35 @@ try {
   })
   handles.push(codeHandle)
 
+  const manifestResult = await ctx.tools.execute({
+    callId: CallId('diagnostics-manifest'),
+    name: 'search_tools',
+    arguments: { capabilities: ['diagnostics'] },
+    agent: nativeHandle.agent,
+    signal: new AbortController().signal,
+  })
+  assert.equal(manifestResult.isError, false)
+  assert.equal(manifestResult.value.takes_effect, 'already_active')
+  const diagnosticsManifest = manifestResult.value.groups[0].operations[0]
+  assert.equal(diagnosticsManifest.name, 'search_diagnostics')
+  assert.deepEqual(Object.keys(diagnosticsManifest.parameters.properties), ['action'])
+  assert.deepEqual(diagnosticsManifest.parameters.required, ['action'])
+  assert.deepEqual(diagnosticsManifest.parameters.properties.action.enum, ['show', 'test'])
+  assert.equal(diagnosticsManifest.output_schema.type, 'object')
+
+  directShow = await ctx.tools.execute({
+    callId: CallId('diagnostics-direct-show'),
+    name: 'search_call',
+    arguments: showGatewayArgs,
+    agent: nativeHandle.agent,
+    signal: new AbortController().signal,
+  })
+  assert.equal(directShow.isError, false)
+  assert.equal(directShow.value.tested, false)
+  assert.deepEqual(directShow.value.provider_attempts, [])
+  assert.equal(httpRequests.length, 0, 'show performed an HTTP request')
+  assert.doesNotMatch(JSON.stringify(directShow), /diagnostics-secret|authorization|bearer/i)
+
   await followup(nativeHandle.agent, 'Show read-only masked search capability status without network.')
   assert.equal(httpRequests.length, 0, 'Native show performed an HTTP request')
   await followup(codeHandle.agent, 'Use Code Mode to show the same read-only status without network.')
@@ -483,8 +494,8 @@ try {
 
   const nativeShow = observed.find(item => item.callId === 'native-diagnostics-show')
   const nativeTest = observed.find(item => item.callId === 'native-diagnostics-test')
-  const nestedShows = observed.filter(item => item.name === 'search_diagnostics' && item.nested && item.result.value?.action === 'show')
-  const nestedTests = observed.filter(item => item.name === 'search_diagnostics' && item.nested && item.result.value?.action === 'test')
+  const nestedShows = observed.filter(item => item.name === 'search_call' && item.nested && item.result.value?.action === 'show')
+  const nestedTests = observed.filter(item => item.name === 'search_call' && item.nested && item.result.value?.action === 'test')
   assert.ok(nativeShow && !nativeShow.result.isError)
   assert.ok(nativeTest && !nativeTest.result.isError)
   assert.equal(nestedShows.length, 1)
@@ -512,14 +523,14 @@ try {
   assert.equal(nativeTest.result.value.minimum_profile.satisfied, true)
 
   const requests = scriptedModule.requests()
-  const nativeRequest = requests.find(request => request.tools.some(tool => tool.name === 'search_diagnostics'))
+  const nativeRequest = requests.find(request => request.tools.some(tool => tool.name === 'search_call'))
   const codeRequest = requests.find(request => request.tools.some(tool => tool.name === 'run_code'))
   assert.ok(nativeRequest)
   assert.ok(codeRequest)
   assert.deepEqual(nativeRequest.tools.map(tool => tool.name), modelTools)
   assert.deepEqual(codeRequest.tools.map(tool => tool.name), ['run_code'])
-  assert.match(codeRequest.system, /search_diagnostics:/)
-  assert.match(codeRequest.system, /action: "show" \| "test"/)
+  assert.match(codeRequest.system, /search_call:/)
+  assert.doesNotMatch(codeRequest.system, /\n\s+search_diagnostics: \{/u)
 
   const showCallEvent = nativeHandle.agent.session.events.find(
     event => event.type === 'tool/call' && String(event.data.callId) === 'native-diagnostics-show',
@@ -536,7 +547,7 @@ try {
       && String(event.data.message.content[0]?.toolCallId) === 'native-diagnostics-test',
   )
   assert.ok(showCallEvent && showResultEvent && testCallEvent && testResultEvent)
-  const definition = ctx.tools.get('search_diagnostics', nativeHandle.agent)
+  const definition = ctx.tools.get('search_call', nativeHandle.agent)
   assert.ok(definition?.presentResult)
   const replayCard = (callEvent, resultEvent) => definition.presentResult(
     JSON.parse(callEvent.data.arguments),
@@ -559,7 +570,7 @@ try {
     'tool/code-dispatch-start',
     'tool/code-dispatch',
   ])
-  assert.equal(codeDispatches.every(event => event.data.name === 'search_diagnostics'), true)
+  assert.equal(codeDispatches.every(event => event.data.name === 'search_call'), true)
   assert.equal(codeDispatches.every(event => !('meta' in event.data)), true)
 
   const fixedQuery = 'search-enhance fixed connectivity diagnostic'
@@ -589,12 +600,13 @@ try {
     }
   }
 
-  const oldDefinition = ctx.tools.get('search_diagnostics')
+  const oldDefinition = ctx.tools.get('search_call')
   slowModelList = true
   const activeTest = ctx.tools.execute({
     callId: CallId('diagnostics-active-restart'),
-    name: 'search_diagnostics',
-    arguments: { action: 'test' },
+    name: 'search_call',
+    arguments: testGatewayArgs,
+    agent: nativeHandle.agent,
     signal: new AbortController().signal,
   })
   await waitFor(() => slowModelSocket !== undefined, 'diagnostics restart fixture did not receive model-list probe')
@@ -605,14 +617,15 @@ try {
   assert.doesNotMatch(JSON.stringify(stoppedTest), /search\/v1|context7|diagnostics-secret/i)
   await waitFor(() => slowModelSocket?.destroyed === true, 'diagnostics restart left model-list socket open')
   slowModelList = false
-  assert.notEqual(ctx.tools.get('search_diagnostics'), oldDefinition)
-  assert.equal(ctx.tools.schemas().filter(schema => schema.name === 'search_diagnostics').length, 1)
+  assert.notEqual(ctx.tools.get('search_call'), oldDefinition)
+  assert.equal(ctx.tools.schemas().filter(schema => schema.name === 'search_call').length, 1)
   assert.equal(descriptors().length, 1)
 
   const postRestartShow = await ctx.tools.execute({
     callId: CallId('diagnostics-post-restart-show'),
-    name: 'search_diagnostics',
-    arguments: { action: 'show' },
+    name: 'search_call',
+    arguments: showGatewayArgs,
+    agent: nativeHandle.agent,
     signal: new AbortController().signal,
   })
   assert.equal(postRestartShow.isError, false)
@@ -625,11 +638,12 @@ try {
     optionalTools: { webMap: true, researchPlan: true, diagnostics: false },
   }, true)
   assert.deepEqual(names(ctx), globalDefinitions)
-  assert.equal(ctx.tools.get('search_diagnostics')?.name, 'search_diagnostics')
+  assert.equal(ctx.tools.get('search_call')?.name, 'search_call')
   const compatibilityCall = await ctx.tools.execute({
     callId: CallId('diagnostics-compatibility-config'),
-    name: 'search_diagnostics',
-    arguments: { action: 'show' },
+    name: 'search_call',
+    arguments: showGatewayArgs,
+    agent: nativeHandle.agent,
     signal: new AbortController().signal,
   })
   assert.equal(compatibilityCall.isError, false)
@@ -648,11 +662,13 @@ try {
   const snapshot = normalize({
     global_definitions: globalDefinitions,
     deprecated_optional_tools_ignored: names(ctx),
-    diagnostics_schema: diagnosticsSchema,
+    gateway_schema: gatewaySchema,
+    diagnostics_manifest: diagnosticsManifest,
     direct_show: directShow.value,
     native_wire_tools: nativeRequest.tools.map(tool => tool.name),
     code_wire_tools: codeRequest.tools.map(tool => tool.name),
-    code_system_has_diagnostics: /search_diagnostics:/.test(codeRequest.system),
+    code_system_has_gateway: /search_call:/.test(codeRequest.system),
+    code_system_has_direct_diagnostics: /\n\s+search_diagnostics: \{/u.test(codeRequest.system),
     native_show: nativeShow.result.value,
     code_show: nestedShows[0].result.value,
     native_test: nativeTest.result.value,
@@ -696,7 +712,7 @@ try {
   handles.length = 0
   await ctx.fiber.dispose()
   disposed = true
-  process.stdout.write('search_diagnostics headless snapshot: ok (all-mode visibility, show/no-network, fixed probes, Native/Code parity, generic replay cards, restart/update/dispose, secret scan)\n')
+  process.stdout.write('search_diagnostics headless snapshot: ok (fixed gateway all-mode execution, show/no-network, probes, Native/Code parity, replay cards, restart/dispose, secret scan)\n')
 } finally {
   for (const handle of handles.reverse()) {
     try {

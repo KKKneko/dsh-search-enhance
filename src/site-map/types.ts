@@ -38,7 +38,7 @@ export interface TavilyMapResult extends ParsedTavilyMapResponse {
   readonly totalDelayMs: number
 }
 
-/** Registration-free Provider seam used by the deferred global Consumer. */
+/** Registration-free Provider seam used by the deferred site-map operation. */
 export interface SiteMapProvider {
   readonly provider: 'tavily'
   map(input: TavilyMapInput): Promise<Readonly<TavilyMapResult>>

@@ -3,7 +3,7 @@ import type { Context } from '@deepseek-ai/cordis'
 export const TOOL_DISCOVERY_GUIDANCE = [
   'Search Enhance keeps a fixed model-facing surface: web_search, docs_search, web_extract, search_tools, and search_call.',
   'Use search_tools only when the resident search tools cannot complete the task. It returns append-only capability and operation manifests; do not activate every capability preemptively.',
-  'Run a manifested deferred operation with search_call({ operation, arguments }). A newly disclosed capability is callable on the next model step, and search_call fails closed while it is inactive.',
+  'Run a manifested deferred operation with search_call({ operation, arguments }). In progressive mode, a newly disclosed capability is callable on the next model step; in all mode, deferred operations are active immediately. search_call fails closed while an operation is inactive.',
   'Activate planning only for explicit deep research, multi-source verification, or complex comparison. Activate diagnostics only when the user asks about Provider configuration or connectivity.',
   'A successful web_search or docs_search result with source_ref activates the sources capability. Use the appended search_sources manifest, or call search_tools for sources to replay that manifest before search_call.',
 ].join('\n')

@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { createServer } from 'node:http'
 import { lstat, mkdtemp, readFile, rm, symlink, unlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+
+import { CallId, createToolResultMessage } from '@deepseek-ai/dsh-llm'
 
 const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)))
 const dshHome = await mkdtemp(join(tmpdir(), 'dsh-search-enhance-'))
@@ -60,6 +63,67 @@ async function waitFor(predicate, message) {
     if (Date.now() >= deadline) throw new Error(message)
     await new Promise(resolve => setTimeout(resolve, 5))
   }
+}
+
+const sha256 = value => createHash('sha256')
+  .update(typeof value === 'string' ? value : JSON.stringify(value))
+  .digest('hex')
+
+async function modelSurface(ctx, systemPromptModule, agent) {
+  const assembly = await ctx.systemPrompt.assemble({ scope: agent, agent })
+  const sdkText = assembly.sections.find(section => section.name === 'tools:sdk')?.text ?? ''
+  return {
+    systemHash: sha256(systemPromptModule.renderPrompt(assembly)),
+    wireNames: assembly.tools.map(schema => schema.name),
+    wireHash: sha256(assembly.tools),
+    sdkHash: sha256(sdkText),
+    topLevelSchemaHash: sha256(assembly.tools[0] ?? null),
+  }
+}
+
+function appendDisclosure(session, capability, step) {
+  session.append('step/start', { turn: 1, step })
+  const callId = CallId(`loader-disclosure-${step}`)
+  const call = session.append('tool/call', {
+    turn: 1,
+    step,
+    callId,
+    name: 'search_tools',
+    arguments: JSON.stringify({ capabilities: [capability] }),
+  })
+  session.append('tool/result', {
+    turn: 1,
+    step,
+    message: createToolResultMessage({
+      callId,
+      content: [{ type: 'text', text: 'manifest' }],
+      isError: false,
+    }),
+  }, { sourceEventSeqs: [call.seq], surfaceOp: 'append' })
+  session.append('step/end', { turn: 1, step })
+}
+
+function appendSourceActivation(session, step) {
+  session.append('step/start', { turn: 1, step })
+  const callId = CallId(`loader-source-${step}`)
+  const call = session.append('tool/call', {
+    turn: 1,
+    step,
+    callId,
+    name: 'web_search',
+    arguments: JSON.stringify({ query: 'source activation' }),
+  })
+  session.append('tool/result', {
+    turn: 1,
+    step,
+    message: createToolResultMessage({
+      callId,
+      content: [{ type: 'text', text: 'source' }],
+      isError: false,
+    }),
+    meta: { version: 1, type: 'web_search', source_produced: true },
+  }, { sourceEventSeqs: [call.seq], surfaceOp: 'append' })
+  session.append('step/end', { turn: 1, step })
 }
 
 process.env.DSH_HOME = dshHome
@@ -281,6 +345,90 @@ try {
   assert.ok(agentPrompt.includes(toolDiscoveryGuidance))
   assert.ok(agentPrompt.includes(fullEvidenceGuidance))
 
+  const nativeSurface = await modelSurface(ctx, systemPromptModule, mutableAgent)
+  assert.deepEqual(nativeSurface.wireNames, [
+    'docs_search',
+    'search_call',
+    'search_tools',
+    'web_extract',
+    'web_search',
+  ])
+  const inactiveGateway = await ctx.tools.execute({
+    callId: CallId('loader-inactive-gateway'),
+    name: 'search_call',
+    arguments: { operation: 'web_map', arguments: { url: 'https://example.test' } },
+    agent: mutableAgent,
+    signal: new AbortController().signal,
+  })
+  assert.equal(inactiveGateway.error?.info?.code, 'SEARCH_OPERATION_UNAVAILABLE')
+  assert.deepEqual(await modelSurface(ctx, systemPromptModule, mutableAgent), nativeSurface)
+  appendDisclosure(agentSession, 'site_map', 1)
+  appendSourceActivation(agentSession, 2)
+  assert.deepEqual(
+    await modelSurface(ctx, systemPromptModule, mutableAgent),
+    nativeSurface,
+    'Native system text or wire schema changed after disclosure',
+  )
+
+  const codeSession = sessionModule.Session.create(sessionModule.SessionId('loader-code-agent'))
+  const codeAgent = {
+    id: codeSession.id,
+    options: {},
+    session: codeSession,
+    ctx: undefined,
+  }
+  let codeScope
+  const codeOwner = ctx.plugin({
+    name: 'loader-code-agent-owner',
+    inject: ['agents', 'tools'],
+    apply(pluginCtx) {
+      codeScope = scopeModule.createScope(pluginCtx, codeAgent)
+      codeAgent.ctx = codeScope.ctx
+      codeScope.ctx.tools.presentAs('code')
+      pluginCtx.agents.register(codeAgent)
+    },
+  })
+  await codeOwner.await()
+  assert.ok(codeScope)
+  const codeSurface = await modelSurface(ctx, systemPromptModule, codeAgent)
+  assert.deepEqual(codeSurface.wireNames, ['run_code'])
+  assert.notEqual(codeSurface.sdkHash, sha256(''))
+  appendDisclosure(codeSession, 'site_map', 1)
+  appendSourceActivation(codeSession, 2)
+  assert.deepEqual(
+    await modelSurface(ctx, systemPromptModule, codeAgent),
+    codeSurface,
+    'Code SDK text or run_code schema changed after disclosure',
+  )
+
+  const recoveredSession = sessionModule.Session.create(
+    sessionModule.SessionId('loader-recovered-agent'),
+    agentSession.events,
+  )
+  const recoveredAgent = {
+    id: recoveredSession.id,
+    options: {},
+    session: recoveredSession,
+    ctx: undefined,
+  }
+  let recoveredScope
+  const recoveredOwner = ctx.plugin({
+    name: 'loader-recovered-agent-owner',
+    inject: ['agents', 'tools'],
+    apply(pluginCtx) {
+      recoveredScope = scopeModule.createScope(pluginCtx, recoveredAgent)
+      recoveredAgent.ctx = recoveredScope.ctx
+      pluginCtx.agents.register(recoveredAgent)
+    },
+  })
+  await recoveredOwner.await()
+  assert.ok(recoveredScope)
+  assert.deepEqual(
+    await modelSurface(ctx, systemPromptModule, recoveredAgent),
+    nativeSurface,
+    'recovered Session changed the fixed Native surface',
+  )
+
   assert.equal(ctx.get('webServer'), undefined, 'headless Loader unexpectedly mounted a Web server')
   const settings = ctx.settings
   const tools = ctx.tools
@@ -381,6 +529,16 @@ try {
   const restartedAgentWebSearch = tools.get('web_search', mutableAgent)
   assert.notEqual(restartedAgentWebSearch, nativeWebSearchDefinition)
   assert.deepEqual(
+    await modelSurface(ctx, systemPromptModule, mutableAgent),
+    nativeSurface,
+    'HMR changed the Native model surface',
+  )
+  assert.deepEqual(
+    await modelSurface(ctx, systemPromptModule, codeAgent),
+    codeSurface,
+    'HMR changed the Code model surface',
+  )
+  assert.deepEqual(
     Object.keys(tools.schemas(mutableAgent)
       .find(schema => schema.name === 'web_search').parameters.properties),
     ['query', 'profile', 'depth'],
@@ -462,6 +620,10 @@ try {
   })
   assert.equal(independentWebResult.isError, false)
   assert.equal(independentWebResult.value, 'stub:restored native definition')
+  await recoveredOwner.dispose()
+  await recoveredScope.dispose()
+  await codeOwner.dispose()
+  await codeScope.dispose()
   await agentOwner.dispose()
   await agentScope.dispose()
   disposeWebSearch()
@@ -498,7 +660,7 @@ try {
     /invalid-record|failed to load|failed to apply/i,
   )
 
-  process.stdout.write(`loader smoke: ok (${expectedPluginToolNames.length} fixed resident tools, static prompt, real storage, pagination/recovery, corruption rejection, reload/dispose)\n`)
+  process.stdout.write(`loader smoke: ok (${expectedPluginToolNames.length} fixed resident tools, Native/Code surface hashes, recovery, storage, reload/dispose)\n`)
 } finally {
   if (ctx !== undefined && !disposed && ctx.fiber.uid !== null) {
     await ctx.fiber.dispose()

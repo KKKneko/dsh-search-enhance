@@ -7,7 +7,7 @@
   },
   "phase1": {
     "pid": "<first-process>",
-    "event_count": 97,
+    "event_count": 94,
     "event_types": [
       "agent/inbox/spliced",
       "turn/start",
@@ -28,84 +28,58 @@
     "model_tool_views": [
       [
         "docs_search",
+        "search_call",
         "search_tools",
         "web_extract",
         "web_search"
       ],
       [
-        "context7_get_cached_doc_raw",
-        "context7_get_library_docs",
-        "context7_query_docs",
-        "context7_resolve_library_id",
         "docs_search",
+        "search_call",
         "search_tools",
         "web_extract",
         "web_search"
       ],
       [
-        "context7_get_cached_doc_raw",
-        "context7_get_library_docs",
-        "context7_query_docs",
-        "context7_resolve_library_id",
         "docs_search",
+        "search_call",
         "search_tools",
         "web_extract",
         "web_search"
       ],
       [
-        "context7_get_cached_doc_raw",
-        "context7_get_library_docs",
-        "context7_query_docs",
-        "context7_resolve_library_id",
         "docs_search",
+        "search_call",
         "search_tools",
         "web_extract",
-        "web_map",
         "web_search"
       ],
       [
-        "context7_get_cached_doc_raw",
-        "context7_get_library_docs",
-        "context7_query_docs",
-        "context7_resolve_library_id",
         "docs_search",
+        "search_call",
         "search_tools",
         "web_extract",
-        "web_map",
         "web_search"
       ],
       [
-        "context7_get_cached_doc_raw",
-        "context7_get_library_docs",
-        "context7_query_docs",
-        "context7_resolve_library_id",
         "docs_search",
+        "search_call",
         "search_tools",
         "web_extract",
-        "web_map",
         "web_search"
       ],
       [
-        "context7_get_cached_doc_raw",
-        "context7_get_library_docs",
-        "context7_query_docs",
-        "context7_resolve_library_id",
         "docs_search",
+        "search_call",
         "search_tools",
         "web_extract",
-        "web_map",
         "web_search"
       ],
       [
-        "context7_get_cached_doc_raw",
-        "context7_get_library_docs",
-        "context7_query_docs",
-        "context7_resolve_library_id",
         "docs_search",
-        "search_sources",
+        "search_call",
         "search_tools",
         "web_extract",
-        "web_map",
         "web_search"
       ]
     ],
@@ -138,7 +112,7 @@
         "content": [
           {
             "type": "text",
-            "text": "Fresh-process fixture answer.\n\nTop sources\n1. Primary recovery evidence\n   URL: <fixture-origin>/evidence/primary\n\nSources shown: 1/1\nSource reference: <source-ref>\n\nEvidence level: discovery. Snippets are discovery metadata, not verified page-body evidence."
+            "text": "Fresh-process fixture answer.\n\nTop sources\n1. Primary recovery evidence\n   URL: <fixture-origin>/evidence/primary\n\nSources shown: 1/1\n\nEvidence level: discovery. Snippets are discovery metadata, not verified page-body evidence.\n\nSource reference: <source-ref>\n\n{\"capability\":\"sources\",\"gateway\":\"search_call\",\"operations\":[{\"name\":\"search_sources\",\"description\":\"Page discovery sources retained by web_search or docs_search for the current Agent session or an inherited fork. The private search_enhance_sources storage must be backed up and restored together with the session.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"source_ref\":{\"type\":\"string\",\"description\":\"Opaque source reference returned by web_search or docs_search.\"},\"offset\":{\"type\":\"integer\",\"description\":\"Zero-based source offset; defaults to 0.\"},\"limit\":{\"type\":\"integer\",\"description\":\"Positive page size; defaults to 20 and is capped by Settings.\"},\"format\":{\"type\":\"string\",\"description\":\"compact (default) or full with bounded snippets.\",\"enum\":[\"compact\",\"full\"]}},\"required\":[\"source_ref\"]},\"output_schema\":{\"oneOf\":[{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"state\":{\"type\":\"string\",\"const\":\"found\"},\"source_ref\":{\"type\":\"string\"},\"offset\":{\"type\":\"integer\"},\"limit\":{\"type\":\"integer\"},\"format\":{\"type\":\"string\",\"enum\":[\"compact\",\"full\"]},\"total\":{\"type\":\"integer\"},\"returned\":{\"type\":\"integer\"},\"sources\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"url\":{\"type\":\"string\"},\"title\":{\"type\":\"string\"},\"date\":{\"type\":\"string\"},\"category\":{\"type\":\"string\",\"enum\":[\"official\",\"primary\",\"documentation\",\"code\",\"academic\",\"news\",\"community\",\"aggregate\",\"unknown\"]},\"snippet\":{\"type\":\"string\",\"description\":\"Bounded discovery snippet; not fetched page-body evidence.\"},\"snippet_truncated\":{\"type\":\"boolean\",\"const\":true}},\"required\":[\"url\",\"category\"]}},\"has_more\":{\"type\":\"boolean\"},\"next_offset\":{\"type\":\"integer\"},\"total_before_retention\":{\"type\":\"integer\"},\"truncated\":{\"type\":\"boolean\"},\"page_byte_limited\":{\"type\":\"boolean\"}},\"required\":[\"state\",\"source_ref\",\"offset\",\"limit\",\"format\",\"total\",\"returned\",\"sources\",\"has_more\",\"total_before_retention\",\"truncated\",\"page_byte_limited\"]},{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"state\":{\"type\":\"string\",\"const\":\"not_found\"},\"code\":{\"type\":\"string\",\"const\":\"SOURCE_REF_NOT_FOUND\"}},\"required\":[\"state\",\"code\"]}]},\"call\":{\"tool\":\"search_call\",\"operation\":\"search_sources\"}}]}\nCapability \"sources\" is active for this Agent. Invoke only the manifested deferred operations through search_call."
           }
         ]
       }
@@ -163,7 +137,7 @@
   },
   "phase2": {
     "pid": "<second-process>",
-    "loaded_event_count": 97,
+    "loaded_event_count": 94,
     "loaded_event_types": [
       "agent/inbox/spliced",
       "turn/start",
@@ -178,7 +152,7 @@
       "step/end",
       "turn/end"
     ],
-    "resumed_event_count": 136,
+    "resumed_event_count": 132,
     "resumed_event_types": [
       "agent/inbox/spliced",
       "turn/start",
@@ -216,33 +190,23 @@
         "content": [
           {
             "type": "text",
-            "text": "Fresh-process fixture answer.\n\nTop sources\n1. Primary recovery evidence\n   URL: <fixture-origin>/evidence/primary\n\nSources shown: 1/1\nSource reference: <source-ref>\n\nEvidence level: discovery. Snippets are discovery metadata, not verified page-body evidence."
+            "text": "Fresh-process fixture answer.\n\nTop sources\n1. Primary recovery evidence\n   URL: <fixture-origin>/evidence/primary\n\nSources shown: 1/1\n\nEvidence level: discovery. Snippets are discovery metadata, not verified page-body evidence.\n\nSource reference: <source-ref>\n\n{\"capability\":\"sources\",\"gateway\":\"search_call\",\"operations\":[{\"name\":\"search_sources\",\"description\":\"Page discovery sources retained by web_search or docs_search for the current Agent session or an inherited fork. The private search_enhance_sources storage must be backed up and restored together with the session.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"source_ref\":{\"type\":\"string\",\"description\":\"Opaque source reference returned by web_search or docs_search.\"},\"offset\":{\"type\":\"integer\",\"description\":\"Zero-based source offset; defaults to 0.\"},\"limit\":{\"type\":\"integer\",\"description\":\"Positive page size; defaults to 20 and is capped by Settings.\"},\"format\":{\"type\":\"string\",\"description\":\"compact (default) or full with bounded snippets.\",\"enum\":[\"compact\",\"full\"]}},\"required\":[\"source_ref\"]},\"output_schema\":{\"oneOf\":[{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"state\":{\"type\":\"string\",\"const\":\"found\"},\"source_ref\":{\"type\":\"string\"},\"offset\":{\"type\":\"integer\"},\"limit\":{\"type\":\"integer\"},\"format\":{\"type\":\"string\",\"enum\":[\"compact\",\"full\"]},\"total\":{\"type\":\"integer\"},\"returned\":{\"type\":\"integer\"},\"sources\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"url\":{\"type\":\"string\"},\"title\":{\"type\":\"string\"},\"date\":{\"type\":\"string\"},\"category\":{\"type\":\"string\",\"enum\":[\"official\",\"primary\",\"documentation\",\"code\",\"academic\",\"news\",\"community\",\"aggregate\",\"unknown\"]},\"snippet\":{\"type\":\"string\",\"description\":\"Bounded discovery snippet; not fetched page-body evidence.\"},\"snippet_truncated\":{\"type\":\"boolean\",\"const\":true}},\"required\":[\"url\",\"category\"]}},\"has_more\":{\"type\":\"boolean\"},\"next_offset\":{\"type\":\"integer\"},\"total_before_retention\":{\"type\":\"integer\"},\"truncated\":{\"type\":\"boolean\"},\"page_byte_limited\":{\"type\":\"boolean\"}},\"required\":[\"state\",\"source_ref\",\"offset\",\"limit\",\"format\",\"total\",\"returned\",\"sources\",\"has_more\",\"total_before_retention\",\"truncated\",\"page_byte_limited\"]},{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"state\":{\"type\":\"string\",\"const\":\"not_found\"},\"code\":{\"type\":\"string\",\"const\":\"SOURCE_REF_NOT_FOUND\"}},\"required\":[\"state\",\"code\"]}]},\"call\":{\"tool\":\"search_call\",\"operation\":\"search_sources\"}}]}\nCapability \"sources\" is active for this Agent. Invoke only the manifested deferred operations through search_call."
           }
         ]
       }
     },
     "recovered_tools_before_first_request": [
-      "context7_get_cached_doc_raw",
-      "context7_get_library_docs",
-      "context7_query_docs",
-      "context7_resolve_library_id",
       "docs_search",
-      "search_sources",
+      "search_call",
       "search_tools",
       "web_extract",
-      "web_map",
       "web_search"
     ],
     "first_request_tools": [
-      "context7_get_cached_doc_raw",
-      "context7_get_library_docs",
-      "context7_query_docs",
-      "context7_resolve_library_id",
       "docs_search",
-      "search_sources",
+      "search_call",
       "search_tools",
       "web_extract",
-      "web_map",
       "web_search"
     ],
     "first_request_restored_before_assembly": true,
@@ -286,8 +250,8 @@
     "public_fork_used": true,
     "public_forks": [
       {
-        "boundary": 25,
-        "seed_length": 26,
+        "boundary": 24,
+        "seed_length": 25,
         "marker": "session/end-seed",
         "event_types": [
           "agent/inbox/spliced",
@@ -306,8 +270,8 @@
         ]
       },
       {
-        "boundary": 25,
-        "seed_length": 26,
+        "boundary": 24,
+        "seed_length": 25,
         "marker": "session/end-seed",
         "event_types": [
           "agent/inbox/spliced",
@@ -328,57 +292,53 @@
     ],
     "fork_tools": {
       "inherited": [
-        "context7_get_cached_doc_raw",
-        "context7_get_library_docs",
-        "context7_query_docs",
-        "context7_resolve_library_id",
         "docs_search",
+        "search_call",
         "search_tools",
         "web_extract",
         "web_search"
       ],
       "child_after_activation": [
-        "context7_get_cached_doc_raw",
-        "context7_get_library_docs",
-        "context7_query_docs",
-        "context7_resolve_library_id",
         "docs_search",
-        "research_plan",
-        "search_sources",
+        "search_call",
         "search_tools",
         "web_extract",
         "web_search"
       ],
       "sibling_after_activation": [
-        "context7_get_cached_doc_raw",
-        "context7_get_library_docs",
-        "context7_query_docs",
-        "context7_resolve_library_id",
         "docs_search",
-        "search_diagnostics",
+        "search_call",
         "search_tools",
         "web_extract",
         "web_search"
       ],
       "parent_after_activation": [
-        "context7_get_cached_doc_raw",
-        "context7_get_library_docs",
-        "context7_query_docs",
-        "context7_resolve_library_id",
         "docs_search",
-        "research_plan",
-        "search_sources",
+        "search_call",
         "search_tools",
         "web_extract",
-        "web_map",
         "web_search"
       ],
       "unrelated_fresh": [
         "docs_search",
+        "search_call",
         "search_tools",
         "web_extract",
         "web_search"
       ]
+    },
+    "fork_operation_access": {
+      "parent_planning_before": "SEARCH_OPERATION_UNAVAILABLE",
+      "sibling_planning_before": "SEARCH_OPERATION_UNAVAILABLE",
+      "child_planning_after": "active",
+      "child_web_map_active": false,
+      "sibling_diagnostics_after": "active",
+      "child_diagnostics_after": "SEARCH_OPERATION_UNAVAILABLE",
+      "parent_diagnostics_after": "SEARCH_OPERATION_UNAVAILABLE",
+      "parent_planning_after": "active",
+      "parent_web_map_active": true,
+      "sibling_planning_after": "SEARCH_OPERATION_UNAVAILABLE",
+      "unrelated_planning": "SEARCH_OPERATION_UNAVAILABLE"
     },
     "source_isolation": true,
     "no_additional_http_dispatch": true,

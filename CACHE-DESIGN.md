@@ -32,6 +32,17 @@ Remove state-dependent system-prompt prose (remaining group lists and visibility
 
 Do not retain a second direct model-facing path for deferred operations. Internal operation definitions may share schemas, execution, output rendering, and bounds, but Native and Code Mode must use the same fixed `search_call` schema, execution policy, and canonical JSON result.
 
+## Integrated gateway contract
+
+The implemented operation manifest carries each deferred operation's exact `parameters` and `output_schema`, plus the canonical `search_call` route. `search_tools` returns the same immutable definitions in both discovery modes:
+
+- `progressive`: newly added groups become callable after the current step ends;
+- `all`: every deferred operation is callable immediately, while the registered model-facing tool table remains identical to `progressive`.
+
+Research plans keep resident operations on their direct routes (`web_search`, `docs_search`, `web_extract`) and route only deferred `web_map` steps through `search_call`. The plan's `web_map_available` fact means the `site_map` operation is active for that Agent, not that a standalone `web_map` tool is registered.
+
+A source-producing `web_search` or `docs_search` result reserves bounded model text for both its `source_ref` and the compact `search_sources` operation manifest. Recovery still folds only standard `tool/call`, `tool/result`, and `tool/code-dispatch` session data; there is no second persisted disclosure store.
+
 ## DSH constraints
 
 Use only public DSH/Cordis seams. Do not edit DSH installation files or `references/dsh-plugin-development/**`. Do not filter only the prompt assembly while leaving lookup/execution inconsistent. Do not bypass cancellation, output validation, or lifecycle disposal. Model-visible facts must be reconstructable from standard session events/results. Preserve HMR/dispose cleanup.
