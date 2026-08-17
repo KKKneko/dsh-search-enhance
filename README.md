@@ -12,47 +12,51 @@
   ▼
 DSH Agent
   │
-  ├─ web_search ──────> Grok 主搜索
-  │                      ├─ 按需要补充 Context7 / Exa
-  │                      ├─ 按需要补充 Tavily / Firecrawl
-  │                      └─ 返回回答、来源，必要时返回 source_ref
-  │
-  ├─ docs_search ─────> Context7 / Exa 文档检索
-  │                      └─ 返回文档片段、来源，必要时返回 source_ref
-  │
-  ├─ web_extract ─────> Tavily → Firecrawl → smart_direct → direct
-  │                      └─ 读取选中网页的正文
-  │
-  └─ search_tools ────> 按需开放更多工具
-                         ├─ Context7 精细查询
-                         ├─ 完整来源分页
-                         ├─ 站点页面发现
-                         ├─ 研究计划
-                         └─ 配置诊断
+  └─ 固定模型工具 surface（schema 与顺序不随披露状态变化）
+      ├─ web_search ──────> Grok 主搜索
+      │                      ├─ 按需要补充 Context7 / Exa
+      │                      ├─ 按需要补充 Tavily / Firecrawl
+      │                      └─ 返回回答、来源；有 source_ref 时追加 search_sources manifest
+      │
+      ├─ docs_search ─────> Context7 / Exa 文档检索
+      │                      └─ 返回文档片段、来源；有 source_ref 时追加 search_sources manifest
+      │
+      ├─ web_extract ─────> Tavily → Firecrawl → smart_direct → direct
+      │                      └─ 读取选中网页的正文
+      │
+      ├─ search_tools ────> 按需返回 capability / operation manifest
+      │
+      └─ search_call ─────> 调用已经激活的延迟 operation
+                             ├─ Context7 精细查询
+                             ├─ 完整来源分页
+                             ├─ 站点页面发现
+                             ├─ 研究计划
+                             └─ 配置诊断
 ```
 
 插件继续使用 DSH 原有的 `web_search` 名称，不会再增加第二个普通搜索入口。在本来可以使用 `web_search` 的 Agent 中，插件提供增强后的搜索；如果某个 Agent 已经禁用网页搜索，插件不会强行重新开启。
 
 普通搜索以 Grok 为主。其他服务只负责补充文档、来源或网页内容，不会替代 Grok 的主搜索位置。
 
-### 初始可用工具
+### 固定模型工具 surface
 
-默认使用渐进式披露。每个新 Agent 开始时，插件提供的搜索工具中只显示以下四个：
+默认使用 `progressive`。在 DSH 未另行限制的 Agent 中，插件在初始步骤和后续步骤提供的五个固定搜索入口（Native tool / Code Mode SDK）是：
 
-| 工具 | 用途 |
+| 工具 | 调用方式与用途 |
 | --- | --- |
-| `web_search` | 通用搜索。使用 Grok 生成主要回答，并按搜索类型补充其他来源 |
-| `docs_search` | 面向库、框架、SDK、API 和源码仓库的文档检索 |
-| `web_extract` | 读取指定网页正文，用于核对搜索摘要中的重要内容 |
-| `search_tools` | 当前四个工具不足时，按需要开放后续工具 |
+| `web_search` | 直接调用。使用 Grok 生成通用搜索的主要回答，并按搜索类型补充其他来源 |
+| `docs_search` | 直接调用。检索库、框架、SDK、API 和源码仓库文档 |
+| `web_extract` | 直接调用。读取指定网页正文，用于核对搜索摘要中的重要内容 |
+| `search_tools` | 直接调用。按需返回延迟能力的 operation manifest，不注册新的模型工具 |
+| `search_call` | 固定网关。通过 `search_call({ operation, arguments })` 调用已经激活的延迟 operation |
 
-这样可以避免一开始向模型展示全部工具，同时保留深度搜索所需的完整能力。
+这里的“延迟”指 operation 是否处于 active 状态，而不是工具是否出现在列表中。延迟 operation 的参数和输出 schema 通过工具结果中的 manifest 披露，不会作为独立工具加入模型 surface。
 
 ### 渐进式披露
 
 `search_tools` 一次可以选择一到五组能力：
 
-| 能力组 | 开放的工具 | 适用场景 |
+| 能力组 | 按需返回 manifest 的 operation | 适用场景 |
 | --- | --- | --- |
 | `context7` | `context7_resolve_library_id`、`context7_query_docs`、`context7_get_library_docs`、`context7_get_cached_doc_raw` | 需要精确选择库版本或进一步读取 Context7 文档 |
 | `sources` | `search_sources` | 搜索结果中的来源较多，需要继续分页读取完整来源 |
@@ -60,23 +64,24 @@ DSH Agent
 | `planning` | `research_plan` | 明确要求深度研究、多来源核对或复杂比较时先制定计划 |
 | `diagnostics` | `search_diagnostics` | 用户明确要求检查搜索配置或连接状态 |
 
-渐进式披露遵循以下规则：
+披露与调用遵循以下规则：
 
-1. 新工具不会在 `search_tools` 调用的同一步立即出现，而会从下一步开始可用。
-2. 开放范围只属于当前 Agent；已经开放的能力会保留，重复开放不会产生第二套工具。
-3. `web_search` 或 `docs_search` 成功返回 `source_ref` 后，`sources` 会自动开放，不需要再次调用 `search_tools`。
-4. 插件只会减少自己设置的隐藏范围，不能绕过 DSH 原有的工具限制。
-5. 不应预先开放全部能力；只有初始四个工具无法完成任务时才按需增加。
+1. `search_tools` 返回所请求能力组的 operation manifest，其中包含真实的参数 schema、输出 schema 和 `search_call` 路由；它不会增加、删除或改写模型工具 schema。
+2. 在 `progressive` 模式下，新披露的能力组从下一模型 step 开始 active；同一步内提前调用会失败。激活范围属于当前 Agent，重复请求会再次返回同一 manifest，但不会创建第二套状态或入口。
+3. 在 `all` 模式下，唯一变化是所有延迟 operation 从一开始就 active；`search_tools` 仍按需返回 manifest。`all` 不会“显示全部 12 个工具”，两种模式的五个模型工具及其 schema 完全相同。
+4. 延迟 operation 只能通过 `search_call({ operation, arguments })` 调用，不能直接调用 `search_sources`、`web_map` 等名称；resident 的 `web_search`、`docs_search` 和 `web_extract` 仍然直接调用。
+5. `web_search` 或 `docs_search` 成功返回 `source_ref` 时，插件会自动激活 `sources`，并在结果中追加 `search_sources` manifest；在 `progressive` 模式下可从下一 step 通过 `search_call` 使用它。
+6. 固定 surface 仍受 DSH 原有 Preset、guard 和工具限制约束，插件不会绕过这些限制。
 
-如果希望插件一开始就显示全部 12 个工具，可以在配置页把“工具披露模式”改为 `all`。默认的 `progressive` 更适合普通使用；无论选择哪种模式，DSH 原有的工具限制仍然有效。
+这种固定网关设计保留了按需披露，同时避免插件因披露状态变化而改写发送给 DeepSeek 的 system 文本、tool schema/顺序或 Code Mode SDK 前缀，从而消除插件自身造成的前缀变化。DeepSeek Provider 的上下文缓存仍是 best-effort，不能据此承诺固定命中率或每次请求都命中。
 
 ### 一次完整搜索如何进行
 
-1. 通用问题先使用 `web_search`，文档问题优先使用 `docs_search`。
-2. 当搜索产生来源时，会同时返回可见来源和一个可继续读取完整来源的 `source_ref`。
-3. 需要更多来源时使用自动开放的 `search_sources` 分页读取。
-4. 对重要结论，选择权威链接并使用 `web_extract` 获取网页正文。
-5. 如果任务需要站点内发现、研究计划或连接检查，再通过 `search_tools` 开放对应能力。
+1. 通用问题直接调用 `web_search`，文档问题直接调用 `docs_search`。
+2. 当搜索产生来源时，结果会包含可见来源、`source_ref` 和追加的 `search_sources` manifest，同时自动激活 `sources`。
+3. 在下一 step 需要更多来源时，调用 `search_call({ operation: 'search_sources', arguments: { source_ref, offset: 0, limit: 20, format: 'compact' } })` 分页读取，而不是直接调用 `search_sources`。
+4. 对重要结论，选择权威链接并直接调用 `web_extract` 获取网页正文。
+5. 如果任务需要站点内发现、研究计划、精细 Context7 查询或连接检查，先调用例如 `search_tools({ capabilities: ['site_map'] })` 取得 manifest；`progressive` 模式从下一 step、`all` 模式立即通过 `search_call({ operation: 'web_map', arguments: { url: 'https://example.com' } })` 调用相应 operation。
 6. 最终回答综合主搜索、补充来源和已经读取的网页正文，并保留来源链接。
 
 `source_ref` 只是完整来源列表的引用，不等同于网页正文；重要事实仍应通过 `web_extract` 读取原页面后再下结论。
@@ -147,7 +152,7 @@ dsh web
 
 不确定时保持默认值即可，也可以在单次搜索中临时选择其他设置。
 
-“工具披露模式”建议保持 `progressive`，让工具按任务需要逐步出现；只有明确希望一开始显示全部搜索工具时才选择 `all`。
+“工具披露模式”建议保持 `progressive`，让延迟 operation 按需披露并从下一模型 step 激活；`all` 只让所有延迟 operation 从一开始处于 active 状态。两种模式都保留同一组五个模型工具及相同 schema，不会显示额外的独立工具。
 
 ### 4. 配置网页代理
 
