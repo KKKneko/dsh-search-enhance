@@ -74,7 +74,8 @@
   ],
   "sideEffects": ["./client/client.js"],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && tsdown && tsc -p tsconfig.client.build.json",
+    "clean": "node -e \"const { rmSync } = require('node:fs'); for (const path of ['lib', 'client']) rmSync(path, { recursive: true, force: true })\"",
+    "build": "npm run clean && tsc -p tsconfig.build.json && tsdown && tsc -p tsconfig.client.build.json",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.client.json",
     "test": "npm run test:unit && npm run test:loader && npm run test:headless",
     "test:unit": "vitest run",
