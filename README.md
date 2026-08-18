@@ -73,7 +73,7 @@ DSH Agent
 5. `web_search` 或 `docs_search` 成功返回 `source_ref` 时，插件会自动激活 `sources`，并在结果中追加 `search_sources` manifest；在 `progressive` 模式下可从下一 step 通过 `search_call` 使用它。
 6. 固定 surface 仍受 DSH 原有 Preset、guard 和工具限制约束，插件不会绕过这些限制。
 
-这种固定网关设计保留了按需披露，同时避免插件因披露状态变化而改写发送给 DeepSeek 的 system 文本、tool schema/顺序或 Code Mode SDK 前缀，从而消除插件自身造成的前缀变化。DeepSeek Provider 的上下文缓存仍是 best-effort，不能据此承诺固定命中率或每次请求都命中。
+这种固定网关设计保留了按需披露，同时避免插件因披露状态变化而改写发送给 DeepSeek 的 system 文本、tool schema/顺序或 Code Mode SDK 前缀，从而消除插件自身造成的前缀变化。
 
 ### 一次完整搜索如何进行
 
@@ -215,11 +215,3 @@ dsh plugin --profile web add dsh-search-enhance@latest
 ```bash
 dsh plugin --profile web remove dsh-search-enhance
 ```
-
-## 使用提示
-
-- 网页正文读取不会执行页面 JavaScript，也不能处理登录、验证码或浏览器会话。
-- 常见的 Cloudflare 等反爬验证页会被视为不可用并继续降级，不会作为网页正文返回；这是避免错误证据的保护，不是绕过机制。
-- 页面必须完成 JavaScript、验证码或登录交互时，`smart_direct`/`direct` 无法完成，Tavily/Firecrawl 也不保证可用；只能在已获授权并符合服务条款时改用具备相应能力的独立浏览器工具。
-- 网页读取可以访问 DSH 所在机器能够访问的地址；在敏感网络中只处理可信链接，并配合网络访问限制。
-- 如果配置页面没有出现，先用 `dsh plugin --profile web list --depth 0` 确认 npm 包已经安装，然后重启 DSH 并强制刷新浏览器。
