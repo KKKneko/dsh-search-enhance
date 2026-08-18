@@ -15,11 +15,30 @@ export const WEB_CREDENTIAL_SLOTS = [
 
 export type WebCredentialSlot = (typeof WEB_CREDENTIAL_SLOTS)[number]
 
-export const WEB_EDITABLE_PATHS = [
+/**
+ * Search profiles that carry an editable supplementary discovery budget. The
+ * list is spelled here rather than imported: this contract is also the browser
+ * half, and a client module must not depend on the Host configuration module.
+ * The Host contract test keeps this list aligned with the configuration schema.
+ */
+export const WEB_EXTRA_DISCOVERY_PROFILES = [
+  'auto',
+  'coding_docs',
+  'code_examples',
+  'project_research',
+  'academic',
+  'fact_check',
+] as const
+
+export type WebExtraDiscoveryProfile = (typeof WEB_EXTRA_DISCOVERY_PROFILES)[number]
+export type WebExtraDiscoverySources = Record<WebExtraDiscoveryProfile, number>
+
+export const WEB_EDITABLE_PATHS: readonly (readonly string[])[] = [
   ['defaultProfile'],
   ['defaultDepth'],
   ['toolTimeoutMs'],
   ['toolDiscovery', 'mode'],
+  ...WEB_EXTRA_DISCOVERY_PROFILES.map(profile => ['extraDiscoverySources', profile]),
   ['searchApi', 'baseUrl'],
   ['searchApi', 'protocol'],
   ['searchApi', 'model'],
@@ -40,7 +59,7 @@ export const WEB_EDITABLE_PATHS = [
   ['providers', 'firecrawl', 'timeoutMs'],
   ['webExtract', 'smartDirect', 'proxyUrl'],
   ['webExtract', 'direct', 'proxyUrl'],
-] as const
+]
 
 export interface WebSearchApiConfig {
   baseUrl: string
@@ -68,6 +87,7 @@ export interface WebEditableConfig {
   toolDiscovery: {
     mode: string
   }
+  extraDiscoverySources: WebExtraDiscoverySources
   searchApi: WebSearchApiConfig
   providers: {
     context7: WebDiscoveryProviderConfig
@@ -96,6 +116,7 @@ export interface WebConfigOptions {
   thinkingLevels: readonly string[]
   toolDiscoveryModes: readonly string[]
   proxyUrlMaxCharacters: number
+  extraDiscoveryMaxSources: number
 }
 
 export interface WebCredentialState {

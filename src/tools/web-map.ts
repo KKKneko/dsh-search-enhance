@@ -41,7 +41,7 @@ import {
 } from './schemas.js'
 
 export interface WebMapToolDependencies {
-  /** Read and snapshot the current resolved Settings value once per operation. */
+  /** Read the restart-scoped resolved Settings value this plugin instance was loaded with. */
   readonly getConfig: () => Config
   readonly operations: ForegroundOperationScope
   readonly provider: SiteMapProvider

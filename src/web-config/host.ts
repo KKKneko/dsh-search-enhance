@@ -6,6 +6,7 @@ import type {} from '@deepseek-ai/dsh-host-webserver'
 
 import {
   Config as SearchEnhanceConfig,
+  EXTRA_DISCOVERY_SOURCES_MAX,
   SEARCH_API_PROTOCOLS,
   SEARCH_DEPTHS,
   SEARCH_ENHANCE_SETTINGS_NAMESPACE,
@@ -41,7 +42,8 @@ export const WEB_CONFIG_REQUEST_MAX_BYTES = 64 * 1024
 export const WEB_CONFIG_RESPONSE_MAX_BYTES = 128 * 1024
 
 const MAX_CREDENTIAL_SOURCE_CHARACTERS = 128
-const MAX_MUTATIONS = 32
+/** One save may touch each editable field at most once. */
+const MAX_MUTATIONS = WEB_EDITABLE_PATHS.length
 const FORWARDING_HEADERS = [
   'forwarded',
   'x-forwarded-for',
@@ -115,6 +117,7 @@ function projectConfig(config: SearchEnhanceConfigValue): WebEditableConfig {
     defaultDepth: config.defaultDepth,
     toolTimeoutMs: config.toolTimeoutMs,
     toolDiscovery: { mode: config.toolDiscovery.mode },
+    extraDiscoverySources: { ...config.extraDiscoverySources },
     searchApi: {
       baseUrl: boundedString(config.searchApi.baseUrl, WEB_BASE_URL_MAX_CHARACTERS, 'Grok base URL'),
       protocol: config.searchApi.protocol,
@@ -274,6 +277,7 @@ export async function readWebConfigSnapshot(
       thinkingLevels: [...THINKING_LEVELS],
       toolDiscoveryModes: [...TOOL_DISCOVERY_MODES],
       proxyUrlMaxCharacters: WEB_EXTRACT_PROXY_URL_MAX_CHARACTERS,
+      extraDiscoveryMaxSources: EXTRA_DISCOVERY_SOURCES_MAX,
     },
     credentials: Object.fromEntries(credentialEntries) as Record<WebCredentialSlot, WebCredentialState>,
     diagnostics: {
@@ -612,6 +616,9 @@ async function currentConfig(ctx: Context): Promise<SearchEnhanceConfigValue> {
   if (current === undefined) {
     throw new BridgeHttpError(503, 'settings-unavailable', 'Search Enhance settings are not available.')
   }
+  // The configuration surface reads Settings live on purpose: it must write a
+  // credential to the reference the user just saved, while the search plane keeps
+  // using the restart-scoped value its plugin instance loaded.
   // Settings owns schema validation and returns a deeply frozen resolved snapshot.
   // Re-running Schemastery here mutates optional fields and fails on that snapshot.
   return current

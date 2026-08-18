@@ -16,6 +16,7 @@ import {
   WEB_CREDENTIAL_SLOTS,
   WEB_CREDENTIAL_VALUE_MAX_CHARACTERS,
   WEB_EDITABLE_PATHS,
+  WEB_EXTRA_DISCOVERY_PROFILES,
   WEB_MODEL_MAX_CHARACTERS,
   type WebConfigLayer,
   type WebConfigSnapshot,
@@ -122,6 +123,7 @@ function cloneConfig(config: WebEditableConfig): WebEditableConfig {
     defaultDepth: config.defaultDepth,
     toolTimeoutMs: config.toolTimeoutMs,
     toolDiscovery: { ...config.toolDiscovery },
+    extraDiscoverySources: { ...config.extraDiscoverySources },
     searchApi: { ...config.searchApi },
     providers: {
       context7: { ...config.providers.context7 },
@@ -172,6 +174,13 @@ function validTimeouts(config: WebEditableConfig): boolean {
   ].every(positiveInteger)
 }
 
+function validExtraDiscoverySources(config: WebEditableConfig, maximum: number): boolean {
+  return WEB_EXTRA_DISCOVERY_PROFILES.every(profile => {
+    const value = config.extraDiscoverySources[profile]
+    return Number.isInteger(value) && value >= 0 && value <= maximum
+  })
+}
+
 function credentialRef(config: WebEditableConfig, slot: WebCredentialSlot): string {
   return slot === 'searchApi' ? config.searchApi.credentialRef : config.providers[slot].credentialRef
 }
@@ -219,18 +228,21 @@ function Select({ value, options, onChange, disabled }: {
   )
 }
 
-function NumberInput({ value, onChange, disabled, label }: {
+function NumberInput({ value, onChange, disabled, label, min = 1, max }: {
   value: number
   onChange(value: number): void
   disabled: boolean
   label: string
+  min?: number
+  max?: number
 }) {
   return (
     <input
       aria-label={label}
       style={controlStyle}
       type="number"
-      min={1}
+      min={min}
+      max={max}
       step={1}
       value={Number.isFinite(value) ? value : ''}
       disabled={disabled}
@@ -342,13 +354,24 @@ export function SearchEnhancePluginCard({ t }: SearchEnhancePluginCardProps) {
     [draft, snapshot],
   )
   const dirty = mutations.length > 0
-  const valid = draft !== undefined && validTimeouts(draft)
+  const valid = draft !== undefined
+    && snapshot !== undefined
+    && validTimeouts(draft)
+    && validExtraDiscoverySources(draft, snapshot.options.extraDiscoveryMaxSources)
   const editable = phase === 'ready' && snapshot?.writable === true && !saving
 
   const updateProvider = (provider: ProviderId, value: WebDiscoveryProviderConfig): void => {
     setDraft(current => current === undefined ? current : {
       ...current,
       providers: { ...current.providers, [provider]: value },
+    })
+    setFeedback('idle')
+  }
+
+  const updateExtraDiscovery = (profile: typeof WEB_EXTRA_DISCOVERY_PROFILES[number], value: number): void => {
+    setDraft(current => current === undefined ? current : {
+      ...current,
+      extraDiscoverySources: { ...current.extraDiscoverySources, [profile]: value },
     })
     setFeedback('idle')
   }
@@ -603,6 +626,32 @@ export function SearchEnhancePluginCard({ t }: SearchEnhancePluginCardProps) {
                       onChange={toolTimeoutMs => { setDraft(current => current === undefined ? current : { ...current, toolTimeoutMs }); setFeedback('idle') }}
                     />
                   </Field>
+                </div>
+              </section>
+
+              <section style={sectionDividerStyle} aria-labelledby="search-enhance-extra-sources-heading">
+                <div>
+                  <h3 id="search-enhance-extra-sources-heading" style={headingStyle}>{t('extraSourcesHeading')}</h3>
+                  <p style={{ ...bodyStyle, marginTop: 4 }}>{t('extraSourcesIntro')}</p>
+                </div>
+                <div style={gridStyle}>
+                  {WEB_EXTRA_DISCOVERY_PROFILES.map(profile => (
+                    <Field
+                      key={profile}
+                      label={profile}
+                      overridden={isOverridden(snapshot.user, ['extraDiscoverySources', profile])}
+                      t={t}
+                    >
+                      <NumberInput
+                        label={`${t('extraSourcesHeading')} ${profile}`}
+                        value={draft.extraDiscoverySources[profile]}
+                        min={0}
+                        max={snapshot.options.extraDiscoveryMaxSources}
+                        disabled={!editable}
+                        onChange={value => { updateExtraDiscovery(profile, value) }}
+                      />
+                    </Field>
+                  ))}
                 </div>
               </section>
 

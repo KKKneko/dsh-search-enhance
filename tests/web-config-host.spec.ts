@@ -14,7 +14,9 @@ import SettingsProvider, {
 
 import {
   Config,
+  EXTRA_DISCOVERY_SOURCES_MAX,
   SEARCH_ENHANCE_SETTINGS_NAMESPACE,
+  SEARCH_PROFILES,
   WEB_EXTRACT_PROXY_URL_MAX_CHARACTERS,
   type Config as SearchEnhanceConfig,
 } from '../src/config.js'
@@ -26,6 +28,8 @@ import {
 import {
   WEB_CONFIG_PATH,
   WEB_CREDENTIALS_PATH,
+  WEB_EDITABLE_PATHS,
+  WEB_EXTRA_DISCOVERY_PROFILES,
   WEB_MODEL_MAX_CHARACTERS,
   type WebConfigSnapshot,
 } from '../src/web-config/contracts.js'
@@ -256,6 +260,41 @@ describe('Search Enhance Web configuration Host bridge', () => {
     expect(snapshot.diagnostics.capabilities.length).toBeGreaterThan(0)
     expect(text).not.toContain('fixture-secret-value')
     expect(text).not.toContain('must-not-change')
+  })
+
+  it('exposes and edits the supplementary discovery budget for every search profile', async () => {
+    expect([...WEB_EXTRA_DISCOVERY_PROFILES]).toEqual([...SEARCH_PROFILES])
+    for (const profile of SEARCH_PROFILES) {
+      expect(WEB_EDITABLE_PATHS.some(
+        path => path.length === 2 && path[0] === 'extraDiscoverySources' && path[1] === profile,
+      )).toBe(true)
+    }
+
+    const harness = await createHarness()
+    const snapshot = await (await fetch(`${harness.origin}${WEB_CONFIG_PATH}`)).json() as WebConfigSnapshot
+    expect(Object.values(snapshot.value.extraDiscoverySources).every(value => value === 0)).toBe(true)
+    expect(snapshot.options.extraDiscoveryMaxSources).toBe(EXTRA_DISCOVERY_SOURCES_MAX)
+
+    const updated = await mutate(harness, {
+      expectedRevision: 0,
+      mutations: [{ op: 'set', path: ['extraDiscoverySources', 'auto'], value: 1 }],
+    })
+    const applied = await updated.json() as WebConfigSnapshot
+    expect(updated.status).toBe(200)
+    expect(applied.value.extraDiscoverySources.auto).toBe(1)
+    expect(applied.value.extraDiscoverySources.academic).toBe(0)
+    expect(applied.user?.extraDiscoverySources).toEqual({ auto: 1 })
+
+    const rejected = await mutate(harness, {
+      expectedRevision: 1,
+      mutations: [{
+        op: 'set',
+        path: ['extraDiscoverySources', 'auto'],
+        value: EXTRA_DISCOVERY_SOURCES_MAX + 1,
+      }],
+    })
+    expect(rejected.status).toBe(422)
+    expect((await rejected.json() as { error: { code: string } }).error.code).toBe('settings-rejected')
   })
 
   it('mutates one path with revision fencing and preserves third-party, provider, future, and unrelated settings', async () => {

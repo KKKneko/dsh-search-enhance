@@ -10,10 +10,11 @@ import {
   type SearchEnhancePluginCardProps,
 } from '../src/client/SearchEnhancePluginCard.js'
 import { en, type SearchEnhanceLocaleKey } from '../src/client/locales.js'
-import type {
-  WebConfigSnapshot,
-  WebCredentialSlot,
-  WebCredentialState,
+import {
+  WEB_EXTRA_DISCOVERY_PROFILES,
+  type WebConfigSnapshot,
+  type WebCredentialSlot,
+  type WebCredentialState,
 } from '../src/web-config/contracts.js'
 
 function t(
@@ -49,6 +50,14 @@ function snapshot(overrides: Partial<WebConfigSnapshot> = {}): WebConfigSnapshot
       defaultDepth: 'compact',
       toolTimeoutMs: 180_000,
       toolDiscovery: { mode: 'progressive' },
+      extraDiscoverySources: {
+        auto: 0,
+        coding_docs: 0,
+        code_examples: 0,
+        project_research: 0,
+        academic: 0,
+        fact_check: 0,
+      },
       searchApi: {
         baseUrl: 'https://grok-gateway.example/v1',
         protocol: 'completions',
@@ -89,6 +98,7 @@ function snapshot(overrides: Partial<WebConfigSnapshot> = {}): WebConfigSnapshot
       thinkingLevels: ['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'],
       toolDiscoveryModes: ['progressive', 'all'],
       proxyUrlMaxCharacters: 2048,
+      extraDiscoveryMaxSources: 100,
     },
     credentials: {
       searchApi: credentialState('TEST_GROK_SEARCH_KEY', true, 'file'),
@@ -308,6 +318,47 @@ describe('Search Enhance browser contribution', () => {
         { op: 'set', path: ['webExtract', 'smartDirect', 'proxyUrl'], value: 'http://127.0.0.1:7892' },
         { op: 'unset', path: ['webExtract', 'direct', 'proxyUrl'] },
       ],
+    })
+  })
+
+  it('edits the per-profile supplementary source budget and blocks an out-of-range draft', async () => {
+    const initial = snapshot()
+    let patchBody: unknown
+    const fetchMock = vi.fn(async (_input: string | URL | Request, init?: RequestInit): Promise<Response> => {
+      if (requestMethod(init) === 'GET') return response(initial)
+      patchBody = JSON.parse(String(init?.body)) as unknown
+      return response(snapshot({
+        revision: 1,
+        value: {
+          ...initial.value,
+          extraDiscoverySources: { ...initial.value.extraDiscoverySources, project_research: 10 },
+        },
+      }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<SearchEnhancePluginCard t={t as SearchEnhancePluginCardProps['t']} />)
+    await openCard()
+
+    for (const profile of WEB_EXTRA_DISCOVERY_PROFILES) {
+      expect(screen.getByLabelText(`${en.extraSourcesHeading} ${profile}`)).toBeTruthy()
+    }
+    const research = screen.getByLabelText(`${en.extraSourcesHeading} project_research`) as HTMLInputElement
+    expect(research.value).toBe('0')
+    expect(research.min).toBe('0')
+    expect(research.max).toBe('100')
+
+    fireEvent.change(research, { target: { value: '101' } })
+    expect(screen.getByRole('alert').textContent).toBe(en.invalidNumber)
+    expect((screen.getByRole('button', { name: en.save }) as HTMLButtonElement).disabled).toBe(true)
+
+    fireEvent.change(research, { target: { value: '10' } })
+    fireEvent.click(screen.getByRole('button', { name: en.save }))
+
+    expect(await screen.findByText(en.savedRestart)).toBeTruthy()
+    expect(patchBody).toEqual({
+      expectedRevision: 0,
+      mutations: [{ op: 'set', path: ['extraDiscoverySources', 'project_research'], value: 10 }],
     })
   })
 

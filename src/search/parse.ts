@@ -214,7 +214,8 @@ function addTextSources(
   limits: SearchResponseParseLimits,
 ): void {
   addMarkdownSources(text, state, limits)
-  for (const url of extractUrls(text)) addSource(state, { url }, limits)
+  const bareText = text.replace(MARKDOWN_LINK_PATTERN, ' ')
+  for (const url of extractUrls(bareText)) addSource(state, { url }, limits)
 }
 
 function normalizeSourceItem(

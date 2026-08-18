@@ -6,6 +6,7 @@ import {
   Config,
   DEFAULT_CREDENTIAL_REFS,
   DEFAULT_SEARCH_BUDGETS,
+  EXTRA_DISCOVERY_SOURCES_MAX,
   SEARCH_ENHANCE_SETTINGS_NAMESPACE,
   WEB_EXTRACT_PROXY_URL_MAX_CHARACTERS,
 } from '../src/config.js'
@@ -39,6 +40,10 @@ describe('stage 0 configuration contract', () => {
       fact_check: 0,
       project_research: 0,
     })
+    expect(resolveConfig({ extraDiscoverySources: { auto: 1 } }).extraDiscoverySources.auto).toBe(1)
+    expect(() => resolveConfig({
+      extraDiscoverySources: { auto: EXTRA_DISCOVERY_SOURCES_MAX + 1 },
+    })).toThrow()
     expect(config.retry).toEqual({
       baseDelayMs: 1000,
       jitterRatio: 0.2,

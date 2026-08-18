@@ -62,12 +62,11 @@ export const inject = ['agents', 'credentials', 'settings', 'storageDomain', 'sy
 export const Config = SearchEnhanceConfig
 
 export async function apply(ctx: Context, config: SearchEnhanceConfigValue): Promise<void> {
-  const settings = ctx.settings.register(
+  const effective = ctx.settings.register(
     SEARCH_ENHANCE_SETTINGS_NAMESPACE,
     SearchEnhanceConfig,
     { applies: 'restart', base: config },
-  )
-  const effective = settings.get()
+  ).get()
   const domain = await ctx.storageDomain.open(SOURCE_RECORD_DOMAIN_SPEC)
   const store = new SourceRecordStore(domain.table(SOURCE_RECORD_TABLE_NAME), {
     maxBytes: effective.retention.sourceEventMaxBytes,
@@ -79,7 +78,10 @@ export async function apply(ctx: Context, config: SearchEnhanceConfigValue): Pro
   })
 
   const operations = new ForegroundOperationScope()
-  const getConfig = (): SearchEnhanceConfigValue => settings.get()
+  // This namespace applies on restart, so every consumer reads the one value
+  // resolved here. Reading Settings live would make some fields take effect
+  // immediately while constructor-bound limits waited for a restart.
+  const getConfig = (): SearchEnhanceConfigValue => effective
   const providerDependencies = { credentials: ctx.credentials }
   const context7Cache = new PersistentContext7Cache(ctx.storageDomain, {
     maxEntries: effective.cache.maxEntries,

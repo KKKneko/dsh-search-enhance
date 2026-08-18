@@ -38,6 +38,39 @@ describe('Search API answer and source parsing', () => {
     })
   })
 
+  it('does not rescan URL-looking Markdown labels as bare sources', () => {
+    const input = `Answer.
+
+Sources:
+- [https://docs.example.test/api](https://docs.example.test/api)
+- https://status.example.test/current`
+    const result = parseSearchAnswerText(input, { maxSources: 2 })
+
+    expect(result).toEqual({
+      answer: 'Answer.',
+      sources: [
+        {
+          provider: 'search-api',
+          title: 'https://docs.example.test/api',
+          url: 'https://docs.example.test/api',
+        },
+        {
+          provider: 'search-api',
+          url: 'https://status.example.test/current',
+        },
+      ],
+      sourcesTruncated: false,
+    })
+    expect(result.sources.some(source => source.url.includes(']('))).toBe(false)
+
+    const bounded = parseSearchAnswerText(
+      'Answer.\n\nSources:\n- [https://docs.example.test/api](https://docs.example.test/api)',
+      { maxSources: 1 },
+    )
+    expect(bounded.sources).toHaveLength(1)
+    expect(bounded.sourcesTruncated).toBe(false)
+  })
+
   it('extracts a Chinese reference heading and preserves stable order', () => {
     const result = parseSearchAnswerText(`答案。
 

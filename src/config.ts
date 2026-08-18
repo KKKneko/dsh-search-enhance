@@ -400,6 +400,9 @@ export const DEFAULT_SEARCH_BUDGETS: SearchBudgets = {
   },
 }
 
+/** Deployment ceiling for one profile's supplementary discovery-source budget. */
+export const EXTRA_DISCOVERY_SOURCES_MAX = 100
+
 export const SEARCH_ENHANCE_SETTINGS_NAMESPACE = settingsNamespace('search-enhance')
 
 const httpUrl = (defaultValue: string) =>
@@ -522,12 +525,12 @@ export const Config: Schema<Config> = Schema.object({
     fact_check: profileBudgets('fact_check'),
   }),
   extraDiscoverySources: Schema.object({
-    auto: nonNegativeInteger(0, 100),
-    coding_docs: nonNegativeInteger(0, 100),
-    code_examples: nonNegativeInteger(0, 100),
-    project_research: nonNegativeInteger(0, 100),
-    academic: nonNegativeInteger(0, 100),
-    fact_check: nonNegativeInteger(0, 100),
+    auto: nonNegativeInteger(0, EXTRA_DISCOVERY_SOURCES_MAX),
+    coding_docs: nonNegativeInteger(0, EXTRA_DISCOVERY_SOURCES_MAX),
+    code_examples: nonNegativeInteger(0, EXTRA_DISCOVERY_SOURCES_MAX),
+    project_research: nonNegativeInteger(0, EXTRA_DISCOVERY_SOURCES_MAX),
+    academic: nonNegativeInteger(0, EXTRA_DISCOVERY_SOURCES_MAX),
+    fact_check: nonNegativeInteger(0, EXTRA_DISCOVERY_SOURCES_MAX),
   }),
   retention: Schema.object({
     searchQueryMaxCharacters: positiveInteger(32_000, 1_000_000),

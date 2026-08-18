@@ -1457,6 +1457,38 @@ try {
     assert.deepEqual(snapshot, expected)
   }
 
+  // The namespace declares applies: 'restart', so a live user-layer write must not
+  // reach a running search; only a fiber restart may pick it up.
+  const beforeLiveEdit = settingsDescriptors()[0]
+  await ctx.settings.mutate(
+    beforeLiveEdit.ns,
+    [{ op: 'set', path: ['defaultDepth'], value: 'normal' }],
+    beforeLiveEdit.revision,
+  )
+  assert.equal(settingsDescriptors()[0].value.defaultDepth, 'normal')
+  const lastSearchMode = () => {
+    const body = httpRequests.filter(item => item.url === '/search/v1/chat/completions').at(-1)?.body
+    const system = body?.messages?.[0]?.content ?? ''
+    return /Mode: (compact|normal|deep)\./.exec(system)?.[1]
+  }
+  const runDefaultDepthSearch = async callId => {
+    const result = await ctx.tools.execute({
+      callId: CallId(callId),
+      name: 'web_search',
+      arguments: { query: 'restart scoped config empty fixture' },
+      agent: nativeFull,
+      signal: new AbortController().signal,
+    })
+    assert.equal(result.isError, false)
+  }
+  await runDefaultDepthSearch('restart-scoped-config-before')
+  assert.equal(lastSearchMode(), 'compact')
+  await pluginEntry.fiber.restart()
+  await ctx.loader.await()
+  await pluginEntry.fiber?.await()
+  await runDefaultDepthSearch('restart-scoped-config-after')
+  assert.equal(lastSearchMode(), 'normal')
+
   const agentFirst = await createAgent('agent-first-dispose-session')
   const agentFirstHandle = handles.pop()
   assert.equal(agentFirstHandle?.agent, agentFirst)
