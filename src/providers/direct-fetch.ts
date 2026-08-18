@@ -8,6 +8,7 @@ import {
   throwIfAborted,
 } from '../provider-runtime/index.js'
 import { normalizeWebExtractUrl } from '../web-extract/url.js'
+import { isLikelyAntiBotChallenge } from './web-extract-common.js'
 import { isWebExtractFormat } from '../web-extract/types.js'
 import type {
   WebExtractAdapter,
@@ -80,8 +81,10 @@ function delayForRetry(
 /**
  * Production `direct` route. It performs bounded Node HTTP(S) requests without
  * JavaScript, cookies, login flows, CAPTCHA handling, browser emulation, or any
- * destination-network classification. Localhost, private, metadata, reserved,
- * and DNS-rebinding targets are deliberately not blocked by this adapter.
+ * destination-network classification. Recognizable anti-bot interstitials are
+ * unavailable rather than returned as direct page evidence. Localhost, private,
+ * metadata, reserved, and DNS-rebinding targets are deliberately not blocked
+ * by this adapter.
  */
 export class DirectFetchProvider implements WebExtractAdapter {
   readonly route = PROVIDER
@@ -156,6 +159,9 @@ export class DirectFetchProvider implements WebExtractAdapter {
 
       const contentInput = this.contentInput(response, input)
       const inspection = inspectDirectHtml(contentInput)
+      if (isLikelyAntiBotChallenge(inspection.scanText, response.statusCode)) {
+        throw new ProviderError({ capability: CAPABILITY, kind: 'unavailable', provider: PROVIDER })
+      }
       const navigationTarget = inspection.metaRefreshUrl ?? inspection.alternateUrl
       if (navigationTarget !== undefined) {
         target = this.nextTarget(

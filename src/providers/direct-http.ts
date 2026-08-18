@@ -28,6 +28,7 @@ import {
   isDirectTextLikeContentType,
   type DirectBodyOmissionReason,
 } from './direct-content.js'
+import { isLikelyAntiBotChallenge } from './web-extract-common.js'
 
 const PROVIDER = 'direct' as const
 const CAPABILITY = 'web_extract' as const
@@ -599,6 +600,13 @@ export async function fetchDirectHttpHop(
     }
     if (input.config.proxyUrl !== undefined && statusCode === 407) {
       throw providerHttpError({ capability: CAPABILITY, provider: PROVIDER, status: statusCode })
+    }
+    if (isLikelyAntiBotChallenge(
+      '',
+      statusCode,
+      scalarHeader(response, 'cf-mitigated'),
+    )) {
+      throw new ProviderError({ capability: CAPABILITY, kind: 'unavailable', provider: PROVIDER })
     }
     const contentType = scalarHeader(response, 'content-type')
     const contentLength = parseContentLength(scalarHeader(response, 'content-length'))

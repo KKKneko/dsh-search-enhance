@@ -3,6 +3,7 @@ import type { CredentialProvider } from '@deepseek-ai/dsh-credentials'
 import type { Config } from '../config.js'
 import {
   boundedExtractedContent,
+  isLikelyAntiBotChallenge,
   remoteMetadata,
   responseRecord,
 } from './web-extract-common.js'
@@ -49,7 +50,9 @@ export function firecrawlFormatForWebExtract(
 
 /**
  * Parse one Firecrawl v2 scrape envelope. The requested format is selected from
- * `data[format]`; `metadata` is projected only for explicit scalar fields.
+ * `data[format]`; recognizable anti-bot challenge content throws a fixed
+ * unavailable error instead of consuming empty-content retries, and `metadata`
+ * is projected only for explicit scalar fields.
  */
 export function parseFirecrawlScrapeResponse(
   body: string,
@@ -68,13 +71,23 @@ export function parseFirecrawlScrapeResponse(
   const firecrawlFormat = firecrawlFormatForWebExtract(format)
   if (firecrawlFormat === undefined) return undefined
   const data = root.data
-  const content = boundedExtractedContent(data[firecrawlFormat], maximumContentCharacters)
+  const metadata = remoteMetadata(
+    isRecord(data.metadata) ? data.metadata : undefined,
+    maximumUrlCharacters,
+  )
+  const extracted = data[firecrawlFormat]
+  if (
+    typeof extracted === 'string'
+    && isLikelyAntiBotChallenge(extracted, metadata.statusCode)
+  ) {
+    throw new ProviderError({ capability: CAPABILITY, kind: 'unavailable', provider: PROVIDER })
+  }
+  const content = boundedExtractedContent(extracted, maximumContentCharacters)
   if (content === undefined) return undefined
-  const metadata = isRecord(data.metadata) ? data.metadata : undefined
   return {
     content: content.content,
     truncated: content.truncated,
-    ...remoteMetadata(metadata, maximumUrlCharacters),
+    ...metadata,
   }
 }
 

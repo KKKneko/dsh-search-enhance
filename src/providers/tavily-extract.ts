@@ -3,6 +3,7 @@ import type { CredentialProvider } from '@deepseek-ai/dsh-credentials'
 import type { Config } from '../config.js'
 import {
   boundedExtractedContent,
+  isLikelyAntiBotChallenge,
   remoteMetadata,
   responseRecord,
 } from './web-extract-common.js'
@@ -38,8 +39,10 @@ export interface TavilyExtractProviderDependencies extends HttpDependencies {
 
 /**
  * Parse the Pi-compatible Tavily Extract response. Tavily's first result is
- * authoritative; absent or blank `raw_content` is an unavailable route, not a
- * successful empty result. Metadata is retained only from explicit fields.
+ * authoritative; absent, blank, or recognizable anti-bot challenge content is
+ * unavailable, not a successful page body; a recognized challenge throws a
+ * fixed unavailable error so callers do not retry it as an empty result.
+ * Metadata is retained only from explicit fields.
  */
 export function parseTavilyExtractResponse(
   body: string,
@@ -54,12 +57,19 @@ export function parseTavilyExtractResponse(
   }
   const item = data.results[0]
   if (!responseRecordSafe(item)) return undefined
+  const metadata = remoteMetadata(item, maximumUrlCharacters)
+  if (
+    typeof item.raw_content === 'string'
+    && isLikelyAntiBotChallenge(item.raw_content, metadata.statusCode)
+  ) {
+    throw new ProviderError({ capability: CAPABILITY, kind: 'unavailable', provider: PROVIDER })
+  }
   const content = boundedExtractedContent(item.raw_content, maximumContentCharacters)
   if (content === undefined) return undefined
   return {
     content: content.content,
     truncated: content.truncated,
-    ...remoteMetadata(item, maximumUrlCharacters),
+    ...metadata,
   }
 }
 

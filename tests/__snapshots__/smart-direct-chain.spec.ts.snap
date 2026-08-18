@@ -50,3 +50,51 @@ A second paragraph keeps the result stable and readable.",
   "truncated": false,
 }
 `;
+
+exports[`production four-route web extraction chain > returns a safe final failure when both local routes receive a challenge header 1`] = `
+{
+  "capability": "web_extract",
+  "code": "SEARCH_WEB_EXTRACT_FAILED",
+  "kind": "unavailable",
+  "routeStatuses": [
+    {
+      "attempts": 0,
+      "capability": "web_extract",
+      "durationMs": 0,
+      "outcome": "skipped",
+      "participatedInFallback": false,
+      "provider": "tavily_extract",
+      "skipReason": "not_configured",
+    },
+    {
+      "attempts": 0,
+      "capability": "web_extract",
+      "durationMs": 0,
+      "outcome": "skipped",
+      "participatedInFallback": false,
+      "provider": "firecrawl_scrape",
+      "skipReason": "not_configured",
+    },
+    {
+      "attempts": 1,
+      "capability": "web_extract",
+      "durationMs": 0,
+      "errorKind": "unavailable",
+      "outcome": "failed",
+      "participatedInFallback": false,
+      "provider": "smart_direct",
+      "retryable": false,
+    },
+    {
+      "attempts": 1,
+      "capability": "web_extract",
+      "durationMs": 0,
+      "errorKind": "unavailable",
+      "outcome": "failed",
+      "participatedInFallback": true,
+      "provider": "direct",
+      "retryable": false,
+    },
+  ],
+}
+`;

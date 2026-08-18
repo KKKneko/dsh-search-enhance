@@ -15,6 +15,7 @@ import {
   utf8ByteLength,
 } from '../provider-runtime/index.js'
 import { normalizeWebExtractUrl } from '../web-extract/url.js'
+import { isLikelyAntiBotChallenge } from './web-extract-common.js'
 import type {
   WebExtractAdapter,
   WebExtractAdapterInput,
@@ -448,7 +449,8 @@ function delayForRetry(
 /**
  * Production smart_direct route: wreq browser TLS/HTTP fingerprint transport,
  * bounded linkedom DOM construction, and Defuddle readable-content cleaning.
- * It is not browser automation and executes no page JavaScript.
+ * Recognizable anti-bot interstitials are unavailable rather than extracted as
+ * evidence. This is not browser automation and executes no page JavaScript.
  */
 export class SmartDirectProvider implements WebExtractAdapter {
   readonly route = PROVIDER
@@ -620,6 +622,7 @@ export class SmartDirectProvider implements WebExtractAdapter {
         const startedAt = clockValue(now)
         throwIfAborted(signal)
         const source = strictUtf8(response.body)
+        if (isLikelyAntiBotChallenge(source, response.statusCode)) return undefined
         processingCheckpoint(startedAt, config.processingTimeoutMs, now)
 
         if (response.mediaKind === 'plain' || response.mediaKind === 'markdown') {

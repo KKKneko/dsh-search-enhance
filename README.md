@@ -219,5 +219,7 @@ dsh plugin --profile web remove dsh-search-enhance
 ## 使用提示
 
 - 网页正文读取不会执行页面 JavaScript，也不能处理登录、验证码或浏览器会话。
+- 常见的 Cloudflare 等反爬验证页会被视为不可用并继续降级，不会作为网页正文返回；这是避免错误证据的保护，不是绕过机制。
+- 页面必须完成 JavaScript、验证码或登录交互时，`smart_direct`/`direct` 无法完成，Tavily/Firecrawl 也不保证可用；只能在已获授权并符合服务条款时改用具备相应能力的独立浏览器工具。
 - 网页读取可以访问 DSH 所在机器能够访问的地址；在敏感网络中只处理可信链接，并配合网络访问限制。
 - 如果配置页面没有出现，先用 `dsh plugin --profile web list --depth 0` 确认 npm 包已经安装，然后重启 DSH 并强制刷新浏览器。

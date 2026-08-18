@@ -402,6 +402,21 @@ describe('Firecrawl Scrape remote adapter', () => {
     expect(calls).toBe(3)
   })
 
+  it('does not retry an anti-bot challenge as an empty scrape pass', async () => {
+    const challenge = '<html><head><title>Just a moment...</title></head><body>Verify you are human</body></html>'
+    const fetchMock = vi.fn(async () => jsonResponse({ data: { markdown: challenge } })) as typeof fetch
+    const provider = new FirecrawlScrapeProvider({
+      credentials: credentials(['secret']),
+      fetch: fetchMock,
+    })
+
+    await expect(provider.extract(adapterInput(
+      providerConfig({ webExtract: { firecrawl: { maxEmptyAttempts: 3 } } }),
+      'markdown',
+    ))).rejects.toMatchObject({ kind: 'unavailable', provider: 'firecrawl_scrape' })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
   it('returns unavailable for empty content and skips text before any credential/network work', async () => {
     const fetchMock = vi.fn(async () => jsonResponse({ data: { markdown: ' ' } })) as typeof fetch
     const provider = new FirecrawlScrapeProvider({ credentials: credentials(['secret']), fetch: fetchMock })
@@ -550,5 +565,77 @@ describe('remote extraction composition', () => {
     expect(credentialFixture.resolve).toHaveBeenCalledTimes(2)
     expect(JSON.stringify(result)).not.toContain('firecrawl-secret')
     expect(JSON.stringify(result)).not.toContain('direct_http_content')
+  })
+
+  it('continues through Tavily and Firecrawl challenge content to the next route', async () => {
+    const challenge = '<title>Just a moment...</title><script src="/cdn-cgi/challenge-platform/scripts/jsd/main.js"></script>anti-bot-remote-secret'
+    const credentialFixture = credentials(['tavily-secret', 'firecrawl-secret'])
+    const fetchMock = vi.fn<typeof fetch>(async request => {
+      const endpoint = String(request)
+      if (endpoint.endsWith('/extract')) {
+        return jsonResponse({ results: [{ raw_content: challenge, status: 200 }] })
+      }
+      if (endpoint.endsWith('/scrape')) {
+        return jsonResponse({
+          data: {
+            markdown: 'Performing security verification. Verify you are human. anti-bot-remote-secret',
+            metadata: { statusCode: 403 },
+          },
+        })
+      }
+      throw new Error('unexpected remote extraction endpoint')
+    })
+    const smartExtract = vi.fn(async () => ({
+      result: { content: 'safe smart fallback content', truncated: false },
+      state: 'complete' as const,
+    }))
+    const directExtract = vi.fn(async () => ({ state: 'unavailable' as const }))
+    const config = providerConfig()
+    const extractor = new WebExtractOrchestrator({
+      tavilyExtract: new TavilyExtractProvider({ credentials: credentialFixture, fetch: fetchMock }),
+      firecrawlScrape: new FirecrawlScrapeProvider({ credentials: credentialFixture, fetch: fetchMock }),
+      smartDirect: {
+        route: 'smart_direct',
+        enabled: () => true,
+        supports: () => true,
+        extract: smartExtract,
+      },
+      direct: {
+        route: 'direct',
+        enabled: () => true,
+        supports: () => true,
+        extract: directExtract,
+      },
+      getConfig: () => config,
+      now: () => 100,
+    })
+
+    const result = await extractor.extract({
+      format: 'markdown',
+      signal: new AbortController().signal,
+      url: 'https://example.test/article',
+    })
+
+    expect(result).toMatchObject({
+      content: 'safe smart fallback content',
+      retrievalRoute: 'smart_direct',
+    })
+    expect(result.attempts).toEqual([
+      expect.objectContaining({
+        errorKind: 'unavailable',
+        outcome: 'failed',
+        provider: 'tavily_extract',
+      }),
+      expect.objectContaining({
+        errorKind: 'unavailable',
+        outcome: 'failed',
+        provider: 'firecrawl_scrape',
+      }),
+      expect.objectContaining({ outcome: 'success', provider: 'smart_direct' }),
+    ])
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(smartExtract).toHaveBeenCalledTimes(1)
+    expect(directExtract).not.toHaveBeenCalled()
+    expect(JSON.stringify(result)).not.toContain('anti-bot-remote-secret')
   })
 })

@@ -24,6 +24,7 @@ import {
   RETRYABLE_HTTP_STATUSES,
   throwIfAborted,
 } from '../provider-runtime/index.js'
+import { isLikelyAntiBotChallenge } from './web-extract-common.js'
 
 const PROVIDER = 'smart_direct' as const
 const CAPABILITY = 'web_extract' as const
@@ -367,6 +368,14 @@ export async function settleSmartDirectWreqResponse(
   const statusCode = response.status
   if (!Number.isInteger(statusCode) || statusCode < 100 || statusCode > 599) {
     throw new ProviderError({ capability: CAPABILITY, kind: 'invalid_response', provider: PROVIDER })
+  }
+  if (isLikelyAntiBotChallenge(
+    '',
+    statusCode,
+    scalarHeader(response, 'cf-mitigated'),
+  )) {
+    await discardBody(response, input.signal)
+    return { kind: 'unavailable', statusCode, url: response.url }
   }
   const contentType = scalarHeader(response, 'content-type')
   const contentLength = parseContentLength(scalarHeader(response, 'content-length'))

@@ -303,6 +303,55 @@ describe('SmartDirectProvider public wreq transport', () => {
     })
   })
 
+  it('treats the Cloudflare header as unavailable before body metadata processing', async () => {
+    let cancelled = 0
+    const seam = fakeProvider({
+      response: () => fakeResponse({
+        headers: {
+          'cf-mitigated': 'challenge',
+          'content-length': 'not-a-length',
+        },
+        onCancel: () => { cancelled += 1 },
+        status: 503,
+        body: '<html><body>ordinary-looking body</body></html>',
+      }),
+    })
+
+    await expect(seam.provider.extract(adapterInput(
+      'https://target.example/challenge-header',
+      testConfig(),
+      'markdown',
+    ))).resolves.toEqual({ state: 'unavailable' })
+    expect(cancelled).toBe(1)
+    expect(seam.fetch).toHaveBeenCalledTimes(1)
+    expect(seam.transport.close).toHaveBeenCalledTimes(1)
+  })
+
+  it.each(['markdown', 'text', 'html'] as const)(
+    'rejects a decompressed challenge body before %s projection',
+    async format => {
+      const extract = vi.fn(async () => defuddleResult('must not run'))
+      const challenge = Buffer.from(
+        '<html><head><title>验证🙂</title></head><body><script src="/cdn-cgi/challenge-platform/scripts/jsd/main.js"></script></body></html>',
+      )
+      const seam = fakeProvider({
+        extract,
+        response: () => fakeResponse({
+          body: gzipSync(challenge),
+          headers: { 'content-encoding': 'gzip' },
+        }),
+      })
+
+      await expect(seam.provider.extract(adapterInput(
+        'https://target.example/challenge-body',
+        testConfig(),
+        format,
+      ))).resolves.toEqual({ state: 'unavailable' })
+      expect(extract).not.toHaveBeenCalled()
+      expect(seam.transport.close).toHaveBeenCalledTimes(1)
+    },
+  )
+
   it('omits wreq proxy configuration when proxyUrl is absent', async () => {
     const seam = fakeProvider()
     await completeResult(

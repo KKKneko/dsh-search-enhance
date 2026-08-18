@@ -1,5 +1,6 @@
 import { createServer, type RequestListener, type Server } from 'node:http'
 import type { Socket } from 'node:net'
+import { gzipSync } from 'node:zlib'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -145,6 +146,70 @@ function unavailable(route: WebExtractRoute): WebExtractAdapter {
 }
 
 describe('DirectFetchProvider redirects, formats, and adapter integration', () => {
+  it('rejects a Cloudflare challenge header before body and content-length processing', async () => {
+    const fixture = await httpFixture((_request, response) => {
+      response.writeHead(503, {
+        'cf-mitigated': 'challenge',
+        'content-length': String(10 * 1024 * 1024),
+        'content-type': 'text/html; charset=utf-8',
+      })
+      response.end('<html><body>anti-bot-header-secret</body></html>')
+    })
+
+    await expect(new DirectFetchProvider().extract(adapterInput(
+      `${fixture.origin}/challenge-header`,
+      testConfig({ direct: { maxRetries: 2 } }),
+    ))).rejects.toMatchObject({
+      code: 'SEARCH_PROVIDER_UNAVAILABLE',
+      kind: 'unavailable',
+      provider: 'direct',
+      retryable: false,
+    })
+    expect(fixture.requests).toEqual(['/challenge-header'])
+  })
+
+  it.each(['markdown', 'text', 'html', 'json', 'raw'] as const)(
+    'rejects a decoded challenge body before %s conversion',
+    async format => {
+      const challenge = Buffer.from(
+        '<html><head><title>验证🙂</title></head><body><script src="/cdn-cgi/challenge-platform/scripts/jsd/main.js"></script></body></html>',
+      )
+      const compressed = gzipSync(challenge)
+      const fixture = await httpFixture((_request, response) => {
+        response.writeHead(200, {
+          'content-encoding': 'gzip',
+          'content-length': String(compressed.byteLength),
+          'content-type': 'text/html; charset=utf-8',
+        })
+        response.end(compressed)
+      })
+
+      await expect(new DirectFetchProvider().extract(adapterInput(
+        `${fixture.origin}/challenge-body`,
+        testConfig(),
+        format,
+      ))).rejects.toMatchObject({
+        code: 'SEARCH_PROVIDER_UNAVAILABLE',
+        kind: 'unavailable',
+        provider: 'direct',
+      })
+      expect(fixture.requests).toEqual(['/challenge-body'])
+    },
+  )
+
+  it('keeps a 403 article that only discusses access denial and challenges', async () => {
+    const fixture = await httpFixture((_request, response) => {
+      response.writeHead(403, { 'content-type': 'text/html; charset=utf-8' })
+      response.end('<html><head><title>Access denied errors explained</title></head><body><article>This guide discusses access denied responses and challenge design.</article></body></html>')
+    })
+
+    const result = await directResult(`${fixture.origin}/discussion`, 'text')
+    expect(result).toMatchObject({
+      content: 'Access denied errors explained\nThis guide discusses access denied responses and challenge design.',
+      statusCode: 403,
+    })
+  })
+
   it.each([301, 302, 303, 307, 308])('manually follows relative HTTP %s and reports only the final response', async status => {
     const fixture = await httpFixture((request, response) => {
       if (request.url === `/start-${status}`) {

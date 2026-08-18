@@ -152,6 +152,7 @@ async function smartDirectChildMain(): Promise<void> {
         'content-length',
         'content-disposition',
         'content-encoding',
+        'cf-mitigated',
         'location',
         'retry-after',
       ])
@@ -171,8 +172,9 @@ async function smartDirectChildMain(): Promise<void> {
         return
       }
 
+      const challengeMitigated = selected['cf-mitigated']?.trim().toLowerCase() === 'challenge'
       const contentLengthHeader = selected['content-length']
-      if (contentLengthHeader !== undefined) {
+      if (!challengeMitigated && contentLengthHeader !== undefined) {
         if (!/^\d+$/.test(contentLengthHeader)) {
           await response.body?.cancel()
           finish({ error: 'invalid_response' }, 1)
@@ -209,7 +211,8 @@ async function smartDirectChildMain(): Promise<void> {
         'text/x-markdown',
         'application/markdown',
       ].includes(mime ?? '')
-      const shouldRead = status >= 200
+      const shouldRead = !challengeMitigated
+        && status >= 200
         && status <= 299
         && disposition !== 'attachment'
         && mimeSupported

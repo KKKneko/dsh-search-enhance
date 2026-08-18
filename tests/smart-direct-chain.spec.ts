@@ -454,6 +454,92 @@ describe('production four-route web extraction chain', () => {
     expect(requests).toBe(2)
   })
 
+  it('continues from a smart_direct challenge to production direct', async () => {
+    let requests = 0
+    const page = await fixture((_request, response) => {
+      requests += 1
+      if (requests === 1) {
+        response.writeHead(200, {
+          'cf-mitigated': 'challenge',
+          'content-type': 'text/html; charset=utf-8',
+        })
+        response.end('<html><body>smart challenge body</body></html>')
+        return
+      }
+      response.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' })
+      response.end('direct content after smart challenge')
+    })
+
+    const result = await orchestrator({}).extract({
+      format: 'text',
+      signal: new AbortController().signal,
+      url: `${page.origin}/challenge-fallback`,
+    })
+
+    expect(result).toMatchObject({
+      content: 'direct content after smart challenge',
+      retrievalRoute: 'direct',
+    })
+    expect(result.attempts.slice(-2)).toEqual([
+      expect.objectContaining({
+        errorKind: 'unavailable',
+        outcome: 'failed',
+        provider: 'smart_direct',
+      }),
+      expect.objectContaining({ outcome: 'success', provider: 'direct' }),
+    ])
+    expect(requests).toBe(2)
+  })
+
+  it('returns a safe final failure when both local routes receive a challenge header', async () => {
+    let requests = 0
+    const page = await fixture((_request, response) => {
+      requests += 1
+      response.writeHead(200, {
+        'cf-mitigated': 'challenge',
+        'content-length': String(6 * 1024 * 1024),
+        'content-type': 'text/html; charset=utf-8',
+      })
+      response.end('<html><body>anti-bot-response-secret</body></html>')
+    })
+
+    let caught: unknown
+    try {
+      await orchestrator({}).extract({
+        format: 'markdown',
+        signal: new AbortController().signal,
+        url: `${page.origin}/challenge?token=anti-bot-url-secret`,
+      })
+    } catch (error) {
+      caught = error
+    }
+
+    expect(caught).toBeInstanceOf(WebExtractInfrastructureError)
+    expect(caught).toMatchObject({
+      code: 'SEARCH_WEB_EXTRACT_FAILED',
+      kind: 'unavailable',
+    })
+    expect((caught as WebExtractInfrastructureError).routeStatuses.slice(-2)).toEqual([
+      expect.objectContaining({
+        errorKind: 'unavailable',
+        outcome: 'failed',
+        provider: 'smart_direct',
+      }),
+      expect.objectContaining({
+        errorKind: 'unavailable',
+        outcome: 'failed',
+        provider: 'direct',
+      }),
+    ])
+    const safe = JSON.parse(JSON.stringify(caught)) as unknown
+    expect(safe).toMatchSnapshot()
+    const visible = `${String(caught)}\n${JSON.stringify(caught)}`
+    expect(visible).not.toMatch(/anti-bot-(?:response|url)-secret/)
+    expect(visible).not.toContain(page.origin)
+    expect(requests).toBe(2)
+    await vi.waitFor(() => expect(page.sockets.size).toBe(0))
+  })
+
   it('pins the production smart_direct canonical route and evidence keylessly', async () => {
     const page = await fixture((_request, response) => {
       const body = articleHtml()
