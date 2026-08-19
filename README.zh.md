@@ -21,6 +21,8 @@
 - Native Tool Mode 与 Code Mode 使用相同的固定工具入口和规范输出。DSH Settings、Credentials、Agent Preset、guard 和生命周期清理继续生效。
 - 未配置的可选 Provider 会被跳过。Tavily 和 Firecrawl 的补充搜索预算默认是 `0`，可选 Provider 失败也会在结果中显示。
 
+完整的路由、证据处理和渐进披露流程见[搜索链路架构](guides/search-workflow.zh.md)。
+
 ## 快速开始
 
 ### 1. 安装
