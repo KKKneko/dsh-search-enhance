@@ -21,7 +21,7 @@ The plugin handles search, source retention, and page retrieval as separate step
 - Native Tool Mode and Code Mode use the same fixed tool surface and canonical outputs. DSH Settings, Credentials, Agent Presets, guards, and lifecycle cleanup continue to apply.
 - Optional Providers are skipped when unconfigured. Tavily and Firecrawl supplementary-search budgets default to `0`, and optional Provider failures remain visible in the result.
 
-For the complete routing, evidence, and progressive-disclosure flow, see [Search workflow architecture](guides/search-workflow.md).
+For the complete routing, evidence, and progressive-disclosure flow, see [Search workflow architecture](https://github.com/KKKneko/dsh-search-enhance/blob/main/guides/search-workflow.md).
 
 ## Quick start
 
