@@ -42,7 +42,7 @@ const requests = []
 globalThis.fetch = async (input, init) => {
   const url = String(input)
   requests.push({ headers: init?.headers, url })
-  if (url.startsWith('https://context7.com/api/v2/search?')) {
+  if (url.startsWith('https://context7.com/api/v2/libs/search?')) {
     return new Response(JSON.stringify({
       results: [{
         benchmarkScore: 90,
@@ -103,6 +103,7 @@ try {
 
   const firstService = ctx.searchEnhanceDocumentation
   const first = await firstService.search({
+    libraryName: 'React',
     maxResults: 5,
     provider: 'context7',
     query: 'React useEffect API docs',
@@ -143,6 +144,7 @@ try {
   )
   await assert.rejects(
     firstService.search({
+      libraryName: 'React',
       maxResults: 5,
       provider: 'context7',
       query: 'React useEffect API docs',
@@ -152,6 +154,7 @@ try {
   )
 
   const second = await ctx.searchEnhanceDocumentation.search({
+    libraryName: 'React',
     maxResults: 5,
     provider: 'context7',
     query: 'React useEffect API docs',
@@ -192,6 +195,7 @@ try {
   assert.equal(secondCtx.storageDomain.get(documentation.CONTEXT7_CACHE_DOMAIN_NAME), undefined)
   await assert.rejects(
     secondCtx.searchEnhanceDocumentation.search({
+      libraryName: 'React',
       maxResults: 5,
       provider: 'context7',
       query: 'React useEffect API docs',

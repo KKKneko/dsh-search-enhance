@@ -86,7 +86,7 @@ const server = createServer(async (request, response) => {
     sendJson(response, { data: [{ id: 'fixture-model' }] })
     return
   }
-  if (request.method === 'GET' && url.pathname === '/context7/api/v2/search') {
+  if (request.method === 'GET' && url.pathname === '/context7/api/v2/libs/search') {
     sendJson(response, {
       results: [{
         id: '/react/react',
@@ -574,18 +574,19 @@ try {
   assert.equal(codeDispatches.every(event => !('meta' in event.data)), true)
 
   const fixedQuery = 'search-enhance fixed connectivity diagnostic'
-  const context7Query = 'react documentation'
+  const context7LibraryName = 'React'
+  const context7Query = 'documentation connectivity diagnostic'
   assert.equal(httpRequests.length, 10)
   assert.equal(httpRequests.every(request => [
     '/search/v1/models',
-    '/context7/api/v2/search',
+    '/context7/api/v2/libs/search',
     '/exa/search',
     '/tavily/search',
     '/firecrawl/search',
   ].includes(request.path)), true)
   for (const request of httpRequests) {
-    if (request.path === '/context7/api/v2/search') {
-      assert.deepEqual(request.query, { query: context7Query })
+    if (request.path === '/context7/api/v2/libs/search') {
+      assert.deepEqual(request.query, { libraryName: context7LibraryName, query: context7Query })
     }
     if (request.path === '/exa/search') {
       assert.equal(request.body.query, fixedQuery)

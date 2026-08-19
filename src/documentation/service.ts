@@ -11,9 +11,8 @@ import {
   type ProviderAttemptRecord,
   type ProviderErrorKind,
 } from '../provider-runtime/index.js'
-import { boundSourceProviderResult } from '../providers/bounded-result.js'
 import {
-  Context7RemoteClient,
+  type Context7RemoteClient,
   context7LibrarySource,
   selectContext7Library,
   type Context7Library,
@@ -22,8 +21,6 @@ import type {
   BoundedSourceProvider,
   DocumentationSnippet,
   SourceProviderSearchInput,
-  SourceProviderSearchOutcome,
-  SourceProviderWarning,
 } from '../providers/types.js'
 import { applySourceQuality } from '../search/index.js'
 import type {
@@ -45,6 +42,7 @@ import {
   type Context7OperationPath,
 } from './context7-cache.js'
 
+const CONTEXT7_RESOLVE_CANDIDATE_LIMIT = 30
 export const DOCUMENTATION_SEARCH_SERVICE_KEY = 'searchEnhanceDocumentation'
 export const DOCUMENTATION_SEARCH_PROVIDERS = ['auto', 'context7', 'exa', 'all'] as const
 export type DocumentationSearchProvider = (typeof DOCUMENTATION_SEARCH_PROVIDERS)[number]
@@ -107,7 +105,10 @@ export interface DocumentationWarning {
 export interface DocumentationSearchInput {
   readonly query: string
   readonly provider?: DocumentationSearchProvider
+  /** Exact Context7 id; when present it takes priority and bypasses resolve. */
   readonly libraryId?: string
+  /** Explicit Context7 package/product identity; never inferred from query. */
+  readonly libraryName?: string
   readonly maxResults: number
   readonly forceRefresh?: boolean
   readonly signal: AbortSignal
@@ -202,7 +203,7 @@ export class DocumentationSearchInfrastructureError extends Error {
 }
 
 export interface DocumentationSearchDependencies {
-  readonly context7: Context7RemoteClient
+  readonly context7: Pick<Context7RemoteClient, 'resolve' | 'docs'>
   readonly context7Cache: Context7CachedOperations
   readonly exa: BoundedSourceProvider
   readonly getConfig: () => Config
@@ -384,6 +385,7 @@ function validateInput(input: DocumentationSearchInput, config: Config): {
   readonly query: string
   readonly provider: DocumentationSearchProvider
   readonly libraryId?: string
+  readonly libraryName?: string
 } {
   const query = input.query.trim()
   if (query.length === 0 || Array.from(query).length > config.retention.searchQueryMaxCharacters) {
@@ -416,17 +418,36 @@ function validateInput(input: DocumentationSearchInput, config: Config): {
       provider: 'documentation-search',
     })
   }
-  if (input.libraryId !== undefined && !isContext7LibraryId(input.libraryId)) {
+  let libraryId: string | undefined
+  if (provider !== 'exa' && input.libraryId !== undefined) {
+    if (!isContext7LibraryId(input.libraryId)) {
+      throw new ProviderError({
+        capability: 'docs_search',
+        kind: 'invalid_request',
+        provider: 'context7',
+      })
+    }
+    libraryId = normalizeContext7LibraryId(input.libraryId)
+  }
+  const libraryName = provider !== 'exa'
+    && libraryId === undefined
+    && input.libraryName !== undefined
+    ? context7Text(input.libraryName, config)
+    : undefined
+  if (
+    (provider === 'context7' || provider === 'all')
+    && libraryId === undefined
+    && libraryName === undefined
+  ) {
     throw new ProviderError({
       capability: 'docs_search',
       kind: 'invalid_request',
-      provider: 'context7',
+      provider: 'context7-library-name-or-id-required',
     })
   }
   return {
-    ...(input.libraryId === undefined
-      ? {}
-      : { libraryId: normalizeContext7LibraryId(input.libraryId) }),
+    ...(libraryId === undefined ? {} : { libraryId }),
+    ...(libraryName === undefined ? {} : { libraryName }),
     provider,
     query,
   }
@@ -479,11 +500,11 @@ declare module '@deepseek-ai/cordis' {
 }
 
 /**
- * Lifecycle-bound documentation core shared by the high-level docs Consumer,
- * enhancement routing, and the deferred granular Context7 Consumers.
+ * Lifecycle-bound documentation core shared by the high-level docs Consumer
+ * and the deferred granular Context7 Consumers.
  */
 export class DocumentationSearchService extends Service {
-  private readonly context7: Context7RemoteClient
+  private readonly context7: DocumentationSearchDependencies['context7']
   private readonly context7Cache: Context7CachedOperations
   private readonly exa: BoundedSourceProvider
   private readonly getConfig: () => Config
@@ -606,10 +627,12 @@ export class DocumentationSearchService extends Service {
     readonly forceRefresh: boolean
     readonly libraryName: string
     readonly maxResults: number
+    readonly candidateLimit?: number
     readonly query: string
     readonly signal: AbortSignal
     readonly onDispatch?: () => void
   }): Promise<Readonly<Context7ResolveResult>> {
+    const candidateLimit = input.candidateLimit ?? input.maxResults
     const startedAt = safeClockValue(this.now)
     let dispatches = 0
     const resolved = await this.context7Cache.resolve({
@@ -617,20 +640,26 @@ export class DocumentationSearchService extends Service {
       forceRefresh: input.forceRefresh,
       load: () => this.context7.resolve({
         config: input.config,
-        limit: input.maxResults,
+        limit: candidateLimit,
         onDispatch: () => {
           dispatches += 1
           input.onDispatch?.()
         },
-        query: input.libraryName,
+        libraryName: input.libraryName,
+        query: input.query,
         signal: input.signal,
       }),
-      maxResults: input.maxResults,
-      query: input.libraryName,
+      maxResults: candidateLimit,
+      libraryName: input.libraryName,
+      query: input.query,
       signal: input.signal,
     })
-    const candidates = Object.freeze([...resolved.entry.libraries])
-    const selected = selectContext7Library(candidates, input.libraryName, input.query)
+    const candidates = Object.freeze(resolved.entry.libraries.slice(0, input.maxResults))
+    const selected = selectContext7Library(
+      resolved.entry.libraries,
+      input.libraryName,
+      input.query,
+    )
     return Object.freeze({
       attempts: successfulCacheAttempts(
         'resolve',
@@ -703,8 +732,12 @@ export class DocumentationSearchService extends Service {
     const config = input.config ?? this.getConfig()
     const validated = validateInput(input, config)
     const forceRefresh = input.forceRefresh === true
-    const runContext7 = validated.provider !== 'exa'
-    const autoExa = validated.provider === 'auto' && config.fallbackMode === 'auto'
+    const hasContext7Identity = validated.libraryId !== undefined || validated.libraryName !== undefined
+    const runContext7 = validated.provider === 'context7'
+      || validated.provider === 'all'
+      || (validated.provider === 'auto' && hasContext7Identity)
+    const autoExa = validated.provider === 'auto'
+      && (!hasContext7Identity || config.fallbackMode === 'auto')
     const considerExa = validated.provider === 'exa' || validated.provider === 'all' || autoExa
 
     let exaConfigured = false
@@ -725,6 +758,7 @@ export class DocumentationSearchService extends Service {
         config,
         forceRefresh,
         ...(validated.libraryId === undefined ? {} : { libraryId: validated.libraryId }),
+        ...(validated.libraryName === undefined ? {} : { libraryName: validated.libraryName }),
         maxResults: input.maxResults,
         query: validated.query,
         signal,
@@ -924,6 +958,7 @@ export class DocumentationSearchService extends Service {
     readonly config: Config
     readonly forceRefresh: boolean
     readonly libraryId?: string
+    readonly libraryName?: string
     readonly maxResults: number
     readonly query: string
     readonly signal: AbortSignal
@@ -941,13 +976,24 @@ export class DocumentationSearchService extends Service {
       resolveReport = cachePath('skipped', 0, 'known_library_id')
       attempts.push(skippedAttempt('context7-resolve'))
     } else {
+      if (input.libraryName === undefined) {
+        throw new ProviderError({
+          capability: 'docs_search',
+          kind: 'invalid_request',
+          provider: 'context7-library-name-or-id-required',
+        })
+      }
       const startedAt = safeClockValue(this.now)
       try {
         const resolved = await this.executeContext7Resolve({
           config: input.config,
           forceRefresh: input.forceRefresh,
-          libraryName: input.query,
+          libraryName: input.libraryName,
           maxResults: input.maxResults,
+          candidateLimit: Math.min(
+            CONTEXT7_RESOLVE_CANDIDATE_LIMIT,
+            input.config.retention.providerMaxSources,
+          ),
           onDispatch: () => { resolveDispatches += 1 },
           query: input.query,
           signal: input.signal,
@@ -1152,67 +1198,5 @@ export class DocumentationSearchService extends Service {
         })],
       })
     }
-  }
-}
-
-/** Context7-only adapter used by web_search while sharing the high-level service/cache. */
-export class DocumentationContext7Provider implements BoundedSourceProvider {
-  readonly capability = 'docs_search' as const
-  readonly provider = 'context7' as const
-
-  constructor(private readonly documentation: DocumentationSearchService) {}
-
-  async configured(): Promise<boolean> {
-    return true
-  }
-
-  async search(input: SourceProviderSearchInput): Promise<SourceProviderSearchOutcome> {
-    let result: Readonly<DocumentationSearchResult>
-    try {
-      result = await this.documentation.search({
-        config: input.config,
-        forceRefresh: false,
-        maxResults: input.limit,
-        provider: 'context7',
-        query: input.query,
-        signal: input.signal,
-      })
-    } catch (error) {
-      if (error instanceof DocumentationSearchInfrastructureError && error.cause !== undefined) {
-        throw error.cause
-      }
-      throw error
-    }
-    const warnings: SourceProviderWarning[] = result.warnings.flatMap(warning => {
-      if (
-        warning.code !== 'cache_stale'
-        && warning.code !== 'cache_evicted'
-        && warning.code !== 'provider_failed'
-      ) return []
-      return [Object.freeze({
-        code: warning.code,
-        ...(warning.errorKind === undefined ? {} : { errorKind: warning.errorKind }),
-        provider: warning.provider ?? 'context7',
-      })]
-    })
-    const attempts = result.attempts
-      .filter(attempt => !attempt.provider.startsWith('context7-cache-'))
-      .reduce((sum, attempt) => sum + attempt.attempts, 0)
-    return Object.freeze({
-      attempts: Math.max(1, attempts),
-      result: boundSourceProviderResult({
-        capability: 'docs_search',
-        config: input.config,
-        inputTruncated: result.truncated,
-        provider: 'context7',
-        requestedSources: input.limit,
-        responseBytes: result.providerResponseBytes,
-        snippets: result.snippets,
-        sources: result.sources,
-      }),
-      state: 'complete',
-      totalDelayMs: 0,
-      ...(warnings.length === 0 ? {} : { warnings: Object.freeze(warnings) }),
-    })
   }
 }

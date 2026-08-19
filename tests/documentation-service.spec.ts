@@ -15,7 +15,6 @@ import type {
 import {
   Context7CacheStore,
   Context7CachedOperations,
-  DocumentationContext7Provider,
   DocumentationSearchInfrastructureError,
   DocumentationSearchService,
 } from '../src/documentation/index.js'
@@ -30,6 +29,9 @@ import type {
 function resolveConfig(overrides: Record<string, unknown> = {}): SearchEnhanceConfig {
   const cache = typeof overrides.cache === 'object' && overrides.cache !== null
     ? overrides.cache as Record<string, unknown>
+    : {}
+  const retention = typeof overrides.retention === 'object' && overrides.retention !== null
+    ? overrides.retention as Record<string, unknown>
     : {}
   return Config({
     ...overrides,
@@ -48,6 +50,7 @@ function resolveConfig(overrides: Record<string, unknown> = {}): SearchEnhanceCo
       providerMaxSources: 20,
       providerResponseMaxBytes: 64 * 1024,
       providerResultMaxBytes: 64 * 1024,
+      ...retention,
     },
     retry: {
       baseDelayMs: 0,
@@ -62,8 +65,12 @@ function resolveConfig(overrides: Record<string, unknown> = {}): SearchEnhanceCo
 
 class TestCacheTable implements KvTable<Context7CacheKey, Context7CacheEntry> {
   readonly records = new Map<Context7CacheKey, Context7CacheEntry>()
+  getCalls = 0
   get size(): number { return this.records.size }
-  get(key: Context7CacheKey): Context7CacheEntry | undefined { return this.records.get(key) }
+  get(key: Context7CacheKey): Context7CacheEntry | undefined {
+    this.getCalls += 1
+    return this.records.get(key)
+  }
   entries(): IterableIterator<[Context7CacheKey, Context7CacheEntry]> {
     return new Map(this.records).entries()
   }
@@ -116,6 +123,10 @@ interface FixtureOptions {
   readonly exaCredential?: string
   readonly fetch?: typeof fetch
   readonly now?: number
+  readonly remote?: {
+    resolve(input: Parameters<Context7RemoteClient['resolve']>[0]): ReturnType<Context7RemoteClient['resolve']>
+    docs(input: Parameters<Context7RemoteClient['docs']>[0]): ReturnType<Context7RemoteClient['docs']>
+  }
 }
 
 const activeFixtures: Array<{
@@ -135,7 +146,7 @@ function fixture(options: FixtureOptions = {}) {
   const defaultFetch = vi.fn(async (input: Parameters<typeof fetch>[0]) => {
     const url = String(input)
     calls.push(url)
-    if (url.startsWith('https://context7.test/api/v2/search?')) {
+    if (url.startsWith('https://context7.test/api/v2/libs/search?')) {
       return jsonResponse({
         results: [
           {
@@ -182,7 +193,7 @@ function fixture(options: FixtureOptions = {}) {
   const clock = { value: options.now ?? 1_000 }
   const context = new Context()
   const service = new DocumentationSearchService(context, {
-    context7: new Context7RemoteClient({
+    context7: options.remote ?? new Context7RemoteClient({
       credentials: credentialFixture,
       fetch: fetchImplementation,
       random: () => 0.5,
@@ -212,8 +223,10 @@ afterEach(async () => {
 function input(
   provider: 'auto' | 'context7' | 'exa' | 'all',
   overrides: Partial<Parameters<DocumentationSearchService['search']>[0]> = {},
+  withLibraryIdentity = true,
 ) {
   return {
+    ...(withLibraryIdentity ? { libraryName: 'React' } : {}),
     maxResults: 5,
     provider,
     query: 'React useEffect API docs',
@@ -256,11 +269,100 @@ describe('high-level documentation provider routing', () => {
     expect(result.sources.length).toBeGreaterThan(0)
   })
 
+  it.each(['context7', 'all'] as const)(
+    'fails %s without a library identity before probes, cache, credentials, or network',
+    async (provider) => {
+      const test = fixture({ exaCredential: 'exa-secret' })
+
+      await expect(test.service.search(input(provider, {}, false))).rejects.toMatchObject({
+        kind: 'invalid_request',
+        provider: 'context7-library-name-or-id-required',
+      })
+
+      expect(test.calls).toHaveLength(0)
+      expect(test.table.size).toBe(0)
+      expect(test.table.getCalls).toBe(0)
+      expect(test.credentialFixture.describe).not.toHaveBeenCalled()
+      expect(test.credentialFixture.resolve).not.toHaveBeenCalled()
+    },
+  )
+
+  it('routes auto without a library identity exclusively to Exa', async () => {
+    const test = fixture({ exaCredential: 'exa-secret' })
+
+    const result = await test.service.search(input('auto', {}, false))
+
+    expect(test.calls).toEqual(['https://exa.test/search'])
+    expect(result.providers).toEqual([
+      { provider: 'context7', state: 'skipped' },
+      { provider: 'exa', state: 'complete' },
+    ])
+    expect(result.sources.every(source => source.provider === 'exa')).toBe(true)
+    expect(result.cache.resolve).toMatchObject({
+      state: 'skipped',
+      reason: 'provider_not_selected',
+    })
+    expect(test.table.size).toBe(0)
+  })
+
+  it('keeps exa Exa-only and ignores Context7 identity fields', async () => {
+    const test = fixture({ exaCredential: 'exa-secret' })
+
+    const result = await test.service.search(input('exa', {
+      libraryId: 'not-a-context7-id',
+      libraryName: '   ',
+    }, false))
+
+    expect(test.calls).toEqual(['https://exa.test/search'])
+    expect(result.providers).toEqual([
+      { provider: 'context7', state: 'skipped' },
+      { provider: 'exa', state: 'complete' },
+    ])
+    expect(result.sources.every(source => source.provider === 'exa')).toBe(true)
+    expect(test.table.size).toBe(0)
+  })
+
+  it('reports auto without identity and unavailable Exa without trying Context7', async () => {
+    const test = fixture()
+
+    await expect(test.service.search(input('auto', {}, false))).rejects.toMatchObject({
+      code: 'DOCUMENTATION_SEARCH_FAILED',
+      warnings: [expect.objectContaining({ code: 'provider_not_configured', provider: 'exa' })],
+    })
+
+    expect(test.calls).toHaveLength(0)
+    expect(test.table.size).toBe(0)
+    expect(test.credentialFixture.resolve).not.toHaveBeenCalled()
+  })
+
+  it('reports auto without identity Exa failure without falling back to Context7', async () => {
+    const fetchMock = vi.fn(async (request: Parameters<typeof fetch>[0]) => {
+      expect(String(request)).toBe('https://exa.test/search')
+      throw new TypeError('deterministic Exa failure')
+    }) as typeof fetch
+    const remote = {
+      resolve: vi.fn(async () => { throw new Error('Context7 resolve must not run') }),
+      docs: vi.fn(async () => { throw new Error('Context7 docs must not run') }),
+    }
+    const test = fixture({ exaCredential: 'exa-secret', fetch: fetchMock, remote })
+
+    await expect(test.service.search(input('auto', {}, false))).rejects.toMatchObject({
+      code: 'DOCUMENTATION_SEARCH_FAILED',
+      warnings: [expect.objectContaining({ code: 'provider_failed', provider: 'exa' })],
+    })
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(remote.resolve).not.toHaveBeenCalled()
+    expect(remote.docs).not.toHaveBeenCalled()
+    expect(test.table.size).toBe(0)
+  })
+
   it('skips Context7 resolve for a known valid libraryId', async () => {
     const test = fixture()
 
     const result = await test.service.search(input('context7', {
       libraryId: '/reactjs/react.dev',
+      libraryName: '   ',
     }))
 
     expect(test.calls).toHaveLength(1)
@@ -287,7 +389,121 @@ describe('high-level documentation provider routing', () => {
       title: 'React',
     })
     expect(second.cache).toMatchObject({ docs: { state: 'hit' }, resolve: { state: 'hit' } })
+    const resolveUrl = new URL(test.calls[0] ?? '')
+    expect(resolveUrl.pathname).toBe('/api/v2/libs/search')
+    expect(resolveUrl.searchParams.get('libraryName')).toBe('React')
+    expect(resolveUrl.searchParams.get('query')).toBe('React useEffect API docs')
     expect(test.calls).toHaveLength(2)
+  })
+
+  it('scans an internal candidate window without widening public result limits', async () => {
+    const query = 'How to use React hooks useEffect documentation'
+    const libraries = [
+      {
+        benchmarkScore: 99,
+        description: 'A collection of React Hooks for common browser behavior.',
+        id: '/streamich/react-use',
+        title: 'React Use',
+        totalSnippets: 9000,
+        trustScore: 10,
+      },
+      ...Array.from({ length: 8 }, (_value, index) => ({
+        benchmarkScore: 95,
+        description: 'Unrelated documentation candidate.',
+        id: `/examples/library-${index}`,
+        title: `Library ${index}`,
+        totalSnippets: 8000,
+        trustScore: 10,
+      })),
+      {
+        benchmarkScore: 90,
+        description: 'The library for web and native user interfaces.',
+        id: '/reactjs/react.dev',
+        title: 'React',
+        totalSnippets: 7000,
+        trustScore: 10,
+      },
+      ...Array.from({ length: 20 }, (_value, index) => ({
+        benchmarkScore: 95,
+        description: 'Another unrelated documentation candidate.',
+        id: `/examples/extra-${index}`,
+        title: `Extra ${index}`,
+        totalSnippets: 8000,
+        trustScore: 10,
+      })),
+    ]
+    const resolveInputs: Array<{ libraryName: string; query: string }> = []
+    const resolveLimits: number[] = []
+    const docsCalls: Array<{ libraryId: string; limit: number }> = []
+    const remote = {
+      resolve: vi.fn(async (request: Parameters<Context7RemoteClient['resolve']>[0]) => {
+        resolveInputs.push({ libraryName: request.libraryName, query: request.query })
+        resolveLimits.push(request.limit)
+        const returned = libraries.slice(0, request.limit)
+        return {
+          attempts: 1,
+          libraries: returned,
+          responseBytes: 4096,
+          totalDelayMs: 0,
+          totalLibraries: libraries.length,
+          truncated: returned.length < libraries.length,
+        }
+      }),
+      docs: vi.fn(async (request: Parameters<Context7RemoteClient['docs']>[0]) => {
+        docsCalls.push({ libraryId: request.libraryId, limit: request.limit })
+        const allSnippets = Array.from({ length: 8 }, (_value, index) => ({
+          content: `React useEffect snippet ${index + 1}`,
+          title: `Snippet ${index + 1}`,
+        }))
+        return {
+          attempts: 1,
+          responseBytes: 2048,
+          snippets: allSnippets.slice(0, request.limit),
+          totalDelayMs: 0,
+          totalSnippets: allSnippets.length,
+          truncated: request.limit < allSnippets.length,
+        }
+      }),
+    }
+    const test = fixture({
+      config: resolveConfig({ retention: { providerMaxSources: 30 } }),
+      exaCredential: 'exa-secret',
+      fetch: vi.fn(async () => jsonResponse({
+        results: Array.from({ length: 8 }, (_value, index) => ({
+          highlights: [`Exa documentation ${index + 1}`],
+          title: `Exa result ${index + 1}`,
+          url: `https://exa.example.test/${index + 1}`,
+        })),
+      })) as typeof fetch,
+      remote,
+    })
+
+    const highLevel = await test.service.search(input('all', {
+      maxResults: 6,
+      query,
+    }))
+    const granular = await test.service.resolveContext7({
+      libraryName: 'React',
+      query,
+      maxResults: 6,
+      signal: new AbortController().signal,
+    })
+
+    expect(highLevel.selectedLibrary?.id).toBe('/reactjs/react.dev')
+    expect(highLevel.sources).toHaveLength(6)
+    expect(highLevel.snippets).toHaveLength(6)
+    expect(highLevel.returnedSources).toBe(6)
+    expect(highLevel.returnedSnippets).toBe(6)
+    expect(highLevel.totalSources).toBeGreaterThan(6)
+    expect(docsCalls).toEqual([{ libraryId: '/reactjs/react.dev', limit: 6 }])
+    expect(resolveLimits).toEqual([30, 6])
+    expect(resolveInputs).toEqual([
+      { libraryName: 'React', query },
+      { libraryName: 'React', query },
+    ])
+    expect(granular.candidates).toHaveLength(6)
+    expect(granular.returnedCandidates).toBe(6)
+    expect(granular.totalCandidates).toBe(30)
   })
 
   it('handles Exa configured and unconfigured states without confusing empty success', async () => {
@@ -353,7 +569,7 @@ describe('documentation partial success, empty results, cache fallback, and canc
   it('preserves a resolved Context7 source when only the docs subpath fails', async () => {
     const fetchMock = vi.fn(async (request: Parameters<typeof fetch>[0]) => {
       const url = String(request)
-      if (url.includes('/api/v2/search')) {
+      if (url.includes('/api/v2/libs/search')) {
         return jsonResponse({ results: [{
           description: 'Official library docs',
           id: '/official/library',
@@ -403,7 +619,7 @@ describe('documentation partial success, empty results, cache fallback, and canc
     const fetchMock = vi.fn(async (request: Parameters<typeof fetch>[0]) => {
       if (offline) throw new TypeError('offline fixture')
       const url = String(request)
-      return url.includes('/api/v2/search')
+      return url.includes('/api/v2/libs/search')
         ? jsonResponse({ results: [{ id: '/react/react', title: 'React' }] })
         : jsonResponse({ codeSnippets: [{ content: 'cached snippet' }] })
     }) as typeof fetch
@@ -435,7 +651,7 @@ describe('documentation partial success, empty results, cache fallback, and canc
     const fetchMock = vi.fn(async (request: Parameters<typeof fetch>[0]) => {
       const url = String(request)
       if (!offline) {
-        return url.includes('/api/v2/search')
+        return url.includes('/api/v2/libs/search')
           ? jsonResponse({ results: [{ id: '/react/react', title: 'React' }] })
           : jsonResponse({ codeSnippets: [{ content: 'cached snippet' }] })
       }
@@ -454,7 +670,7 @@ describe('documentation partial success, empty results, cache fallback, and canc
 })
 
 describe('web_search documentation integration', () => {
-  it('reuses the persistent Context7 operations and leaves non-document queries untouched', async () => {
+  it('keeps web_search documentation enhancement Exa-only and leaves other queries untouched', async () => {
     const test = fixture()
     const emptyOutcome: SourceProviderSearchOutcome = {
       attempts: 1,
@@ -471,16 +687,41 @@ describe('web_search documentation integration', () => {
       state: 'complete',
       totalDelayMs: 0,
     }
-    const unavailable = (provider: 'exa' | 'tavily' | 'firecrawl', capability: 'docs_search' | 'web_search'): BoundedSourceProvider => ({
-      capability,
+    const unavailable = (provider: 'tavily' | 'firecrawl'): BoundedSourceProvider => ({
+      capability: 'web_search',
       configured: async () => false,
       provider,
       search: async () => emptyOutcome,
     })
+    const exaSearch = vi.fn(async (): Promise<SourceProviderSearchOutcome> => ({
+      attempts: 1,
+      result: {
+        responseBytes: 64,
+        returnedSnippets: 0,
+        returnedSources: 1,
+        snippets: [],
+        sources: [{
+          category: 'documentation',
+          provider: 'exa',
+          title: 'React documentation',
+          url: 'https://react.dev/reference/react',
+        }],
+        totalSnippets: 0,
+        totalSources: 1,
+        truncated: false,
+      },
+      state: 'complete',
+      totalDelayMs: 0,
+    }))
+    const exa: BoundedSourceProvider = {
+      capability: 'docs_search',
+      configured: async () => true,
+      provider: 'exa',
+      search: exaSearch,
+    }
     const orchestrator = new SearchOrchestrator({
-      context7: new DocumentationContext7Provider(test.service),
-      exa: unavailable('exa', 'docs_search'),
-      firecrawl: unavailable('firecrawl', 'web_search'),
+      exa,
+      firecrawl: unavailable('firecrawl'),
       getConfig: () => test.config,
       mainSearch: {
         searchResolved: async () => ({
@@ -496,7 +737,7 @@ describe('web_search documentation integration', () => {
         }),
       },
       now: () => test.clock.value,
-      tavily: unavailable('tavily', 'web_search'),
+      tavily: unavailable('tavily'),
     })
 
     const run = (query: string, profile: 'coding_docs' | 'fact_check') => orchestrator.search({
@@ -508,12 +749,14 @@ describe('web_search documentation integration', () => {
     const first = await run('React useEffect API docs', 'coding_docs')
     const second = await run('React useEffect API docs', 'coding_docs')
 
-    expect(first.canonical.sources.some(source => source.provider === 'context7')).toBe(true)
+    expect(first.canonical.sources.map(source => source.provider)).toEqual(['exa'])
     expect(second.canonical.sources).toEqual(first.canonical.sources)
-    expect(test.calls).toHaveLength(2)
+    expect(exaSearch).toHaveBeenCalledTimes(2)
+    expect(test.calls).toHaveLength(0)
 
     await run('compare quarterly revenue reports', 'fact_check')
-    expect(test.calls).toHaveLength(2)
+    expect(exaSearch).toHaveBeenCalledTimes(2)
+    expect(test.calls).toHaveLength(0)
   })
 })
 

@@ -41,7 +41,7 @@ const ORCHESTRATOR_PROVIDER = 'search-orchestrator'
 const PARTIAL_ANSWER = '主搜索失败，仅返回补充来源。'
 const DOCUMENTATION_LIMIT = 8
 
-type SourceSlotKey = 'context7' | 'exa' | 'tavily' | 'firecrawl'
+type SourceSlotKey = 'exa' | 'tavily' | 'firecrawl'
 
 interface TaskTrack<T> {
   readonly provider: string
@@ -412,7 +412,6 @@ function sourceAttempt(
 export class SearchOrchestrator {
   private readonly getConfig: SearchOrchestratorDependencies['getConfig']
   private readonly mainSearch: SearchOrchestratorDependencies['mainSearch']
-  private readonly context7: BoundedSourceProvider
   private readonly exa: BoundedSourceProvider
   private readonly tavily: BoundedSourceProvider
   private readonly firecrawl: BoundedSourceProvider
@@ -421,7 +420,6 @@ export class SearchOrchestrator {
   constructor(dependencies: SearchOrchestratorDependencies) {
     this.getConfig = dependencies.getConfig
     this.mainSearch = dependencies.mainSearch
-    this.context7 = dependencies.context7
     this.exa = dependencies.exa
     this.tavily = dependencies.tavily
     this.firecrawl = dependencies.firecrawl
@@ -479,17 +477,6 @@ export class SearchOrchestrator {
     const relayAbort = (): void => fanout.abort(signal.reason)
     signal.addEventListener('abort', relayAbort, { once: true })
     const slots: SourceSlot[] = [
-      {
-        available: false,
-        capability: 'docs_search',
-        key: 'context7',
-        limit: 0,
-        planningDurationMs: 0,
-        planningError: undefined,
-        provider: this.context7,
-        skipReason: undefined,
-        track: undefined,
-      },
       {
         available: false,
         capability: 'docs_search',
@@ -565,8 +552,8 @@ export class SearchOrchestrator {
       throwIfAborted(signal)
       throwIfAborted(fanout.signal)
 
-      const tavilySlot = slots[2]
-      const firecrawlSlot = slots[3]
+      const tavilySlot = slots[1]
+      const firecrawlSlot = slots[2]
       if (tavilySlot === undefined || firecrawlSlot === undefined) {
         throw new Error('discovery slots are incomplete')
       }

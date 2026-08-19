@@ -56,7 +56,7 @@ type UnknownRecord = Record<string, unknown>
 
 interface MutableSourceState {
   readonly sources: CanonicalSource[]
-  readonly seen: Set<string>
+  readonly sourceIndexByUrl: Map<string, number>
   truncated: boolean
 }
 
@@ -66,9 +66,27 @@ interface TextExtraction {
   readonly text: string
 }
 
-const URL_PATTERN = /https?:\/\/[^\s<>"'`，。、；：！？》）】)]+/g
-const MARKDOWN_LINK_PATTERN = /\[([^\]]+)]\((https?:\/\/[^)]+)\)/g
-const MARKDOWN_LINK_LINE_PATTERN = /\[[^\]]+]\(https?:\/\/[^)]+\)/
+interface MarkdownHttpLink {
+  readonly start: number
+  readonly end: number
+  readonly url: string
+  readonly label: string
+  readonly citationOrdinal: boolean
+}
+
+interface MarkdownInterval {
+  readonly start: number
+  readonly end: number
+}
+
+interface MarkdownLinkScan {
+  readonly links: readonly MarkdownHttpLink[]
+  readonly intervals: readonly MarkdownInterval[]
+}
+
+const BARE_URL_PATTERN = /https?:\/\/[^\s<>"'`，。、；：！？》）】]+/g
+const MARKDOWN_URL_BOUNDARIES = new Set(['<', '>', '"', "'", '`', '，', '。', '、', '；', '：', '！', '？', '》', '）', '】'])
+const URL_TRAILING_PUNCTUATION = new Set(['.', ',', ';', ':', '!', '?'])
 const SOURCES_HEADING_PATTERN =
   /(?:^|\n)(?:#{1,6}\s*)?(?:\*\*|__)?\s*(?:sources?|references?|citations?|信源|参考资料|参考|引用|来源列表|来源)(?:\s*[（(][^)\n]*[)）])?\s*(?:(?:\*\*|__)\s*)?[:：]?\s*(?:(?:\*\*|__)\s*)?$/gim
 const SOURCES_FUNCTION_PATTERN =
@@ -126,8 +144,181 @@ function firstBoundedString(
   return undefined
 }
 
+function isAsciiDigit(character: string | undefined): boolean {
+  return character !== undefined && character >= '0' && character <= '9'
+}
+
+function isCitationOrdinalLabel(label: string): boolean {
+  const trimmed = label.trim()
+  if (trimmed.length === 0) return false
+  for (let index = 0; index < trimmed.length; index += 1) {
+    if (!isAsciiDigit(trimmed[index])) return false
+  }
+  return true
+}
+
+function isMarkdownUrlBoundary(character: string): boolean {
+  return /\s/u.test(character) || MARKDOWN_URL_BOUNDARIES.has(character)
+}
+
+/** Scan the supported Markdown HTTP(S) link subset once without recursive parsing. */
+function scanMarkdownHttpLinks(text: string): MarkdownLinkScan {
+  const links: MarkdownHttpLink[] = []
+  const intervals: MarkdownInterval[] = []
+  const scanDestination = (urlStart: number): {
+    readonly end?: number
+    readonly resume: number
+    readonly url?: string
+  } => {
+    if (!text.startsWith('http://', urlStart) && !text.startsWith('https://', urlStart)) {
+      return { resume: urlStart }
+    }
+    let depth = 0
+    for (let index = urlStart; index < text.length; index += 1) {
+      const character = text[index]
+      if (character === undefined) break
+      if (isMarkdownUrlBoundary(character)) return { resume: index + 1 }
+      if (character === '(') {
+        depth += 1
+      } else if (character === ')') {
+        if (depth === 0) {
+          return {
+            end: index + 1,
+            resume: index + 1,
+            url: text.slice(urlStart, index),
+          }
+        }
+        depth -= 1
+      }
+    }
+    return { resume: text.length }
+  }
+
+  let cursor = 0
+  while (cursor < text.length) {
+    const start = text.indexOf('[', cursor)
+    if (start === -1) break
+    if (start > 0 && text[start - 1] === '[') {
+      cursor = start + 1
+      continue
+    }
+
+    let label: string
+    let citationOrdinal: boolean
+    let destinationOpen: number
+    if (text[start + 1] === '[') {
+      const digitsStart = start + 2
+      let labelEnd = digitsStart
+      while (isAsciiDigit(text[labelEnd])) labelEnd += 1
+      if (
+        labelEnd === digitsStart
+        || text[labelEnd] !== ']'
+        || text[labelEnd + 1] !== ']'
+        || text[labelEnd + 2] !== '('
+      ) {
+        labelEnd = text[digitsStart] === '[' ? digitsStart + 1 : digitsStart
+        while (
+          labelEnd < text.length
+          && text[labelEnd] !== ']'
+          && text[labelEnd] !== '['
+          && !isMarkdownUrlBoundary(text[labelEnd] ?? '')
+        ) labelEnd += 1
+        if (
+          text[labelEnd] === ']'
+          && text[labelEnd + 1] === ']'
+          && text[labelEnd + 2] === '('
+        ) {
+          const rejected = scanDestination(labelEnd + 3)
+          if (rejected.end !== undefined) {
+            intervals.push(Object.freeze({ end: rejected.end, start }))
+          }
+          cursor = rejected.resume
+        } else {
+          cursor = text[labelEnd] === '[' ? labelEnd : labelEnd + 1
+        }
+        continue
+      }
+      label = text.slice(digitsStart, labelEnd)
+      citationOrdinal = true
+      destinationOpen = labelEnd + 2
+    } else {
+      const labelStart = start + 1
+      let labelEnd = labelStart
+      while (
+        labelEnd < text.length
+        && text[labelEnd] !== ']'
+        && text[labelEnd] !== '['
+      ) labelEnd += 1
+      if (
+        labelEnd === labelStart
+        || text[labelEnd] !== ']'
+        || text[labelEnd + 1] !== '('
+      ) {
+        cursor = text[labelEnd] === '[' ? labelEnd : labelEnd + 1
+        continue
+      }
+      label = text.slice(labelStart, labelEnd)
+      citationOrdinal = isCitationOrdinalLabel(label)
+      destinationOpen = labelEnd + 1
+    }
+
+    const destination = scanDestination(destinationOpen + 1)
+    if (destination.end !== undefined && destination.url !== undefined) {
+      const link = Object.freeze({
+        citationOrdinal,
+        end: destination.end,
+        label,
+        start,
+        url: destination.url,
+      })
+      links.push(link)
+      intervals.push(link)
+    }
+    cursor = destination.resume
+  }
+  return Object.freeze({
+    intervals: Object.freeze(intervals),
+    links: Object.freeze(links),
+  })
+}
+
+/** Remove only sentence punctuation and unmatched ASCII closing parens at the URL tail. */
+function trimUrlTail(raw: string): string {
+  const value = raw.trim()
+  const unmatchedClosings: number[] = []
+  let depth = 0
+  for (let index = 0; index < value.length; index += 1) {
+    const character = value[index]
+    if (character === '(') depth += 1
+    else if (character === ')') {
+      if (depth === 0) unmatchedClosings.push(index)
+      else depth -= 1
+    }
+  }
+
+  let end = value.length
+  let unmatchedIndex = unmatchedClosings.length - 1
+  let changed = true
+  while (changed) {
+    changed = false
+    while (end > 0 && URL_TRAILING_PUNCTUATION.has(value[end - 1] ?? '')) {
+      end -= 1
+      changed = true
+    }
+    while (unmatchedIndex >= 0 && (unmatchedClosings[unmatchedIndex] ?? -1) >= end) {
+      unmatchedIndex -= 1
+    }
+    if (unmatchedClosings[unmatchedIndex] === end - 1) {
+      end -= 1
+      unmatchedIndex -= 1
+      changed = true
+    }
+  }
+  return value.slice(0, end)
+}
+
 function validatedHttpUrl(raw: string, limits: SearchResponseParseLimits): string | undefined {
-  const url = raw.trim().replace(/[.,;:!?]+$/, '')
+  const url = trimUrlTail(raw)
   const actual = characterLength(url)
   if (actual > limits.maxUrlCharacters) {
     throw new SearchResponseParseError('limit', { actual, maximum: limits.maxUrlCharacters })
@@ -147,12 +338,32 @@ function addSource(
   limits: SearchResponseParseLimits,
 ): void {
   const url = validatedHttpUrl(candidate.url, limits)
-  if (url === undefined || state.seen.has(url)) return
-  state.seen.add(url)
+  if (url === undefined) return
+  const existingIndex = state.sourceIndexByUrl.get(url)
+  if (existingIndex !== undefined) {
+    const existing = state.sources[existingIndex]!
+    const title = existing.title ?? candidate.title
+    const snippet = existing.snippet ?? candidate.snippet
+    const publishedAt = existing.publishedAt ?? candidate.publishedAt
+    if (
+      title !== existing.title
+      || snippet !== existing.snippet
+      || publishedAt !== existing.publishedAt
+    ) {
+      state.sources[existingIndex] = Object.freeze({
+        ...existing,
+        ...(title === undefined ? {} : { title }),
+        ...(snippet === undefined ? {} : { snippet }),
+        ...(publishedAt === undefined ? {} : { publishedAt }),
+      })
+    }
+    return
+  }
   if (state.sources.length >= limits.maxSources) {
     state.truncated = true
     return
   }
+  const index = state.sources.length
   state.sources.push(Object.freeze({
     provider: 'search-api',
     url,
@@ -160,37 +371,48 @@ function addSource(
     ...(candidate.snippet === undefined ? {} : { snippet: candidate.snippet }),
     ...(candidate.publishedAt === undefined ? {} : { publishedAt: candidate.publishedAt }),
   }))
+  state.sourceIndexByUrl.set(url, index)
 }
 
 function extractUrls(text: string): string[] {
   const urls: string[] = []
-  const seen = new Set<string>()
-  for (const match of text.matchAll(URL_PATTERN)) {
+  for (const match of text.matchAll(BARE_URL_PATTERN)) {
     const raw = match[0]
     if (raw === undefined) continue
-    const url = raw.replace(/[.,;:!?]+$/, '')
-    if (seen.has(url)) continue
-    seen.add(url)
-    urls.push(url)
+    urls.push(raw)
   }
   return urls
 }
 
 function addMarkdownSources(
-  text: string,
+  links: readonly MarkdownHttpLink[],
   state: MutableSourceState,
   limits: SearchResponseParseLimits,
 ): void {
-  for (const match of text.matchAll(MARKDOWN_LINK_PATTERN)) {
-    const rawTitle = match[1]
-    const rawUrl = match[2]
-    if (rawTitle === undefined || rawUrl === undefined) continue
-    const title = boundedOptionalString(rawTitle, limits.maxTitleCharacters)
+  for (const link of links) {
+    const title = link.citationOrdinal
+      ? undefined
+      : boundedOptionalString(link.label, limits.maxTitleCharacters)
     addSource(state, {
-      url: rawUrl,
+      url: link.url,
       ...(title === undefined ? {} : { title }),
     }, limits)
   }
+}
+
+function maskMarkdownLinkIntervals(
+  text: string,
+  intervals: readonly MarkdownInterval[],
+): string {
+  if (intervals.length === 0) return text
+  const parts: string[] = []
+  let cursor = 0
+  for (const link of intervals) {
+    parts.push(text.slice(cursor, link.start), ' ')
+    cursor = link.end
+  }
+  parts.push(text.slice(cursor))
+  return parts.join('')
 }
 
 /** Extract URL-validated inline Markdown citations in answer order for internal orchestration. */
@@ -199,8 +421,12 @@ export function extractMarkdownCitationUrls(
   maximumUrlCharacters = DEFAULT_SEARCH_RESPONSE_PARSE_LIMITS.maxUrlCharacters,
 ): readonly string[] {
   assertSafeInteger(maximumUrlCharacters, 'maximumUrlCharacters', false)
-  const state: MutableSourceState = { seen: new Set(), sources: [], truncated: false }
-  addMarkdownSources(text, state, {
+  const state: MutableSourceState = {
+    sourceIndexByUrl: new Map(),
+    sources: [],
+    truncated: false,
+  }
+  addMarkdownSources(scanMarkdownHttpLinks(text).links, state, {
     ...DEFAULT_SEARCH_RESPONSE_PARSE_LIMITS,
     maxSources: Number.MAX_SAFE_INTEGER,
     maxUrlCharacters: maximumUrlCharacters,
@@ -213,8 +439,9 @@ function addTextSources(
   state: MutableSourceState,
   limits: SearchResponseParseLimits,
 ): void {
-  addMarkdownSources(text, state, limits)
-  const bareText = text.replace(MARKDOWN_LINK_PATTERN, ' ')
+  const markdown = scanMarkdownHttpLinks(text)
+  addMarkdownSources(markdown.links, state, limits)
+  const bareText = maskMarkdownLinkIntervals(text, markdown.intervals)
   for (const url of extractUrls(bareText)) addSource(state, { url }, limits)
 }
 
@@ -413,7 +640,11 @@ function splitDetailsBlockSources(
   }
   const openIndex = lower.lastIndexOf('<details', closeIndex)
   if (openIndex === -1) return undefined
-  const temporary: MutableSourceState = { seen: new Set(), sources: [], truncated: false }
+  const temporary: MutableSourceState = {
+    sourceIndexByUrl: new Map(),
+    sources: [],
+    truncated: false,
+  }
   addTextSources(text.slice(openIndex, closeIndex + '</details>'.length), temporary, limits)
   if (temporary.sources.length < 2 && !temporary.truncated) return undefined
   for (const source of temporary.sources) addSource(state, source, limits)
@@ -426,7 +657,7 @@ function isLinkOnlyLine(line: string): boolean {
   return stripped.length > 0 && (
     stripped.startsWith('http://')
     || stripped.startsWith('https://')
-    || MARKDOWN_LINK_LINE_PATTERN.test(stripped)
+    || scanMarkdownHttpLinks(stripped).links.length > 0
   )
 }
 
@@ -459,7 +690,7 @@ function splitTailLinkBlock(
   return lines.slice(0, tailStart).join('\n').trimEnd()
 }
 
-/** Convert Search API prose/source conventions immediately into provider-neutral records. */
+/** Convert Search API prose/source conventions with one bounded link scan and exact-URL enrichment. */
 export function parseSearchAnswerText(
   text: string,
   limitOverrides: Partial<SearchResponseParseLimits> = {},
@@ -471,15 +702,23 @@ export function parseSearchAnswerText(
     return Object.freeze({ answer: '', sources: Object.freeze([]), sourcesTruncated: false })
   }
 
-  const trailingState: MutableSourceState = { seen: new Set(), sources: [], truncated: false }
+  const trailingState: MutableSourceState = {
+    sourceIndexByUrl: new Map(),
+    sources: [],
+    truncated: false,
+  }
   const answer = splitFunctionCallSources(trimmed, trailingState, limits)
     ?? splitHeadingSources(trimmed, trailingState, limits)
     ?? splitDetailsBlockSources(trimmed, trailingState, limits)
     ?? splitTailLinkBlock(trimmed, trailingState, limits)
     ?? trimmed
 
-  const state: MutableSourceState = { seen: new Set(), sources: [], truncated: false }
-  addMarkdownSources(answer, state, limits)
+  const state: MutableSourceState = {
+    sourceIndexByUrl: new Map(),
+    sources: [],
+    truncated: false,
+  }
+  addMarkdownSources(scanMarkdownHttpLinks(answer).links, state, limits)
   for (const source of trailingState.sources) addSource(state, source, limits)
   state.truncated ||= trailingState.truncated
   return Object.freeze({

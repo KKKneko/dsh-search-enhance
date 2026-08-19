@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto'
+
 import type { KvTable } from '@deepseek-ai/dsh-storage-domain'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -131,6 +133,7 @@ function resolveInput(
     config,
     forceRefresh,
     load,
+    libraryName: 'React',
     maxResults: 5,
     query: 'React useEffect API docs',
     signal: new AbortController().signal,
@@ -459,6 +462,7 @@ describe('Context7 cache integrity, capacity, and byte boundaries', () => {
   it('keys every response-shaping identity while excluding query text and secrets', () => {
     const base = {
       baseUrl: 'https://context7.test',
+      libraryName: 'React',
       maxEntryBytes: 1024,
       maxLibraryTextCharacters: 100,
       maxResults: 5,
@@ -469,6 +473,7 @@ describe('Context7 cache integrity, capacity, and byte boundaries', () => {
     expect(first).not.toContain('secret')
     expect(context7ResolveCacheKey({ ...base, maxResults: 6 })).not.toBe(first)
     expect(context7ResolveCacheKey({ ...base, query: 'Vue docs' })).not.toBe(first)
+    expect(context7ResolveCacheKey({ ...base, libraryName: 'Vue' })).not.toBe(first)
 
     const doc = context7DocsCacheKey({
       baseUrl: base.baseUrl,
@@ -480,6 +485,36 @@ describe('Context7 cache integrity, capacity, and byte boundaries', () => {
     })
     expect(doc).not.toContain('reactjs')
     expect(doc).not.toContain('secret')
+  })
+
+  it('does not hit legacy resolve entries keyed only by query', async () => {
+    const config = resolveConfig()
+    const test = fixture()
+    const seeded = await test.operations.resolve(resolveInput(
+      config,
+      async () => resolveRemote(),
+    ))
+    const legacyKey = `ctx7r_${createHash('sha256')
+      .update(JSON.stringify({
+        version: CONTEXT7_CACHE_FORMAT_VERSION,
+        kind: 'resolve',
+        baseUrl: new URL(config.providers.context7.baseUrl).href.replace(/\/+$/, ''),
+        maxEntryBytes: config.cache.context7EntryMaxBytes,
+        maxLibraryTextCharacters: config.cache.context7LibraryTextMaxCharacters,
+        maxResults: 5,
+        query: 'React useEffect API docs',
+      }))
+      .digest('base64url')}` as Context7CacheKey
+    test.table.records.clear()
+    test.table.records.set(legacyKey, { ...seeded.entry, cacheKey: legacyKey })
+    const load = vi.fn(async () => resolveRemote('Current'))
+
+    const result = await test.operations.resolve(resolveInput(config, load))
+
+    expect(result.cache).toBe('miss')
+    expect(load).toHaveBeenCalledTimes(1)
+    expect(result.entry.cacheKey).not.toBe(legacyKey)
+    expect(test.table.records.has(legacyKey)).toBe(true)
   })
 
   it('retains complete Unicode snippets under an exact JSON byte ceiling', async () => {
@@ -502,6 +537,7 @@ describe('Context7 cache integrity, capacity, and byte boundaries', () => {
     const config = resolveConfig()
     const resolveKey = context7ResolveCacheKey({
       baseUrl: config.providers.context7.baseUrl,
+      libraryName: 'React',
       maxEntryBytes: config.cache.context7EntryMaxBytes,
       maxLibraryTextCharacters: config.cache.context7LibraryTextMaxCharacters,
       maxResults: 1,

@@ -3,7 +3,6 @@ import type { CanonicalSource, SourceProvider } from '../../src/contracts/index.
 
 export const ACCEPTANCE_SEARCH_PROVIDERS = [
   'search-api',
-  'context7',
   'exa',
   'tavily',
   'firecrawl',
@@ -63,16 +62,6 @@ export const FINANCIAL_FACT_CHECK_ACCEPTANCE: Readonly<UserScenarioAcceptanceFix
         snippet: 'Issuer filing reports a 42.7% margin and links the signed quarterly announcement.',
         title: 'Alpha Corp quarterly announcement',
         url: 'HTTPS://Investor.Alpha.Example:443/releases/q1/?utm_medium=email&gclid=tracking&lang=en#results',
-      },
-    ]),
-    context7: frozenSources([
-      {
-        category: 'official',
-        provider: 'context7',
-        publishedAt: '2025-05-01',
-        snippet: 'Issuer filing reports a 42.7% margin and links the signed quarterly announcement.',
-        title: 'Alpha Corp quarterly announcement',
-        url: 'https://investor.alpha.example/releases/q1?lang=en&utm_campaign=context7',
       },
     ]),
     exa: frozenSources([
@@ -140,16 +129,6 @@ export const SDK_VERSIONED_DOCS_ACCEPTANCE: Readonly<UserScenarioAcceptanceFixtu
         url: 'HTTPS://DOCS.ACME.EXAMPLE:443/sdk/v4.2/api/?b=2&utm_campaign=launch&a=1#authentication',
       },
     ]),
-    context7: frozenSources([
-      {
-        category: 'documentation',
-        provider: 'context7',
-        publishedAt: '2023-02-01',
-        snippet: 'Official Acme SDK v3 API reference retained for old-version comparison.',
-        title: 'Acme SDK v3 API reference',
-        url: 'https://docs.acme.example/sdk/v3/api?lang=en',
-      },
-    ]),
     exa: frozenSources([
       {
         category: 'code',
@@ -158,6 +137,14 @@ export const SDK_VERSIONED_DOCS_ACCEPTANCE: Readonly<UserScenarioAcceptanceFixtu
         snippet: 'Official v4.2.0 release notes list migration-sensitive API changes.',
         title: 'Acme SDK v4.2 release',
         url: 'https://github.com/acme/sdk/releases/tag/v4.2.0?utm_source=release-mail',
+      },
+      {
+        category: 'documentation',
+        provider: 'exa',
+        publishedAt: '2023-02-01',
+        snippet: 'Official Acme SDK v3 API reference retained for old-version comparison.',
+        title: 'Acme SDK v3 API reference',
+        url: 'https://docs.acme.example/sdk/v3/api?lang=en',
       },
     ]),
     tavily: frozenSources([

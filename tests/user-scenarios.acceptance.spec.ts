@@ -69,9 +69,7 @@ function trackedProvider(
   provider: SupplementalProvider,
   sources: readonly CanonicalSource[],
 ): TrackedSourceProvider {
-  const capability = provider === 'context7' || provider === 'exa'
-    ? 'docs_search'
-    : 'web_search'
+  const capability = provider === 'exa' ? 'docs_search' : 'web_search'
   const configured = vi.fn<BoundedSourceProvider['configured']>(async () => true)
   const search = vi.fn<BoundedSourceProvider['search']>(async (
     input: SourceProviderSearchInput,
@@ -130,7 +128,6 @@ async function executeScenario(
 ): Promise<ExecutedScenario> {
   const config = scenarioConfig(fixture)
   const providers = {
-    context7: trackedProvider('context7', fixture.sources.context7),
     exa: trackedProvider('exa', fixture.sources.exa),
     tavily: trackedProvider('tavily', fixture.sources.tavily),
     firecrawl: trackedProvider('firecrawl', fixture.sources.firecrawl),
@@ -153,7 +150,6 @@ async function executeScenario(
   })
   let tick = 0
   const orchestrator = new SearchOrchestrator({
-    context7: providers.context7,
     exa: providers.exa,
     firecrawl: providers.firecrawl,
     getConfig: () => config,
@@ -181,7 +177,7 @@ function expectExactlyOneBoundedSearch(executed: ExecutedScenario): void {
     ...Object.values(executed.providers).map(provider => provider.search.mock.calls.length),
   ]
   expect(dispatchCounts).toEqual(ACCEPTANCE_SEARCH_PROVIDERS.map(() => 1))
-  expect(dispatchCounts.reduce((total, count) => total + count, 0)).toBe(5)
+  expect(dispatchCounts.reduce((total, count) => total + count, 0)).toBe(4)
   for (const provider of Object.values(executed.providers)) {
     expect(provider.configured).toHaveBeenCalledTimes(1)
   }

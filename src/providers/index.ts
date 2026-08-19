@@ -3,7 +3,6 @@ export {
   type BoundSourceProviderResultInput,
 } from './bounded-result.js'
 export {
-  Context7Provider,
   Context7RemoteClient,
   context7LibrarySource,
   context7LibraryUrl,
@@ -14,6 +13,7 @@ export {
   selectContext7Library,
   type Context7Library,
   type Context7ProviderDependencies,
+  type Context7ResolveRemoteInput,
   type ParsedContext7Libraries,
   type ParsedContext7Snippets,
 } from './context7.js'

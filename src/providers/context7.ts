@@ -12,7 +12,6 @@ import {
   type Context7ResolveRemoteResult,
 } from '../documentation/context7-cache.js'
 import { ProviderError, truncateCharacters } from '../provider-runtime/index.js'
-import { boundSourceProviderResult } from './bounded-result.js'
 import {
   canonicalHttpUrl,
   firstString,
@@ -25,10 +24,8 @@ import {
 } from './helpers.js'
 import { ProviderHttpClient, type ProviderHttpDependencies } from './http.js'
 import type {
-  BoundedSourceProvider,
   DocumentationSnippet,
   SourceProviderSearchInput,
-  SourceProviderSearchOutcome,
 } from './types.js'
 
 const PROVIDER = 'context7'
@@ -39,6 +36,11 @@ const DEFAULT_SNIPPET_CHARACTERS = 1200
 
 export interface Context7ProviderDependencies extends ProviderHttpDependencies {
   readonly credentials: Pick<CredentialProvider, 'describe' | 'resolve'>
+}
+
+/** Explicit Context7 library identity and independent documentation task. */
+export interface Context7ResolveRemoteInput extends SourceProviderSearchInput {
+  readonly libraryName: string
 }
 
 export type Context7Library = CachedContext7Library
@@ -181,10 +183,17 @@ function normalizedMatchText(value: string | undefined): string {
   return (value ?? '').toLowerCase().replace(/^@/, '').replace(/[^a-z0-9]+/g, '')
 }
 
+function normalizedTerms(value: string): readonly string[] {
+  return value.toLowerCase()
+    .split(/[^a-z0-9@._-]+/)
+    .map(normalizedMatchText)
+    .filter(term => term.length > 0)
+}
+
 function context7LibraryScore(
   item: Context7Library,
   libraryName: string,
-  query: string,
+  queryTerms: readonly string[],
 ): number {
   const wanted = normalizedMatchText(libraryName)
   const rawText = `${item.id ?? ''} ${item.title ?? ''} ${item.description ?? ''}`.toLowerCase()
@@ -193,27 +202,35 @@ function context7LibraryScore(
   const idSegments = (item.id ?? '').split('/').filter(Boolean).map(normalizedMatchText)
   let score = 0
 
-  if (/official.*documentation|documentation.*official|official docs|react\.dev/.test(rawText)) score += 260
-  if (rawText.includes('react.dev')) score += 120
   if (wanted.length > 0) {
-    if (title === wanted) score += 240
-    if (idSegments.some(segment => segment === wanted)) score += 220
-    if (idSegments.at(-1) === wanted) score += 40
-    if (title.startsWith(wanted)) score += 50
-    if (title.includes(wanted)) score += 20
-    if (description.includes(wanted)) score += 8
+    const titleIdentity = title === wanted
+      ? 1000
+      : title.startsWith(wanted)
+        ? 200
+        : title.includes(wanted)
+          ? 100
+          : 0
+    const idIdentity = idSegments.some(segment => segment === wanted)
+      ? 900 + (idSegments.at(-1) === wanted ? 100 : 0)
+      : 0
+    score += Math.max(titleIdentity, idIdentity)
+    if (description.includes(wanted)) score += 15
   }
-  for (const term of query.toLowerCase().split(/[^a-z0-9@.\-/]+/).filter(term => term.length > 1)) {
-    const normalizedTerm = normalizedMatchText(term)
-    if (normalizedTerm.length === 0) continue
-    if (title === normalizedTerm) score += 24
-    else if (title.includes(normalizedTerm)) score += 2
-    if (idSegments.some(segment => segment === normalizedTerm)) score += 20
-    if (description.includes(normalizedTerm)) score += 1
+
+  let queryRelevance = 0
+  for (const term of queryTerms) {
+    if (term.length <= 1) continue
+    if (title === term) queryRelevance += 3
+    else if (title.includes(term)) queryRelevance += 1
+    if (idSegments.some(segment => segment === term)) queryRelevance += 2
+    if (description.includes(term)) queryRelevance += 1
   }
+  score += Math.min(30, queryRelevance)
   if (/official|documentation|docs/.test(rawText)) score += 10
-  if (item.trustScore !== undefined) score += item.trustScore * 2
-  if (item.benchmarkScore !== undefined) score += item.benchmarkScore / 2
+  if (item.trustScore !== undefined) score += Math.min(20, Math.max(0, item.trustScore) * 2)
+  if (item.benchmarkScore !== undefined) {
+    score += Math.min(50, Math.max(0, item.benchmarkScore) / 2)
+  }
   if (item.totalSnippets !== undefined) {
     score += Math.min(30, Math.log10(Math.max(1, item.totalSnippets)) * 8)
   }
@@ -221,17 +238,18 @@ function context7LibraryScore(
   return score
 }
 
-/** Stable selection by exact name, description relevance, trust, benchmark, and snippet coverage. */
+/** Stable selection led by explicit library identity, then bounded secondary signals. */
 export function selectContext7Library(
   libraries: readonly Context7Library[],
   libraryName: string,
   query = libraryName,
 ): Context7Library | undefined {
+  const queryTerms = normalizedTerms(query)
   return libraries
     .map((library, index) => ({
       index,
       library,
-      score: context7LibraryScore(library, libraryName, query),
+      score: context7LibraryScore(library, libraryName, queryTerms),
     }))
     .filter(candidate => isContext7LibraryId(candidate.library.id))
     .sort((left, right) => right.score - left.score || left.index - right.index)[0]?.library
@@ -359,7 +377,8 @@ export class Context7RemoteClient {
     this.http = new ProviderHttpClient(dependencies)
   }
 
-  async resolve(input: SourceProviderSearchInput): Promise<Readonly<Context7ResolveRemoteResult>> {
+  async resolve(input: Context7ResolveRemoteInput): Promise<Readonly<Context7ResolveRemoteResult>> {
+    const libraryName = nonEmptyQuery(input.libraryName, PROVIDER, CAPABILITY)
     const query = nonEmptyQuery(input.query, PROVIDER, CAPABILITY)
     const limit = positiveLimit(input.limit, PROVIDER, CAPABILITY)
     const providerConfig = input.config.providers.context7
@@ -370,8 +389,9 @@ export class Context7RemoteClient {
       PROVIDER,
       CAPABILITY,
     )
-    const resolveUrl = new URL(providerEndpoint(providerConfig.baseUrl, '/api/v2/search'))
+    const resolveUrl = new URL(providerEndpoint(providerConfig.baseUrl, '/api/v2/libs/search'))
     resolveUrl.searchParams.set('query', query)
+    resolveUrl.searchParams.set('libraryName', libraryName)
     const response = await this.http.requestText({
       capability: CAPABILITY,
       endpoint: resolveUrl.href,
@@ -438,72 +458,6 @@ export class Context7RemoteClient {
       totalDelayMs: response.totalDelayMs,
       totalSnippets: parsed.totalSnippets,
       truncated: parsed.truncated,
-    })
-  }
-}
-
-/** Direct resolve-then-docs adapter retained for registration-free Provider use. */
-export class Context7Provider implements BoundedSourceProvider {
-  readonly capability = CAPABILITY
-  readonly provider = PROVIDER
-  private readonly remote: Context7RemoteClient
-
-  constructor(dependencies: Context7ProviderDependencies) {
-    this.remote = new Context7RemoteClient(dependencies)
-  }
-
-  async configured(): Promise<boolean> {
-    return true
-  }
-
-  async search(input: SourceProviderSearchInput): Promise<SourceProviderSearchOutcome> {
-    const query = nonEmptyQuery(input.query, PROVIDER, CAPABILITY)
-    const limit = positiveLimit(input.limit, PROVIDER, CAPABILITY)
-    const resolved = await this.remote.resolve({ ...input, query, limit })
-    const selected = selectContext7Library(resolved.libraries, query, query)
-    if (selected?.id === undefined || !isContext7LibraryId(selected.id)) {
-      return Object.freeze({
-        attempts: resolved.attempts,
-        result: boundSourceProviderResult({
-          capability: CAPABILITY,
-          config: input.config,
-          inputTruncated: resolved.truncated,
-          provider: PROVIDER,
-          requestedSources: limit,
-          responseBytes: resolved.responseBytes,
-          sources: [],
-        }),
-        state: 'complete',
-        totalDelayMs: resolved.totalDelayMs,
-      })
-    }
-
-    const libraryId = normalizeContext7LibraryId(selected.id)
-    const docs = await this.remote.docs({ ...input, libraryId, query, limit })
-    const snippets: DocumentationSnippet[] = docs.snippets.map(snippet => Object.freeze({
-      ...snippet,
-      libraryId,
-    }))
-    const source = context7LibrarySource(
-      selected,
-      input.config.providers.context7.baseUrl,
-      input.config.webExtract.maxUrlCharacters,
-      snippets[0]?.content ?? selected.description,
-    )
-    return Object.freeze({
-      attempts: resolved.attempts + docs.attempts,
-      result: boundSourceProviderResult({
-        capability: CAPABILITY,
-        config: input.config,
-        inputTruncated: resolved.truncated || docs.truncated,
-        provider: PROVIDER,
-        requestedSources: limit,
-        responseBytes: resolved.responseBytes + docs.responseBytes,
-        snippets,
-        sources: source === undefined ? [] : [source],
-      }),
-      state: 'complete',
-      totalDelayMs: resolved.totalDelayMs + docs.totalDelayMs,
     })
   }
 }

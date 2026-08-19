@@ -94,7 +94,6 @@ export interface MainSearchProvider {
 export interface SearchOrchestratorDependencies {
   readonly getConfig: () => Config
   readonly mainSearch: MainSearchProvider
-  readonly context7: BoundedSourceProvider
   readonly exa: BoundedSourceProvider
   readonly tavily: BoundedSourceProvider
   readonly firecrawl: BoundedSourceProvider

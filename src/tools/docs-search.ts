@@ -262,6 +262,7 @@ async function executeDocsSearch(
   const result = await dependencies.documentation.search({
     query: args.query,
     ...(args.provider === undefined ? {} : { provider: args.provider }),
+    ...(args.library_name === undefined ? {} : { libraryName: args.library_name }),
     ...(args.library_id === undefined ? {} : { libraryId: args.library_id }),
     maxResults,
     ...(args.force_refresh === undefined ? {} : { forceRefresh: args.force_refresh }),
@@ -289,7 +290,7 @@ export function createDocsSearchTool(
 ): ToolDefinition {
   return defineTool({
     name: 'docs_search',
-    description: 'High-level SDK/API/framework/README/release documentation search. Routes Context7 first and optionally Exa, returns discovery snippets and durable source_ref pagination; common documentation tasks do not need granular Context7 tools.',
+    description: 'High-level SDK/API/framework/README/release documentation search. Pass library_id for an exact Context7 id or library_name for a package/product; auto without either uses Exa discovery, while context7/all require one. Returns bounded discovery snippets and durable source_ref pagination.',
     parameters: DOCS_SEARCH_PARAMETERS,
     output: {
       schema: DOCS_SEARCH_OUTPUT_SCHEMA,

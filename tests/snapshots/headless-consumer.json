@@ -2,7 +2,7 @@
   "native_schema": [
     {
       "name": "docs_search",
-      "description": "High-level SDK/API/framework/README/release documentation search. Routes Context7 first and optionally Exa, returns discovery snippets and durable source_ref pagination; common documentation tasks do not need granular Context7 tools.",
+      "description": "High-level SDK/API/framework/README/release documentation search. Pass library_id for an exact Context7 id or library_name for a package/product; auto without either uses Exa discovery, while context7/all require one. Returns bounded discovery snippets and durable source_ref pagination.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -12,7 +12,7 @@
           },
           "provider": {
             "type": "string",
-            "description": "auto (default), Context7, Exa, or both documentation discovery routes.",
+            "description": "auto (default), Context7, Exa, or both. Without a Context7 library identity, auto is Exa-only.",
             "enum": [
               "auto",
               "context7",
@@ -20,9 +20,13 @@
               "all"
             ]
           },
+          "library_name": {
+            "type": "string",
+            "description": "Optional Context7 package or product name, such as React or FastAPI. Required for Context7 resolve when library_id is absent; never sent to Exa."
+          },
           "library_id": {
             "type": "string",
-            "description": "Optional exact Context7 /org/project or /org/project/version id; valid ids skip resolve."
+            "description": "Optional exact Context7 /org/project or /org/project/version id; takes priority over library_name and strictly skips resolve."
           },
           "max_results": {
             "type": "integer",
@@ -437,7 +441,7 @@
   },
   "model_surface_hashes": {
     "native_initial": {
-      "system_hash": "24ecebc3d5161d67abb18492343791db93d336b73a4e2858f1e4fcecb1f46c3a",
+      "system_hash": "ced8c8871c52ef65bea4b96095d4d8ebe59ed0a0792c8a8e4281fbd38a5ae9a4",
       "wire_names": [
         "docs_search",
         "search_call",
@@ -446,11 +450,11 @@
         "web_fetch",
         "web_search"
       ],
-      "wire_hash": "157ffde84207a8485d4a914ff3200b5b3f2694d5841f7afe62db9b5aadf5f993",
-      "top_level_schema_hash": "ef25cd75c8db69aefbb950e83b6173819b5627bf047b343496fcc4e2cca5d6c1"
+      "wire_hash": "2018bb0da48828b829020290ead92736964f9f06852135dfdd0a053147e3cbcd",
+      "top_level_schema_hash": "9a36b6058a10a4649402161c11864f22304ff73ef7143af218380308395475f2"
     },
     "native_after_source": {
-      "system_hash": "24ecebc3d5161d67abb18492343791db93d336b73a4e2858f1e4fcecb1f46c3a",
+      "system_hash": "ced8c8871c52ef65bea4b96095d4d8ebe59ed0a0792c8a8e4281fbd38a5ae9a4",
       "wire_names": [
         "docs_search",
         "search_call",
@@ -459,11 +463,11 @@
         "web_fetch",
         "web_search"
       ],
-      "wire_hash": "157ffde84207a8485d4a914ff3200b5b3f2694d5841f7afe62db9b5aadf5f993",
-      "top_level_schema_hash": "ef25cd75c8db69aefbb950e83b6173819b5627bf047b343496fcc4e2cca5d6c1"
+      "wire_hash": "2018bb0da48828b829020290ead92736964f9f06852135dfdd0a053147e3cbcd",
+      "top_level_schema_hash": "9a36b6058a10a4649402161c11864f22304ff73ef7143af218380308395475f2"
     },
     "code_initial": {
-      "system_hash": "0b96826d605eb61a9900147905891c3a9979a1693063d9339bf58d2897ba34f3",
+      "system_hash": "b22dea40ec85c9879abf9f31a837f9b90a59da711b83d486f014541271314a3c",
       "wire_names": [
         "run_code"
       ],
@@ -471,7 +475,7 @@
       "top_level_schema_hash": "dcf5336ad0c911e8d28dbca784cd1f90fc6c3334d5ac3eb456653196d4deac5f"
     },
     "code_after_source": {
-      "system_hash": "0b96826d605eb61a9900147905891c3a9979a1693063d9339bf58d2897ba34f3",
+      "system_hash": "b22dea40ec85c9879abf9f31a837f9b90a59da711b83d486f014541271314a3c",
       "wire_names": [
         "run_code"
       ],
@@ -479,7 +483,7 @@
       "top_level_schema_hash": "dcf5336ad0c911e8d28dbca784cd1f90fc6c3334d5ac3eb456653196d4deac5f"
     },
     "code_site_map_initial": {
-      "system_hash": "0b96826d605eb61a9900147905891c3a9979a1693063d9339bf58d2897ba34f3",
+      "system_hash": "b22dea40ec85c9879abf9f31a837f9b90a59da711b83d486f014541271314a3c",
       "wire_names": [
         "run_code"
       ],
@@ -487,7 +491,7 @@
       "top_level_schema_hash": "dcf5336ad0c911e8d28dbca784cd1f90fc6c3334d5ac3eb456653196d4deac5f"
     },
     "code_site_map_next": {
-      "system_hash": "0b96826d605eb61a9900147905891c3a9979a1693063d9339bf58d2897ba34f3",
+      "system_hash": "b22dea40ec85c9879abf9f31a837f9b90a59da711b83d486f014541271314a3c",
       "wire_names": [
         "run_code"
       ],
@@ -495,7 +499,7 @@
       "top_level_schema_hash": "dcf5336ad0c911e8d28dbca784cd1f90fc6c3334d5ac3eb456653196d4deac5f"
     },
     "progressive_native_assembly": {
-      "system_hash": "24ecebc3d5161d67abb18492343791db93d336b73a4e2858f1e4fcecb1f46c3a",
+      "system_hash": "ced8c8871c52ef65bea4b96095d4d8ebe59ed0a0792c8a8e4281fbd38a5ae9a4",
       "wire_names": [
         "docs_search",
         "search_call",
@@ -504,25 +508,25 @@
         "web_fetch",
         "web_search"
       ],
-      "wire_hash": "157ffde84207a8485d4a914ff3200b5b3f2694d5841f7afe62db9b5aadf5f993",
+      "wire_hash": "2018bb0da48828b829020290ead92736964f9f06852135dfdd0a053147e3cbcd",
       "sdk_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "top_level_schema_hash": "ef25cd75c8db69aefbb950e83b6173819b5627bf047b343496fcc4e2cca5d6c1"
+      "top_level_schema_hash": "9a36b6058a10a4649402161c11864f22304ff73ef7143af218380308395475f2"
     },
     "progressive_code_assembly": {
-      "system_hash": "0b96826d605eb61a9900147905891c3a9979a1693063d9339bf58d2897ba34f3",
+      "system_hash": "b22dea40ec85c9879abf9f31a837f9b90a59da711b83d486f014541271314a3c",
       "wire_names": [
         "run_code"
       ],
       "wire_hash": "3af3f463695b0882270a0b52867b1c5d3499e8c2fdec4bee4c8268dd628ff8a5",
-      "sdk_hash": "238be863bb1ffd5d72f5fed2a37fb3f0ffbf49e6050f7ea0b3ededc0377bb9cf",
+      "sdk_hash": "8f10d3b737a75e01ef6f1deef351128d8dfb1ffa32e0342bc53a0b9cc60a696f",
       "top_level_schema_hash": "dcf5336ad0c911e8d28dbca784cd1f90fc6c3334d5ac3eb456653196d4deac5f"
     }
   },
   "search_surface_system_prompts": {
-    "native_default": "You are an AI agent powered by DeepSeek Harness.\n\nSearch Enhance keeps a fixed model-facing surface: web_search, docs_search, web_extract, search_tools, and search_call.\nUse search_tools only when the resident search tools cannot complete the task. It returns append-only capability and operation manifests; do not activate every capability preemptively.\nRun a manifested deferred operation with search_call({ operation, arguments }). In progressive mode, a newly disclosed capability is callable on the next model step; in all mode, deferred operations are active immediately. search_call fails closed while an operation is inactive.\nActivate planning only for explicit deep research, multi-source verification, or complex comparison. Activate diagnostics only when the user asks about Provider configuration or connectivity.\nA successful web_search or docs_search result with source_ref activates the sources capability. Use the appended search_sources manifest, or call search_tools for sources to replay that manifest before search_call.\n\nFor current or external factual questions, start with one focused web_search (use docs_search for SDK/API documentation); do not inspect local files, settings, sessions, or credentials unless the user explicitly asks about local state.\nTreat web_search/docs_search answers, snippets, and source metadata as discovery, not claim-level evidence.\nBefore asserting decisive factual or causal conclusions, inspect selected authoritative URLs with web_extract; never present an inferred mechanism as source-stated fact, and label unestablished mechanisms as inference or unconfirmed.",
-    "native_only_web_search": "You are an AI agent powered by DeepSeek Harness.\n\nSearch Enhance keeps a fixed model-facing surface: web_search, docs_search, web_extract, search_tools, and search_call.\nUse search_tools only when the resident search tools cannot complete the task. It returns append-only capability and operation manifests; do not activate every capability preemptively.\nRun a manifested deferred operation with search_call({ operation, arguments }). In progressive mode, a newly disclosed capability is callable on the next model step; in all mode, deferred operations are active immediately. search_call fails closed while an operation is inactive.\nActivate planning only for explicit deep research, multi-source verification, or complex comparison. Activate diagnostics only when the user asks about Provider configuration or connectivity.\nA successful web_search or docs_search result with source_ref activates the sources capability. Use the appended search_sources manifest, or call search_tools for sources to replay that manifest before search_call.\n\nFor current or external factual questions, start with one focused web_search (use docs_search for SDK/API documentation); do not inspect local files, settings, sessions, or credentials unless the user explicitly asks about local state.\nTreat web_search/docs_search answers, snippets, and source metadata as discovery, not claim-level evidence.\nBefore asserting decisive factual or causal conclusions, inspect selected authoritative URLs with web_extract; never present an inferred mechanism as source-stated fact, and label unestablished mechanisms as inference or unconfirmed.",
-    "native_no_web_search": "You are an AI agent powered by DeepSeek Harness.\n\nSearch Enhance keeps a fixed model-facing surface: web_search, docs_search, web_extract, search_tools, and search_call.\nUse search_tools only when the resident search tools cannot complete the task. It returns append-only capability and operation manifests; do not activate every capability preemptively.\nRun a manifested deferred operation with search_call({ operation, arguments }). In progressive mode, a newly disclosed capability is callable on the next model step; in all mode, deferred operations are active immediately. search_call fails closed while an operation is inactive.\nActivate planning only for explicit deep research, multi-source verification, or complex comparison. Activate diagnostics only when the user asks about Provider configuration or connectivity.\nA successful web_search or docs_search result with source_ref activates the sources capability. Use the appended search_sources manifest, or call search_tools for sources to replay that manifest before search_call.\n\nFor current or external factual questions, start with one focused web_search (use docs_search for SDK/API documentation); do not inspect local files, settings, sessions, or credentials unless the user explicitly asks about local state.\nTreat web_search/docs_search answers, snippets, and source metadata as discovery, not claim-level evidence.\nBefore asserting decisive factual or causal conclusions, inspect selected authoritative URLs with web_extract; never present an inferred mechanism as source-stated fact, and label unestablished mechanisms as inference or unconfirmed.",
-    "code_default": "You are an AI agent powered by DeepSeek Harness.\n\n`run_code` is the only tool you can call directly — a tool call naming any other tool fails. Reach every tool the SDK declares below from inside the program.\n\nSearch Enhance keeps a fixed model-facing surface: web_search, docs_search, web_extract, search_tools, and search_call.\nUse search_tools only when the resident search tools cannot complete the task. It returns append-only capability and operation manifests; do not activate every capability preemptively.\nRun a manifested deferred operation with search_call({ operation, arguments }). In progressive mode, a newly disclosed capability is callable on the next model step; in all mode, deferred operations are active immediately. search_call fails closed while an operation is inactive.\nActivate planning only for explicit deep research, multi-source verification, or complex comparison. Activate diagnostics only when the user asks about Provider configuration or connectivity.\nA successful web_search or docs_search result with source_ref activates the sources capability. Use the appended search_sources manifest, or call search_tools for sources to replay that manifest before search_call.\n\nFor current or external factual questions, start with one focused web_search (use docs_search for SDK/API documentation); do not inspect local files, settings, sessions, or credentials unless the user explicitly asks about local state.\nTreat web_search/docs_search answers, snippets, and source metadata as discovery, not claim-level evidence.\nBefore asserting decisive factual or causal conclusions, inspect selected authoritative URLs with web_extract; never present an inferred mechanism as source-stated fact, and label unestablished mechanisms as inference or unconfirmed.\n\n## Writing code for run_code\n\n`run_code` takes two required arguments: `code` — the body of an async TypeScript function (erasable syntax only — no `enum` or namespaces; type annotations are advisory, the code runs type-stripped) — and `description`, a short summary of what the program does. Inside the program:\n\n- Call tools as `await tools.name(args)` — quoted access for exotic names: `tools[\"my-tool\"](args)`. Every call resolves to the tool's typed canonical JSON value. Tool arguments must be lossless JSON.\n- A FAILED tool call rejects with `ToolCallError`, whose `toolName` identifies the failed tool and whose `message` is human-readable — `try/catch` it to handle and continue.\n- Independent read-only calls MAY overlap under `Promise.all` (safe calls run concurrently; mutating calls run alone, in submission order). Sequence dependent work with `await`.\n- Emit results with `return` and/or `console.log(...)`. ONLY what you print or return comes back to you — intermediate tool results never enter the conversation, so extract just what you need.\n\nThe available tools:\n\n```ts\ntype JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }\n\ninterface ToolArgsMap {\n  /** High-level SDK/API/framework/README/release documentation search. Routes Context7 first and optionally Exa, returns discovery snippets and durable source_ref pagination; common documentation tasks do not need granular Context7 tools. */\n  docs_search: {\n    /** A non-empty SDK, API, framework, README, release, or documentation question. */\n    query: string;\n    /** auto (default), Context7, Exa, or both documentation discovery routes. */\n    provider?: \"auto\" | \"context7\" | \"exa\" | \"all\";\n    /** Optional exact Context7 /org/project or /org/project/version id; valid ids skip resolve. */\n    library_id?: string;\n    /** Maximum results (1-20); defaults to 6 and may be lowered by Settings. */\n    max_results?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20;\n    /** Bypass fresh Context7 cache entries and request current Provider data. */\n    force_refresh?: boolean;\n  } & Record<string, JsonValue>;\n  /** Execute one deferred search operation from an append-only manifest. The operation must already be active for this Agent; arguments and canonical output are validated against that operation's real schemas. */\n  search_call: {\n    /** Exact operation name from a search_tools or source-produced operation manifest. */\n    operation: string;\n    /** Arguments validated against the disclosed operation manifest before execution. */\n    arguments: Record<string, JsonValue>;\n  };\n  /** Disclose one or more deferred search capability groups and return their operation manifests. Use only when resident search tools cannot complete the task. Operations remain behind search_call; in progressive mode a newly disclosed capability takes effect on the next model step, while all mode keeps deferred operations active immediately. */\n  search_tools: {\n    /** One to five deferred search capability groups to disclose for this Agent. */\n    capabilities: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n  };\n  /** Read a specific HTTP(S) URL through independent extraction/direct routes. No JavaScript or login; host-reachable addresses may be accessed, and evidence differs by route. */\n  web_extract: {\n    /** A non-empty concrete HTTP(S) URL to read. */\n    url: string;\n    /** Output format; defaults to markdown. */\n    format?: \"markdown\" | \"text\" | \"html\" | \"json\" | \"raw\";\n  } & Record<string, JsonValue>;\n  /** Test-only independent native web fetch stub. */\n  web_fetch: {\n    url: string;\n  } & Record<string, JsonValue>;\n  /** Recommended entry point for ordinary search. Returns a bounded answer and discovery-level source metadata; snippets are not verified webpage-body evidence. */\n  web_search: {\n    /** A non-empty, self-contained natural-language search question. */\n    query: string;\n    /** Optional search strategy; omitted uses the user setting. */\n    profile?: \"auto\" | \"coding_docs\" | \"code_examples\" | \"project_research\" | \"academic\" | \"fact_check\";\n    /** Optional result depth; omitted uses the user setting. */\n    depth?: \"compact\" | \"normal\" | \"deep\";\n  } & Record<string, JsonValue>;\n}\n\ninterface ToolOutputMap {\n  docs_search: {\n    state: \"complete\" | \"partial\";\n    provider: \"auto\" | \"context7\" | \"exa\" | \"all\";\n    providers: ({\n      provider: \"context7\" | \"exa\";\n      state: \"complete\" | \"partial\" | \"failed\" | \"skipped\";\n    })[];\n    selected_library?: {\n      id: string;\n      title?: string;\n      description?: string;\n    };\n    snippets: {\n      /** Bounded Context7 documentation snippet; discovery metadata, not a fetched page body. */\n      content: string;\n      title?: string;\n      library_id?: string;\n    }[];\n    sources: {\n      /** HTTP(S) source URL. */\n      url: string;\n      /** Source title when supplied by a search Provider. */\n      title?: string;\n      /** Discovery snippet; not fetched page-body evidence. */\n      snippet?: string;\n      /** Provider-supplied publication or crawl timestamp. */\n      publishedAt?: string;\n    }[];\n    /** Opaque private-storage reference for search_sources. */\n    source_ref?: string;\n    /** Opaque, evictable reference to the plugin-private Context7 docs cache. */\n    doc_ref?: string;\n    cache: {\n      resolve: {\n        state: \"hit\" | \"miss\" | \"refresh\" | \"stale\" | \"skipped\" | \"failed\";\n        evicted_entries: number;\n        reason?: \"provider_not_selected\" | \"known_library_id\" | \"library_not_found\" | \"upstream_failed\";\n      };\n      docs: {\n        state: \"hit\" | \"miss\" | \"refresh\" | \"stale\" | \"skipped\" | \"failed\";\n        evicted_entries: number;\n        reason?: \"provider_not_selected\" | \"known_library_id\" | \"library_not_found\" | \"upstream_failed\";\n      };\n    };\n    total_sources: number;\n    returned_sources: number;\n    total_snippets: number;\n    returned_snippets: number;\n    truncated: boolean;\n    evidence_level: \"discovery\";\n    warnings: ({\n      code: \"provider_failed\" | \"provider_not_configured\" | \"cache_stale\" | \"cache_evicted\" | \"provider_result_truncated\" | \"no_results\" | \"sources_truncated\" | \"canonical_output_truncated\";\n      provider?: \"context7\" | \"exa\" | \"context7-cache\";\n      path?: \"resolve\" | \"docs\";\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n      count?: number;\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n  search_call: JsonValue;\n  search_tools: {\n    requested_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    added_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    active_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    groups: ({\n      group: \"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\";\n      description: string;\n      operations: {\n        name: string;\n        description: string;\n        parameters: JsonValue;\n        call: {\n          tool: \"search_call\";\n          operation: string;\n        };\n      }[];\n    })[];\n    gateway: \"search_call\";\n    takes_effect: \"already_active\" | \"next_step\";\n  };\n  web_extract: {\n    requested_url: string;\n    final_url?: string;\n    content: string;\n    format: \"markdown\" | \"text\" | \"html\" | \"json\" | \"raw\";\n    title?: string;\n    author?: string;\n    published_at?: string;\n    canonical_url?: string;\n    content_type?: string;\n    content_length?: number;\n    content_disposition?: string;\n    content_encoding?: string;\n    status_code?: number;\n    encoded_bytes?: number;\n    decompressed_bytes?: number;\n    metadata_only_reason?: \"attachment\" | \"binary_content_type\" | \"binary_body\" | \"declared_too_large\" | \"unsupported_content_encoding\" | \"empty_body\" | \"encoded_limit\" | \"decompressed_limit\";\n    content_transform?: \"html_to_markdown\" | \"html_to_text\" | \"json_pretty\";\n    encoded_body_truncated?: true;\n    decompressed_body_truncated?: true;\n    output_truncated?: true;\n    metadata_truncated?: true;\n    canonical_output_truncated?: true;\n    retrieval_route: \"tavily_extract\" | \"firecrawl_scrape\" | \"smart_direct\" | \"direct\";\n    evidence_level: \"extracted_content\" | \"direct_http_content\";\n    truncated: boolean;\n    attempts: ({\n      route: \"tavily_extract\" | \"firecrawl_scrape\" | \"smart_direct\" | \"direct\";\n      outcome: \"success\" | \"failed\" | \"aborted\" | \"skipped\";\n      count: number;\n      duration_ms: number;\n      fallback: boolean;\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n      http_status?: number;\n      retryable?: boolean;\n      skip_reason?: \"not_configured\" | \"not_applicable\" | \"budget_zero\" | \"format_unsupported\" | \"disabled\";\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n  web_fetch: string;\n  web_search: {\n    state: \"complete\" | \"partial\";\n    answer?: string;\n    sources: {\n      /** HTTP(S) source URL. */\n      url: string;\n      /** Source title when supplied by a search Provider. */\n      title?: string;\n      /** Discovery snippet; not fetched page-body evidence. */\n      snippet?: string;\n      /** Provider-supplied publication or crawl timestamp. */\n      publishedAt?: string;\n    }[];\n    /** Opaque private-storage reference for search_sources. */\n    source_ref?: string;\n    total_sources: number;\n    returned_sources: number;\n    truncated: boolean;\n    evidence_level: \"discovery\";\n    warnings: ({\n      /** Stable warning category. */\n      code: \"main_search_failed\" | \"provider_failed\" | \"provider_result_truncated\" | \"cache_stale\" | \"cache_evicted\" | \"answer_truncated\" | \"sources_truncated\" | \"canonical_output_truncated\" | \"no_results\";\n      /** Affected search capability, when applicable. */\n      capability?: \"main_search\" | \"docs_search\" | \"web_search\" | \"web_extract\" | \"site_map\" | \"model_list\";\n      /** Credential-free Provider identifier, when applicable. */\n      provider?: string;\n      /** Safe Provider failure category, when applicable. */\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n}\n\ntype ToolName = keyof ToolOutputMap\n\ndeclare class ToolCallError extends Error {\n  readonly name: \"ToolCallError\";\n  readonly toolName: ToolName;\n}\n\ndeclare const tools: {\n  [K in ToolName]: (args: ToolArgsMap[K]) => Promise<ToolOutputMap[K]>;\n}\n```"
+    "native_default": "You are an AI agent powered by DeepSeek Harness.\n\nSearch Enhance keeps a fixed model-facing surface: web_search, docs_search, web_extract, search_tools, and search_call.\nFor docs_search, pass library_id when an exact /org/project id is known, or pass library_name directly when the package or product is known; for example docs_search({ query: \"JWT authentication middleware API\", library_name: \"FastAPI\" }). Do not activate granular Context7 merely to resolve first.\nFor broad, cross-project, or unknown-library documentation discovery, use docs_search with provider: \"auto\" and no library identity; this uses Exa instead of guessing a Context7 library.\nUse search_tools only when the resident search tools cannot complete the task. It returns append-only capability and operation manifests; do not activate every capability preemptively.\nRun a manifested deferred operation with search_call({ operation, arguments }). In progressive mode, a newly disclosed capability is callable on the next model step; in all mode, deferred operations are active immediately. search_call fails closed while an operation is inactive.\nActivate planning only for explicit deep research, multi-source verification, or complex comparison. Activate diagnostics only when the user asks about Provider configuration or connectivity.\nA successful web_search or docs_search result with source_ref activates the sources capability. Use the appended search_sources manifest, or call search_tools for sources to replay that manifest before search_call.\n\nFor current or external factual questions, start with one focused web_search (use docs_search for SDK/API documentation); do not inspect local files, settings, sessions, or credentials unless the user explicitly asks about local state.\nTreat web_search/docs_search answers, snippets, and source metadata as discovery, not claim-level evidence.\nBefore asserting decisive factual or causal conclusions, inspect selected authoritative URLs with web_extract; never present an inferred mechanism as source-stated fact, and label unestablished mechanisms as inference or unconfirmed.",
+    "native_only_web_search": "You are an AI agent powered by DeepSeek Harness.\n\nSearch Enhance keeps a fixed model-facing surface: web_search, docs_search, web_extract, search_tools, and search_call.\nFor docs_search, pass library_id when an exact /org/project id is known, or pass library_name directly when the package or product is known; for example docs_search({ query: \"JWT authentication middleware API\", library_name: \"FastAPI\" }). Do not activate granular Context7 merely to resolve first.\nFor broad, cross-project, or unknown-library documentation discovery, use docs_search with provider: \"auto\" and no library identity; this uses Exa instead of guessing a Context7 library.\nUse search_tools only when the resident search tools cannot complete the task. It returns append-only capability and operation manifests; do not activate every capability preemptively.\nRun a manifested deferred operation with search_call({ operation, arguments }). In progressive mode, a newly disclosed capability is callable on the next model step; in all mode, deferred operations are active immediately. search_call fails closed while an operation is inactive.\nActivate planning only for explicit deep research, multi-source verification, or complex comparison. Activate diagnostics only when the user asks about Provider configuration or connectivity.\nA successful web_search or docs_search result with source_ref activates the sources capability. Use the appended search_sources manifest, or call search_tools for sources to replay that manifest before search_call.\n\nFor current or external factual questions, start with one focused web_search (use docs_search for SDK/API documentation); do not inspect local files, settings, sessions, or credentials unless the user explicitly asks about local state.\nTreat web_search/docs_search answers, snippets, and source metadata as discovery, not claim-level evidence.\nBefore asserting decisive factual or causal conclusions, inspect selected authoritative URLs with web_extract; never present an inferred mechanism as source-stated fact, and label unestablished mechanisms as inference or unconfirmed.",
+    "native_no_web_search": "You are an AI agent powered by DeepSeek Harness.\n\nSearch Enhance keeps a fixed model-facing surface: web_search, docs_search, web_extract, search_tools, and search_call.\nFor docs_search, pass library_id when an exact /org/project id is known, or pass library_name directly when the package or product is known; for example docs_search({ query: \"JWT authentication middleware API\", library_name: \"FastAPI\" }). Do not activate granular Context7 merely to resolve first.\nFor broad, cross-project, or unknown-library documentation discovery, use docs_search with provider: \"auto\" and no library identity; this uses Exa instead of guessing a Context7 library.\nUse search_tools only when the resident search tools cannot complete the task. It returns append-only capability and operation manifests; do not activate every capability preemptively.\nRun a manifested deferred operation with search_call({ operation, arguments }). In progressive mode, a newly disclosed capability is callable on the next model step; in all mode, deferred operations are active immediately. search_call fails closed while an operation is inactive.\nActivate planning only for explicit deep research, multi-source verification, or complex comparison. Activate diagnostics only when the user asks about Provider configuration or connectivity.\nA successful web_search or docs_search result with source_ref activates the sources capability. Use the appended search_sources manifest, or call search_tools for sources to replay that manifest before search_call.\n\nFor current or external factual questions, start with one focused web_search (use docs_search for SDK/API documentation); do not inspect local files, settings, sessions, or credentials unless the user explicitly asks about local state.\nTreat web_search/docs_search answers, snippets, and source metadata as discovery, not claim-level evidence.\nBefore asserting decisive factual or causal conclusions, inspect selected authoritative URLs with web_extract; never present an inferred mechanism as source-stated fact, and label unestablished mechanisms as inference or unconfirmed.",
+    "code_default": "You are an AI agent powered by DeepSeek Harness.\n\n`run_code` is the only tool you can call directly — a tool call naming any other tool fails. Reach every tool the SDK declares below from inside the program.\n\nSearch Enhance keeps a fixed model-facing surface: web_search, docs_search, web_extract, search_tools, and search_call.\nFor docs_search, pass library_id when an exact /org/project id is known, or pass library_name directly when the package or product is known; for example docs_search({ query: \"JWT authentication middleware API\", library_name: \"FastAPI\" }). Do not activate granular Context7 merely to resolve first.\nFor broad, cross-project, or unknown-library documentation discovery, use docs_search with provider: \"auto\" and no library identity; this uses Exa instead of guessing a Context7 library.\nUse search_tools only when the resident search tools cannot complete the task. It returns append-only capability and operation manifests; do not activate every capability preemptively.\nRun a manifested deferred operation with search_call({ operation, arguments }). In progressive mode, a newly disclosed capability is callable on the next model step; in all mode, deferred operations are active immediately. search_call fails closed while an operation is inactive.\nActivate planning only for explicit deep research, multi-source verification, or complex comparison. Activate diagnostics only when the user asks about Provider configuration or connectivity.\nA successful web_search or docs_search result with source_ref activates the sources capability. Use the appended search_sources manifest, or call search_tools for sources to replay that manifest before search_call.\n\nFor current or external factual questions, start with one focused web_search (use docs_search for SDK/API documentation); do not inspect local files, settings, sessions, or credentials unless the user explicitly asks about local state.\nTreat web_search/docs_search answers, snippets, and source metadata as discovery, not claim-level evidence.\nBefore asserting decisive factual or causal conclusions, inspect selected authoritative URLs with web_extract; never present an inferred mechanism as source-stated fact, and label unestablished mechanisms as inference or unconfirmed.\n\n## Writing code for run_code\n\n`run_code` takes two required arguments: `code` — the body of an async TypeScript function (erasable syntax only — no `enum` or namespaces; type annotations are advisory, the code runs type-stripped) — and `description`, a short summary of what the program does. Inside the program:\n\n- Call tools as `await tools.name(args)` — quoted access for exotic names: `tools[\"my-tool\"](args)`. Every call resolves to the tool's typed canonical JSON value. Tool arguments must be lossless JSON.\n- A FAILED tool call rejects with `ToolCallError`, whose `toolName` identifies the failed tool and whose `message` is human-readable — `try/catch` it to handle and continue.\n- Independent read-only calls MAY overlap under `Promise.all` (safe calls run concurrently; mutating calls run alone, in submission order). Sequence dependent work with `await`.\n- Emit results with `return` and/or `console.log(...)`. ONLY what you print or return comes back to you — intermediate tool results never enter the conversation, so extract just what you need.\n\nThe available tools:\n\n```ts\ntype JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }\n\ninterface ToolArgsMap {\n  /** High-level SDK/API/framework/README/release documentation search. Pass library_id for an exact Context7 id or library_name for a package/product; auto without either uses Exa discovery, while context7/all require one. Returns bounded discovery snippets and durable source_ref pagination. */\n  docs_search: {\n    /** A non-empty SDK, API, framework, README, release, or documentation question. */\n    query: string;\n    /** auto (default), Context7, Exa, or both. Without a Context7 library identity, auto is Exa-only. */\n    provider?: \"auto\" | \"context7\" | \"exa\" | \"all\";\n    /** Optional Context7 package or product name, such as React or FastAPI. Required for Context7 resolve when library_id is absent; never sent to Exa. */\n    library_name?: string;\n    /** Optional exact Context7 /org/project or /org/project/version id; takes priority over library_name and strictly skips resolve. */\n    library_id?: string;\n    /** Maximum results (1-20); defaults to 6 and may be lowered by Settings. */\n    max_results?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20;\n    /** Bypass fresh Context7 cache entries and request current Provider data. */\n    force_refresh?: boolean;\n  } & Record<string, JsonValue>;\n  /** Execute one deferred search operation from an append-only manifest. The operation must already be active for this Agent; arguments and canonical output are validated against that operation's real schemas. */\n  search_call: {\n    /** Exact operation name from a search_tools or source-produced operation manifest. */\n    operation: string;\n    /** Arguments validated against the disclosed operation manifest before execution. */\n    arguments: Record<string, JsonValue>;\n  };\n  /** Disclose one or more deferred search capability groups and return their operation manifests. Use only when resident search tools cannot complete the task. Operations remain behind search_call; in progressive mode a newly disclosed capability takes effect on the next model step, while all mode keeps deferred operations active immediately. */\n  search_tools: {\n    /** One to five deferred search capability groups to disclose for this Agent. */\n    capabilities: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n  };\n  /** Read a specific HTTP(S) URL through independent extraction/direct routes. No JavaScript or login; host-reachable addresses may be accessed, and evidence differs by route. */\n  web_extract: {\n    /** A non-empty concrete HTTP(S) URL to read. */\n    url: string;\n    /** Output format; defaults to markdown. */\n    format?: \"markdown\" | \"text\" | \"html\" | \"json\" | \"raw\";\n  } & Record<string, JsonValue>;\n  /** Test-only independent native web fetch stub. */\n  web_fetch: {\n    url: string;\n  } & Record<string, JsonValue>;\n  /** Recommended entry point for ordinary search. Returns a bounded answer and discovery-level source metadata; snippets are not verified webpage-body evidence. */\n  web_search: {\n    /** A non-empty, self-contained natural-language search question. */\n    query: string;\n    /** Optional search strategy; omitted uses the user setting. */\n    profile?: \"auto\" | \"coding_docs\" | \"code_examples\" | \"project_research\" | \"academic\" | \"fact_check\";\n    /** Optional result depth; omitted uses the user setting. */\n    depth?: \"compact\" | \"normal\" | \"deep\";\n  } & Record<string, JsonValue>;\n}\n\ninterface ToolOutputMap {\n  docs_search: {\n    state: \"complete\" | \"partial\";\n    provider: \"auto\" | \"context7\" | \"exa\" | \"all\";\n    providers: ({\n      provider: \"context7\" | \"exa\";\n      state: \"complete\" | \"partial\" | \"failed\" | \"skipped\";\n    })[];\n    selected_library?: {\n      id: string;\n      title?: string;\n      description?: string;\n    };\n    snippets: {\n      /** Bounded Context7 documentation snippet; discovery metadata, not a fetched page body. */\n      content: string;\n      title?: string;\n      library_id?: string;\n    }[];\n    sources: {\n      /** HTTP(S) source URL. */\n      url: string;\n      /** Source title when supplied by a search Provider. */\n      title?: string;\n      /** Discovery snippet; not fetched page-body evidence. */\n      snippet?: string;\n      /** Provider-supplied publication or crawl timestamp. */\n      publishedAt?: string;\n    }[];\n    /** Opaque private-storage reference for search_sources. */\n    source_ref?: string;\n    /** Opaque, evictable reference to the plugin-private Context7 docs cache. */\n    doc_ref?: string;\n    cache: {\n      resolve: {\n        state: \"hit\" | \"miss\" | \"refresh\" | \"stale\" | \"skipped\" | \"failed\";\n        evicted_entries: number;\n        reason?: \"provider_not_selected\" | \"known_library_id\" | \"library_not_found\" | \"upstream_failed\";\n      };\n      docs: {\n        state: \"hit\" | \"miss\" | \"refresh\" | \"stale\" | \"skipped\" | \"failed\";\n        evicted_entries: number;\n        reason?: \"provider_not_selected\" | \"known_library_id\" | \"library_not_found\" | \"upstream_failed\";\n      };\n    };\n    total_sources: number;\n    returned_sources: number;\n    total_snippets: number;\n    returned_snippets: number;\n    truncated: boolean;\n    evidence_level: \"discovery\";\n    warnings: ({\n      code: \"provider_failed\" | \"provider_not_configured\" | \"cache_stale\" | \"cache_evicted\" | \"provider_result_truncated\" | \"no_results\" | \"sources_truncated\" | \"canonical_output_truncated\";\n      provider?: \"context7\" | \"exa\" | \"context7-cache\";\n      path?: \"resolve\" | \"docs\";\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n      count?: number;\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n  search_call: JsonValue;\n  search_tools: {\n    requested_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    added_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    active_groups: (\"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\")[];\n    groups: ({\n      group: \"context7\" | \"sources\" | \"site_map\" | \"planning\" | \"diagnostics\";\n      description: string;\n      operations: {\n        name: string;\n        description: string;\n        parameters: JsonValue;\n        call: {\n          tool: \"search_call\";\n          operation: string;\n        };\n      }[];\n    })[];\n    gateway: \"search_call\";\n    takes_effect: \"already_active\" | \"next_step\";\n  };\n  web_extract: {\n    requested_url: string;\n    final_url?: string;\n    content: string;\n    format: \"markdown\" | \"text\" | \"html\" | \"json\" | \"raw\";\n    title?: string;\n    author?: string;\n    published_at?: string;\n    canonical_url?: string;\n    content_type?: string;\n    content_length?: number;\n    content_disposition?: string;\n    content_encoding?: string;\n    status_code?: number;\n    encoded_bytes?: number;\n    decompressed_bytes?: number;\n    metadata_only_reason?: \"attachment\" | \"binary_content_type\" | \"binary_body\" | \"declared_too_large\" | \"unsupported_content_encoding\" | \"empty_body\" | \"encoded_limit\" | \"decompressed_limit\";\n    content_transform?: \"html_to_markdown\" | \"html_to_text\" | \"json_pretty\";\n    encoded_body_truncated?: true;\n    decompressed_body_truncated?: true;\n    output_truncated?: true;\n    metadata_truncated?: true;\n    canonical_output_truncated?: true;\n    retrieval_route: \"tavily_extract\" | \"firecrawl_scrape\" | \"smart_direct\" | \"direct\";\n    evidence_level: \"extracted_content\" | \"direct_http_content\";\n    truncated: boolean;\n    attempts: ({\n      route: \"tavily_extract\" | \"firecrawl_scrape\" | \"smart_direct\" | \"direct\";\n      outcome: \"success\" | \"failed\" | \"aborted\" | \"skipped\";\n      count: number;\n      duration_ms: number;\n      fallback: boolean;\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n      http_status?: number;\n      retryable?: boolean;\n      skip_reason?: \"not_configured\" | \"not_applicable\" | \"budget_zero\" | \"format_unsupported\" | \"disabled\";\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n  web_fetch: string;\n  web_search: {\n    state: \"complete\" | \"partial\";\n    answer?: string;\n    sources: {\n      /** HTTP(S) source URL. */\n      url: string;\n      /** Source title when supplied by a search Provider. */\n      title?: string;\n      /** Discovery snippet; not fetched page-body evidence. */\n      snippet?: string;\n      /** Provider-supplied publication or crawl timestamp. */\n      publishedAt?: string;\n    }[];\n    /** Opaque private-storage reference for search_sources. */\n    source_ref?: string;\n    total_sources: number;\n    returned_sources: number;\n    truncated: boolean;\n    evidence_level: \"discovery\";\n    warnings: ({\n      /** Stable warning category. */\n      code: \"main_search_failed\" | \"provider_failed\" | \"provider_result_truncated\" | \"cache_stale\" | \"cache_evicted\" | \"answer_truncated\" | \"sources_truncated\" | \"canonical_output_truncated\" | \"no_results\";\n      /** Affected search capability, when applicable. */\n      capability?: \"main_search\" | \"docs_search\" | \"web_search\" | \"web_extract\" | \"site_map\" | \"model_list\";\n      /** Credential-free Provider identifier, when applicable. */\n      provider?: string;\n      /** Safe Provider failure category, when applicable. */\n      error_kind?: \"credential_missing\" | \"configuration\" | \"invalid_request\" | \"rate_limited\" | \"timeout\" | \"network\" | \"http\" | \"invalid_response\" | \"budget_exceeded\" | \"unavailable\" | \"unknown\";\n    })[];\n    /** Applied UTF-8 ceiling for the Native model-text projection. */\n    model_text_max_bytes: number;\n  };\n}\n\ntype ToolName = keyof ToolOutputMap\n\ndeclare class ToolCallError extends Error {\n  readonly name: \"ToolCallError\";\n  readonly toolName: ToolName;\n}\n\ndeclare const tools: {\n  [K in ToolName]: (args: ToolArgsMap[K]) => Promise<ToolOutputMap[K]>;\n}\n```"
   },
   "search_surface_wire_tools": {
     "native_default": [
@@ -559,19 +563,28 @@
       "content": [
         {
           "type": "text",
-          "text": "Fixture answer for native full SDK v4 fixture.\n\nTop sources\n1. Acme SDK v4 release\n   URL: https://github.com/acme/sdk/releases/tag/v4\n   Snippet: Current release discovery for the v4 fixture\n2. Acme SDK v3 community guide\n   URL: <fixture-origin>/pages/sdk-v3\n   Date: 2023-01-02\n\nSources shown: 2/2\n\nEvidence level: discovery. Snippets are discovery metadata, not verified page-body evidence.\n\nSource reference: <source-ref>\n\n{\"capability\":\"sources\",\"gateway\":\"search_call\",\"operations\":[{\"name\":\"search_sources\",\"description\":\"Page discovery sources retained by web_search or docs_search for the current Agent session or an inherited fork. The private search_enhance_sources storage must be backed up and restored together with the session.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"source_ref\":{\"type\":\"string\",\"description\":\"Opaque source reference returned by web_search or docs_search.\"},\"offset\":{\"type\":\"integer\",\"description\":\"Zero-based source offset; defaults to 0.\"},\"limit\":{\"type\":\"integer\",\"description\":\"Positive page size; defaults to 20 and is capped by Settings.\"},\"format\":{\"type\":\"string\",\"description\":\"compact (default) or full with bounded snippets.\",\"enum\":[\"compact\",\"full\"]}},\"required\":[\"source_ref\"]},\"call\":{\"tool\":\"search_call\",\"operation\":\"search_sources\"}}]}\nCapability \"sources\" is active for this Agent. Invoke only the manifested deferred operations through search_call."
+          "text": "Fixture answer for native full SDK v4 fixture.\nUse [[1]](<fixture-origin>/pages/community-guide(2024)) for the bounded answer.\n\nTop sources\n1. Acme SDK v4 community guide\n   URL: <fixture-origin>/pages/community-guide(2024)\n   Date: 2024-06-18\n   Snippet: Structured metadata enriches the exact balanced citation\n2. Acme SDK v4 release\n   URL: https://github.com/acme/sdk/releases/tag/v4\n   Snippet: Current release discovery for the v4 fixture\n3. www.cnsa.gov.cn\n   URL: https://www.cnsa.gov.cn/english/chang-e-4\n4. Acme SDK v3 community guide\n   URL: <fixture-origin>/pages/sdk-v3\n   Date: 2023-01-02\n\nSources shown: 4/4\n\nEvidence level: discovery. Snippets are discovery metadata, not verified page-body evidence.\n\nSource reference: <source-ref>\n\n{\"capability\":\"sources\",\"gateway\":\"search_call\",\"operations\":[{\"name\":\"search_sources\",\"description\":\"Page discovery sources retained by web_search or docs_search for the current Agent session or an inherited fork. The private search_enhance_sources storage must be backed up and restored together with the session.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"source_ref\":{\"type\":\"string\",\"description\":\"Opaque source reference returned by web_search or docs_search.\"},\"offset\":{\"type\":\"integer\",\"description\":\"Zero-based source offset; defaults to 0.\"},\"limit\":{\"type\":\"integer\",\"description\":\"Positive page size; defaults to 20 and is capped by Settings.\"},\"format\":{\"type\":\"string\",\"description\":\"compact (default) or full with bounded snippets.\",\"enum\":[\"compact\",\"full\"]}},\"required\":[\"source_ref\"]},\"call\":{\"tool\":\"search_call\",\"operation\":\"search_sources\"}}]}\nCapability \"sources\" is active for this Agent. Invoke only the manifested deferred operations through search_call."
         }
       ],
       "meta": {
         "version": 1,
         "type": "web_search",
         "source_produced": true,
-        "answer": "Fixture answer for native full SDK v4 fixture.",
+        "answer": "Fixture answer for native full SDK v4 fixture.\nUse [[1]](<fixture-origin>/pages/community-guide(2024)) for the bounded answer.",
         "sources": [
+          {
+            "url": "<fixture-origin>/pages/community-guide(2024)",
+            "title": "Acme SDK v4 community guide",
+            "snippet": "Structured metadata enriches the exact balanced citation",
+            "publishedAt": "2024-06-18"
+          },
           {
             "url": "https://github.com/acme/sdk/releases/tag/v4",
             "title": "Acme SDK v4 release",
             "snippet": "Current release discovery for the v4 fixture"
+          },
+          {
+            "url": "https://www.cnsa.gov.cn/english/chang-e-4"
           },
           {
             "url": "<fixture-origin>/pages/sdk-v3",
@@ -621,7 +634,7 @@
       "content": [
         {
           "type": "text",
-          "text": "Sources\n1. Acme SDK v4 release\n   URL: https://github.com/acme/sdk/releases/tag/v4\n   Category: unknown\n   Snippet: Current release discovery for the v4 fixture\n\nPage returned: 1; retained total: 2; original total: 2.\nMore sources are available at offset 1.\n\nThese are retained discovery records; snippets are not fetched webpage bodies."
+          "text": "Sources\n1. Acme SDK v4 community guide\n   URL: <fixture-origin>/pages/community-guide(2024)\n   Category: unknown\n   Date: 2024-06-18\n   Snippet: Structured metadata enriches the exact balanced citation\n\nPage returned: 1; retained total: 4; original total: 4.\nMore sources are available at offset 1.\n\nThese are retained discovery records; snippets are not fetched webpage bodies."
         }
       ],
       "meta": {
@@ -634,12 +647,13 @@
           "state": "found",
           "offset": 0,
           "returned": 1,
-          "total": 2,
+          "total": 4,
           "sources": [
             {
-              "url": "https://github.com/acme/sdk/releases/tag/v4",
-              "title": "Acme SDK v4 release",
-              "snippet": "Current release discovery for the v4 fixture"
+              "url": "<fixture-origin>/pages/community-guide(2024)",
+              "title": "Acme SDK v4 community guide",
+              "snippet": "Structured metadata enriches the exact balanced citation",
+              "publishedAt": "2024-06-18"
             }
           ],
           "truncated": true
@@ -749,15 +763,46 @@
       }
     }
   ],
+  "citation_priority": {
+    "answer": "Fixture answer for native full SDK v4 fixture.\nUse [[1]](<fixture-origin>/pages/community-guide(2024)) for the bounded answer.",
+    "cited_url": "<fixture-origin>/pages/community-guide(2024)",
+    "cited_source": {
+      "url": "<fixture-origin>/pages/community-guide(2024)",
+      "title": "Acme SDK v4 community guide",
+      "snippet": "Structured metadata enriches the exact balanced citation",
+      "publishedAt": "2024-06-18"
+    },
+    "truncated_urls": [],
+    "deduplicated_url": "<fixture-origin>/pages/sdk-v3",
+    "uncited_quality_url": "https://github.com/acme/sdk/releases/tag/v4",
+    "titleless_url": "https://www.cnsa.gov.cn/english/chang-e-4",
+    "ordered_urls": [
+      "<fixture-origin>/pages/community-guide(2024)",
+      "https://github.com/acme/sdk/releases/tag/v4",
+      "https://www.cnsa.gov.cn/english/chang-e-4",
+      "<fixture-origin>/pages/sdk-v3"
+    ],
+    "malformed_urls": [],
+    "tracking_urls": []
+  },
   "native_outputs": {
     "complete": {
       "state": "complete",
-      "answer": "Fixture answer for native full SDK v4 fixture.",
+      "answer": "Fixture answer for native full SDK v4 fixture.\nUse [[1]](<fixture-origin>/pages/community-guide(2024)) for the bounded answer.",
       "sources": [
+        {
+          "url": "<fixture-origin>/pages/community-guide(2024)",
+          "title": "Acme SDK v4 community guide",
+          "snippet": "Structured metadata enriches the exact balanced citation",
+          "publishedAt": "2024-06-18"
+        },
         {
           "url": "https://github.com/acme/sdk/releases/tag/v4",
           "title": "Acme SDK v4 release",
           "snippet": "Current release discovery for the v4 fixture"
+        },
+        {
+          "url": "https://www.cnsa.gov.cn/english/chang-e-4"
         },
         {
           "url": "<fixture-origin>/pages/sdk-v3",
@@ -766,8 +811,8 @@
         }
       ],
       "source_ref": "<source-ref>",
-      "total_sources": 2,
-      "returned_sources": 2,
+      "total_sources": 4,
+      "returned_sources": 4,
       "truncated": false,
       "evidence_level": "discovery",
       "warnings": [],
@@ -818,19 +863,20 @@
       "offset": 0,
       "limit": 1,
       "format": "full",
-      "total": 2,
+      "total": 4,
       "returned": 1,
       "sources": [
         {
-          "url": "https://github.com/acme/sdk/releases/tag/v4",
+          "url": "<fixture-origin>/pages/community-guide(2024)",
           "category": "unknown",
-          "title": "Acme SDK v4 release",
-          "snippet": "Current release discovery for the v4 fixture"
+          "title": "Acme SDK v4 community guide",
+          "date": "2024-06-18",
+          "snippet": "Structured metadata enriches the exact balanced citation"
         }
       ],
       "has_more": true,
       "next_offset": 1,
-      "total_before_retention": 2,
+      "total_before_retention": 4,
       "truncated": false,
       "page_byte_limited": false
     },
@@ -1107,9 +1153,18 @@
         "title": "native full SDK v4 fixture",
         "sources": [
           {
+            "url": "<fixture-origin>/pages/community-guide(2024)",
+            "title": "Acme SDK v4 community guide",
+            "snippet": "Structured metadata enriches the exact balanced citation",
+            "publishedAt": "2024-06-18"
+          },
+          {
             "url": "https://github.com/acme/sdk/releases/tag/v4",
             "title": "Acme SDK v4 release",
             "snippet": "Current release discovery for the v4 fixture"
+          },
+          {
+            "url": "https://www.cnsa.gov.cn/english/chang-e-4"
           },
           {
             "url": "<fixture-origin>/pages/sdk-v3",
@@ -1117,7 +1172,7 @@
             "publishedAt": "2023-01-02"
           }
         ],
-        "answer": "Fixture answer for native full SDK v4 fixture.",
+        "answer": "Fixture answer for native full SDK v4 fixture.\nUse [[1]](<fixture-origin>/pages/community-guide(2024)) for the bounded answer.",
         "truncated": false
       },
       "replay": {
@@ -1126,9 +1181,18 @@
         "title": "native full SDK v4 fixture",
         "sources": [
           {
+            "url": "<fixture-origin>/pages/community-guide(2024)",
+            "title": "Acme SDK v4 community guide",
+            "snippet": "Structured metadata enriches the exact balanced citation",
+            "publishedAt": "2024-06-18"
+          },
+          {
             "url": "https://github.com/acme/sdk/releases/tag/v4",
             "title": "Acme SDK v4 release",
             "snippet": "Current release discovery for the v4 fixture"
+          },
+          {
+            "url": "https://www.cnsa.gov.cn/english/chang-e-4"
           },
           {
             "url": "<fixture-origin>/pages/sdk-v3",
@@ -1136,19 +1200,28 @@
             "publishedAt": "2023-01-02"
           }
         ],
-        "answer": "Fixture answer for native full SDK v4 fixture.",
+        "answer": "Fixture answer for native full SDK v4 fixture.\nUse [[1]](<fixture-origin>/pages/community-guide(2024)) for the bounded answer.",
         "truncated": false
       },
       "metadata": {
         "version": 1,
         "type": "web_search",
         "source_produced": true,
-        "answer": "Fixture answer for native full SDK v4 fixture.",
+        "answer": "Fixture answer for native full SDK v4 fixture.\nUse [[1]](<fixture-origin>/pages/community-guide(2024)) for the bounded answer.",
         "sources": [
+          {
+            "url": "<fixture-origin>/pages/community-guide(2024)",
+            "title": "Acme SDK v4 community guide",
+            "snippet": "Structured metadata enriches the exact balanced citation",
+            "publishedAt": "2024-06-18"
+          },
           {
             "url": "https://github.com/acme/sdk/releases/tag/v4",
             "title": "Acme SDK v4 release",
             "snippet": "Current release discovery for the v4 fixture"
+          },
+          {
+            "url": "https://www.cnsa.gov.cn/english/chang-e-4"
           },
           {
             "url": "<fixture-origin>/pages/sdk-v3",
@@ -1188,21 +1261,31 @@
       "web_search": [
         {
           "state": "complete",
-          "answer": "Fixture answer for code first-step fixture.",
+          "answer": "Fixture answer for code first-step native full SDK v4 fixture.\nUse [[1]](<fixture-origin>/pages/community-guide(2024)) for the bounded answer.",
           "sources": [
             {
-              "url": "<fixture-origin>/pages/primary",
-              "title": "Primary fixture"
+              "url": "<fixture-origin>/pages/community-guide(2024)",
+              "title": "Acme SDK v4 community guide",
+              "snippet": "Structured metadata enriches the exact balanced citation",
+              "publishedAt": "2024-06-18"
             },
             {
-              "url": "<fixture-origin>/pages/tavily",
-              "title": "Tavily code first-step fixture",
-              "snippet": "Supplemental discovery for code first-step fixture"
+              "url": "https://github.com/acme/sdk/releases/tag/v4",
+              "title": "Acme SDK v4 release",
+              "snippet": "Current release discovery for the v4 fixture"
+            },
+            {
+              "url": "https://www.cnsa.gov.cn/english/chang-e-4"
+            },
+            {
+              "url": "<fixture-origin>/pages/sdk-v3",
+              "title": "Acme SDK v3 community guide",
+              "publishedAt": "2023-01-02"
             }
           ],
           "source_ref": "<source-ref>",
-          "total_sources": 2,
-          "returned_sources": 2,
+          "total_sources": 4,
+          "returned_sources": 4,
           "truncated": false,
           "evidence_level": "discovery",
           "warnings": [],
@@ -1210,21 +1293,31 @@
         },
         {
           "state": "complete",
-          "answer": "Fixture answer for code next-SDK fixture.",
+          "answer": "Fixture answer for code next-SDK native full SDK v4 fixture.\nUse [[1]](<fixture-origin>/pages/community-guide(2024)) for the bounded answer.",
           "sources": [
             {
-              "url": "<fixture-origin>/pages/primary",
-              "title": "Primary fixture"
+              "url": "<fixture-origin>/pages/community-guide(2024)",
+              "title": "Acme SDK v4 community guide",
+              "snippet": "Structured metadata enriches the exact balanced citation",
+              "publishedAt": "2024-06-18"
             },
             {
-              "url": "<fixture-origin>/pages/tavily",
-              "title": "Tavily code next-SDK fixture",
-              "snippet": "Supplemental discovery for code next-SDK fixture"
+              "url": "https://github.com/acme/sdk/releases/tag/v4",
+              "title": "Acme SDK v4 release",
+              "snippet": "Current release discovery for the v4 fixture"
+            },
+            {
+              "url": "https://www.cnsa.gov.cn/english/chang-e-4"
+            },
+            {
+              "url": "<fixture-origin>/pages/sdk-v3",
+              "title": "Acme SDK v3 community guide",
+              "publishedAt": "2023-01-02"
             }
           ],
           "source_ref": "<source-ref>",
-          "total_sources": 2,
-          "returned_sources": 2,
+          "total_sources": 4,
+          "returned_sources": 4,
           "truncated": false,
           "evidence_level": "discovery",
           "warnings": [],
@@ -1237,18 +1330,20 @@
         "offset": 0,
         "limit": 1,
         "format": "full",
-        "total": 2,
+        "total": 4,
         "returned": 1,
         "sources": [
           {
-            "url": "<fixture-origin>/pages/primary",
+            "url": "<fixture-origin>/pages/community-guide(2024)",
             "category": "unknown",
-            "title": "Primary fixture"
+            "title": "Acme SDK v4 community guide",
+            "date": "2024-06-18",
+            "snippet": "Structured metadata enriches the exact balanced citation"
           }
         ],
         "has_more": true,
         "next_offset": 1,
-        "total_before_retention": 2,
+        "total_before_retention": 4,
         "truncated": false,
         "page_byte_limited": false
       }
@@ -1259,21 +1354,31 @@
         "result": {
           "search": {
             "state": "complete",
-            "answer": "Fixture answer for code first-step fixture.",
+            "answer": "Fixture answer for code first-step native full SDK v4 fixture.\nUse [[1]](<fixture-origin>/pages/community-guide(2024)) for the bounded answer.",
             "sources": [
               {
-                "url": "<fixture-origin>/pages/primary",
-                "title": "Primary fixture"
+                "url": "<fixture-origin>/pages/community-guide(2024)",
+                "title": "Acme SDK v4 community guide",
+                "snippet": "Structured metadata enriches the exact balanced citation",
+                "publishedAt": "2024-06-18"
               },
               {
-                "url": "<fixture-origin>/pages/tavily",
-                "title": "Tavily code first-step fixture",
-                "snippet": "Supplemental discovery for code first-step fixture"
+                "url": "https://github.com/acme/sdk/releases/tag/v4",
+                "title": "Acme SDK v4 release",
+                "snippet": "Current release discovery for the v4 fixture"
+              },
+              {
+                "url": "https://www.cnsa.gov.cn/english/chang-e-4"
+              },
+              {
+                "url": "<fixture-origin>/pages/sdk-v3",
+                "title": "Acme SDK v3 community guide",
+                "publishedAt": "2023-01-02"
               }
             ],
             "source_ref": "<source-ref>",
-            "total_sources": 2,
-            "returned_sources": 2,
+            "total_sources": 4,
+            "returned_sources": 4,
             "truncated": false,
             "evidence_level": "discovery",
             "warnings": [],
@@ -1288,21 +1393,31 @@
         "result": {
           "search": {
             "state": "complete",
-            "answer": "Fixture answer for code next-SDK fixture.",
+            "answer": "Fixture answer for code next-SDK native full SDK v4 fixture.\nUse [[1]](<fixture-origin>/pages/community-guide(2024)) for the bounded answer.",
             "sources": [
               {
-                "url": "<fixture-origin>/pages/primary",
-                "title": "Primary fixture"
+                "url": "<fixture-origin>/pages/community-guide(2024)",
+                "title": "Acme SDK v4 community guide",
+                "snippet": "Structured metadata enriches the exact balanced citation",
+                "publishedAt": "2024-06-18"
               },
               {
-                "url": "<fixture-origin>/pages/tavily",
-                "title": "Tavily code next-SDK fixture",
-                "snippet": "Supplemental discovery for code next-SDK fixture"
+                "url": "https://github.com/acme/sdk/releases/tag/v4",
+                "title": "Acme SDK v4 release",
+                "snippet": "Current release discovery for the v4 fixture"
+              },
+              {
+                "url": "https://www.cnsa.gov.cn/english/chang-e-4"
+              },
+              {
+                "url": "<fixture-origin>/pages/sdk-v3",
+                "title": "Acme SDK v3 community guide",
+                "publishedAt": "2023-01-02"
               }
             ],
             "source_ref": "<source-ref>",
-            "total_sources": 2,
-            "returned_sources": 2,
+            "total_sources": 4,
+            "returned_sources": 4,
             "truncated": false,
             "evidence_level": "discovery",
             "warnings": [],
@@ -1314,18 +1429,20 @@
             "offset": 0,
             "limit": 1,
             "format": "full",
-            "total": 2,
+            "total": 4,
             "returned": 1,
             "sources": [
               {
-                "url": "<fixture-origin>/pages/primary",
+                "url": "<fixture-origin>/pages/community-guide(2024)",
                 "category": "unknown",
-                "title": "Primary fixture"
+                "title": "Acme SDK v4 community guide",
+                "date": "2024-06-18",
+                "snippet": "Structured metadata enriches the exact balanced citation"
               }
             ],
             "has_more": true,
             "next_offset": 1,
-            "total_before_retention": 2,
+            "total_before_retention": 4,
             "truncated": false,
             "page_byte_limited": false
           },
@@ -1400,7 +1517,7 @@
         "subCallId": "code-first-call:code:1",
         "name": "web_search",
         "arguments": {
-          "query": "code first-step fixture",
+          "query": "code first-step native full SDK v4 fixture",
           "profile": "auto",
           "depth": "compact"
         },
@@ -1408,7 +1525,7 @@
         "content": [
           {
             "type": "text",
-            "text": "Fixture answer for code first-step fixture.\n\nTop sources\n1. Primary fixture\n   URL: <fixture-origin>/pages/primary\n2. Tavily code first-step fixture\n   URL: <fixture-origin>/pages/tavily\n   Snippet: Supplemental discovery for code first-step fixture\n\nSources shown: 2/2\n\nEvidence level: discovery. Snippets are discovery metadata, not verified page-body evidence.\n\nSource reference: <source-ref>\n\n{\"capability\":\"sources\",\"gateway\":\"search_call\",\"operations\":[{\"name\":\"search_sources\",\"description\":\"Page discovery sources retained by web_search or docs_search for the current Agent session or an inherited fork. The private search_enhance_sources storage must be backed up and restored together with the session.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"source_ref\":{\"type\":\"string\",\"description\":\"Opaque source reference returned by web_search or docs_search.\"},\"offset\":{\"type\":\"integer\",\"description\":\"Zero-based source offset; defaults to 0.\"},\"limit\":{\"type\":\"integer\",\"description\":\"Positive page size; defaults to 20 and is capped by Settings.\"},\"format\":{\"type\":\"string\",\"description\":\"compact (default) or full with bounded snippets.\",\"enum\":[\"compact\",\"full\"]}},\"required\":[\"source_ref\"]},\"call\":{\"tool\":\"search_call\",\"operation\":\"search_sources\"}}]}\nCapability \"sources\" is active for this Agent. Invoke only the manifested deferred operations through search_call."
+            "text": "Fixture answer for code first-step native full SDK v4 fixture.\nUse [[1]](<fixture-origin>/pages/community-guide(2024)) for the bounded answer.\n\nTop sources\n1. Acme SDK v4 community guide\n   URL: <fixture-origin>/pages/community-guide(2024)\n   Date: 2024-06-18\n   Snippet: Structured metadata enriches the exact balanced citation\n2. Acme SDK v4 release\n   URL: https://github.com/acme/sdk/releases/tag/v4\n   Snippet: Current release discovery for the v4 fixture\n3. www.cnsa.gov.cn\n   URL: https://www.cnsa.gov.cn/english/chang-e-4\n4. Acme SDK v3 community guide\n   URL: <fixture-origin>/pages/sdk-v3\n   Date: 2023-01-02\n\nSources shown: 4/4\n\nEvidence level: discovery. Snippets are discovery metadata, not verified page-body evidence.\n\nSource reference: <source-ref>\n\n{\"capability\":\"sources\",\"gateway\":\"search_call\",\"operations\":[{\"name\":\"search_sources\",\"description\":\"Page discovery sources retained by web_search or docs_search for the current Agent session or an inherited fork. The private search_enhance_sources storage must be backed up and restored together with the session.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"source_ref\":{\"type\":\"string\",\"description\":\"Opaque source reference returned by web_search or docs_search.\"},\"offset\":{\"type\":\"integer\",\"description\":\"Zero-based source offset; defaults to 0.\"},\"limit\":{\"type\":\"integer\",\"description\":\"Positive page size; defaults to 20 and is capped by Settings.\"},\"format\":{\"type\":\"string\",\"description\":\"compact (default) or full with bounded snippets.\",\"enum\":[\"compact\",\"full\"]}},\"required\":[\"source_ref\"]},\"call\":{\"tool\":\"search_call\",\"operation\":\"search_sources\"}}]}\nCapability \"sources\" is active for this Agent. Invoke only the manifested deferred operations through search_call."
           },
           {
             "type": "search-enhance/source-produced",
@@ -1444,7 +1561,7 @@
         "subCallId": "code-next-call:code:1",
         "name": "web_search",
         "arguments": {
-          "query": "code next-SDK fixture",
+          "query": "code next-SDK native full SDK v4 fixture",
           "profile": "auto",
           "depth": "compact"
         },
@@ -1452,7 +1569,7 @@
         "content": [
           {
             "type": "text",
-            "text": "Fixture answer for code next-SDK fixture.\n\nTop sources\n1. Primary fixture\n   URL: <fixture-origin>/pages/primary\n2. Tavily code next-SDK fixture\n   URL: <fixture-origin>/pages/tavily\n   Snippet: Supplemental discovery for code next-SDK fixture\n\nSources shown: 2/2\n\nEvidence level: discovery. Snippets are discovery metadata, not verified page-body evidence.\n\nSource reference: <source-ref>\n\n{\"capability\":\"sources\",\"gateway\":\"search_call\",\"operations\":[{\"name\":\"search_sources\",\"description\":\"Page discovery sources retained by web_search or docs_search for the current Agent session or an inherited fork. The private search_enhance_sources storage must be backed up and restored together with the session.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"source_ref\":{\"type\":\"string\",\"description\":\"Opaque source reference returned by web_search or docs_search.\"},\"offset\":{\"type\":\"integer\",\"description\":\"Zero-based source offset; defaults to 0.\"},\"limit\":{\"type\":\"integer\",\"description\":\"Positive page size; defaults to 20 and is capped by Settings.\"},\"format\":{\"type\":\"string\",\"description\":\"compact (default) or full with bounded snippets.\",\"enum\":[\"compact\",\"full\"]}},\"required\":[\"source_ref\"]},\"call\":{\"tool\":\"search_call\",\"operation\":\"search_sources\"}}]}\nCapability \"sources\" is active for this Agent. Invoke only the manifested deferred operations through search_call."
+            "text": "Fixture answer for code next-SDK native full SDK v4 fixture.\nUse [[1]](<fixture-origin>/pages/community-guide(2024)) for the bounded answer.\n\nTop sources\n1. Acme SDK v4 community guide\n   URL: <fixture-origin>/pages/community-guide(2024)\n   Date: 2024-06-18\n   Snippet: Structured metadata enriches the exact balanced citation\n2. Acme SDK v4 release\n   URL: https://github.com/acme/sdk/releases/tag/v4\n   Snippet: Current release discovery for the v4 fixture\n3. www.cnsa.gov.cn\n   URL: https://www.cnsa.gov.cn/english/chang-e-4\n4. Acme SDK v3 community guide\n   URL: <fixture-origin>/pages/sdk-v3\n   Date: 2023-01-02\n\nSources shown: 4/4\n\nEvidence level: discovery. Snippets are discovery metadata, not verified page-body evidence.\n\nSource reference: <source-ref>\n\n{\"capability\":\"sources\",\"gateway\":\"search_call\",\"operations\":[{\"name\":\"search_sources\",\"description\":\"Page discovery sources retained by web_search or docs_search for the current Agent session or an inherited fork. The private search_enhance_sources storage must be backed up and restored together with the session.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"source_ref\":{\"type\":\"string\",\"description\":\"Opaque source reference returned by web_search or docs_search.\"},\"offset\":{\"type\":\"integer\",\"description\":\"Zero-based source offset; defaults to 0.\"},\"limit\":{\"type\":\"integer\",\"description\":\"Positive page size; defaults to 20 and is capped by Settings.\"},\"format\":{\"type\":\"string\",\"description\":\"compact (default) or full with bounded snippets.\",\"enum\":[\"compact\",\"full\"]}},\"required\":[\"source_ref\"]},\"call\":{\"tool\":\"search_call\",\"operation\":\"search_sources\"}}]}\nCapability \"sources\" is active for this Agent. Invoke only the manifested deferred operations through search_call."
           },
           {
             "type": "search-enhance/source-produced",
@@ -1478,7 +1595,7 @@
         "content": [
           {
             "type": "text",
-            "text": "Sources\n1. Primary fixture\n   URL: <fixture-origin>/pages/primary\n   Category: unknown\n\nPage returned: 1; retained total: 2; original total: 2.\nMore sources are available at offset 1.\n\nThese are retained discovery records; snippets are not fetched webpage bodies."
+            "text": "Sources\n1. Acme SDK v4 community guide\n   URL: <fixture-origin>/pages/community-guide(2024)\n   Category: unknown\n   Date: 2024-06-18\n   Snippet: Structured metadata enriches the exact balanced citation\n\nPage returned: 1; retained total: 4; original total: 4.\nMore sources are available at offset 1.\n\nThese are retained discovery records; snippets are not fetched webpage bodies."
           }
         ]
       }
@@ -1491,18 +1608,19 @@
         "offset": 0,
         "limit": 1,
         "format": "compact",
-        "total": 2,
+        "total": 4,
         "returned": 1,
         "sources": [
           {
-            "url": "<fixture-origin>/pages/primary",
+            "url": "<fixture-origin>/pages/community-guide(2024)",
             "category": "unknown",
-            "title": "Primary fixture"
+            "title": "Acme SDK v4 community guide",
+            "date": "2024-06-18"
           }
         ],
         "has_more": true,
         "next_offset": 1,
-        "total_before_retention": 2,
+        "total_before_retention": 4,
         "truncated": false,
         "page_byte_limited": false
       }
@@ -1561,7 +1679,7 @@
       "version": 1,
       "sourceRef": "<source-ref>",
       "ownerSessionId": "code-session",
-      "query": "code first-step fixture",
+      "query": "code first-step native full SDK v4 fixture",
       "profile": "auto",
       "depth": "compact",
       "call": {
@@ -1572,18 +1690,30 @@
       },
       "sources": [
         {
-          "url": "<fixture-origin>/pages/primary",
-          "title": "Primary fixture",
+          "url": "<fixture-origin>/pages/community-guide(2024)",
+          "title": "Acme SDK v4 community guide",
+          "snippet": "Structured metadata enriches the exact balanced citation",
+          "publishedAt": "2024-06-18",
           "provider": "search-api"
         },
         {
-          "url": "<fixture-origin>/pages/tavily",
-          "title": "Tavily code first-step fixture",
-          "snippet": "Supplemental discovery for code first-step fixture",
+          "url": "https://github.com/acme/sdk/releases/tag/v4",
+          "title": "Acme SDK v4 release",
+          "snippet": "Current release discovery for the v4 fixture",
           "provider": "tavily"
+        },
+        {
+          "url": "https://www.cnsa.gov.cn/english/chang-e-4",
+          "provider": "search-api"
+        },
+        {
+          "url": "<fixture-origin>/pages/sdk-v3",
+          "title": "Acme SDK v3 community guide",
+          "publishedAt": "2023-01-02",
+          "provider": "search-api"
         }
       ],
-      "totalBeforeRetention": 2,
+      "totalBeforeRetention": 4,
       "collectionTruncated": false,
       "truncated": false
     },
@@ -1591,7 +1721,7 @@
       "version": 1,
       "sourceRef": "<source-ref>",
       "ownerSessionId": "code-session",
-      "query": "code next-SDK fixture",
+      "query": "code next-SDK native full SDK v4 fixture",
       "profile": "auto",
       "depth": "compact",
       "call": {
@@ -1602,18 +1732,30 @@
       },
       "sources": [
         {
-          "url": "<fixture-origin>/pages/primary",
-          "title": "Primary fixture",
+          "url": "<fixture-origin>/pages/community-guide(2024)",
+          "title": "Acme SDK v4 community guide",
+          "snippet": "Structured metadata enriches the exact balanced citation",
+          "publishedAt": "2024-06-18",
           "provider": "search-api"
         },
         {
-          "url": "<fixture-origin>/pages/tavily",
-          "title": "Tavily code next-SDK fixture",
-          "snippet": "Supplemental discovery for code next-SDK fixture",
+          "url": "https://github.com/acme/sdk/releases/tag/v4",
+          "title": "Acme SDK v4 release",
+          "snippet": "Current release discovery for the v4 fixture",
           "provider": "tavily"
+        },
+        {
+          "url": "https://www.cnsa.gov.cn/english/chang-e-4",
+          "provider": "search-api"
+        },
+        {
+          "url": "<fixture-origin>/pages/sdk-v3",
+          "title": "Acme SDK v3 community guide",
+          "publishedAt": "2023-01-02",
+          "provider": "search-api"
         }
       ],
-      "totalBeforeRetention": 2,
+      "totalBeforeRetention": 4,
       "collectionTruncated": false,
       "truncated": false
     },
@@ -1632,10 +1774,21 @@
       },
       "sources": [
         {
+          "url": "<fixture-origin>/pages/community-guide(2024)",
+          "title": "Acme SDK v4 community guide",
+          "snippet": "Structured metadata enriches the exact balanced citation",
+          "publishedAt": "2024-06-18",
+          "provider": "search-api"
+        },
+        {
           "url": "https://github.com/acme/sdk/releases/tag/v4",
           "title": "Acme SDK v4 release",
           "snippet": "Current release discovery for the v4 fixture",
           "provider": "tavily"
+        },
+        {
+          "url": "https://www.cnsa.gov.cn/english/chang-e-4",
+          "provider": "search-api"
         },
         {
           "url": "<fixture-origin>/pages/sdk-v3",
@@ -1644,7 +1797,7 @@
           "provider": "search-api"
         }
       ],
-      "totalBeforeRetention": 2,
+      "totalBeforeRetention": 4,
       "collectionTruncated": false,
       "truncated": false
     },
@@ -1703,7 +1856,7 @@
   "http_requests": [
     {
       "method": "GET",
-      "url": "/context7/api/v2/search?query=react+documentation",
+      "url": "/context7/api/v2/libs/search?query=documentation+connectivity+diagnostic&libraryName=React",
       "authorization": "<redacted>"
     },
     {
@@ -1787,7 +1940,7 @@
       "authorization": "<redacted>",
       "body": {
         "model": "fixture-search-model",
-        "query": "code first-step fixture",
+        "query": "code first-step native full SDK v4 fixture",
         "stream": true
       }
     },
@@ -1797,7 +1950,7 @@
       "authorization": "<redacted>",
       "body": {
         "model": "fixture-search-model",
-        "query": "code next-SDK fixture",
+        "query": "code next-SDK native full SDK v4 fixture",
         "stream": true
       }
     },
@@ -1943,7 +2096,7 @@
         "include_answer": false,
         "include_raw_content": false,
         "max_results": 1,
-        "query": "code first-step fixture",
+        "query": "code first-step native full SDK v4 fixture",
         "search_depth": "advanced"
       }
     },
@@ -1955,7 +2108,7 @@
         "include_answer": false,
         "include_raw_content": false,
         "max_results": 1,
-        "query": "code next-SDK fixture",
+        "query": "code next-SDK native full SDK v4 fixture",
         "search_depth": "advanced"
       }
     },

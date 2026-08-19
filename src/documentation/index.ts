@@ -69,7 +69,6 @@ export {
   DOCUMENTATION_SEARCH_PROVIDERS,
   DOCUMENTATION_SEARCH_SERVICE_KEY,
   DOCUMENTATION_WARNING_CODES,
-  DocumentationContext7Provider,
   DocumentationSearchInfrastructureError,
   DocumentationSearchService,
   type Context7CachedDocSearchInput,

@@ -14,11 +14,11 @@ DSH Agent
   │
   └─ 固定模型工具 surface（schema 与顺序不随披露状态变化）
       ├─ web_search ──────> Grok 主搜索
-      │                      ├─ 按需要补充 Context7 / Exa
+      │                      ├─ 按需要补充 Exa 文档来源
       │                      ├─ 按需要补充 Tavily / Firecrawl
       │                      └─ 返回回答、来源；有 source_ref 时追加 search_sources manifest
       │
-      ├─ docs_search ─────> Context7 / Exa 文档检索
+      ├─ docs_search ─────> 显式 Context7 库身份 / Exa 文档发现
       │                      └─ 返回文档片段、来源；有 source_ref 时追加 search_sources manifest
       │
       ├─ web_extract ─────> Tavily → Firecrawl → smart_direct → direct
@@ -45,7 +45,7 @@ DSH Agent
 | 工具 | 调用方式与用途 |
 | --- | --- |
 | `web_search` | 直接调用。使用 Grok 生成通用搜索的主要回答，并按搜索类型补充其他来源 |
-| `docs_search` | 直接调用。检索库、框架、SDK、API 和源码仓库文档 |
+| `docs_search` | 直接调用。已知精确 `/org/project` 时传 `library_id`；已知包或产品名时传 `library_name`；不知道库身份时用 `provider: auto` 进行 Exa 发现 |
 | `web_extract` | 直接调用。读取指定网页正文，用于核对搜索摘要中的重要内容 |
 | `search_tools` | 直接调用。按需返回延迟能力的 operation manifest，不注册新的模型工具 |
 | `search_call` | 固定网关。通过 `search_call({ operation, arguments })` 调用已经激活的延迟 operation |
@@ -78,11 +78,13 @@ DSH Agent
 ### 一次完整搜索如何进行
 
 1. 通用问题直接调用 `web_search`，文档问题直接调用 `docs_search`。
-2. 当搜索产生来源时，结果会包含可见来源、`source_ref` 和追加的 `search_sources` manifest，同时自动激活 `sources`。
-3. 在下一 step 需要更多来源时，调用 `search_call({ operation: 'search_sources', arguments: { source_ref, offset: 0, limit: 20, format: 'compact' } })` 分页读取，而不是直接调用 `search_sources`。
-4. 对重要结论，选择权威链接并直接调用 `web_extract` 获取网页正文。
-5. 如果任务需要站点内发现、研究计划、精细 Context7 查询或连接检查，先调用例如 `search_tools({ capabilities: ['site_map'] })` 取得 manifest；`progressive` 模式从下一 step、`all` 模式立即通过 `search_call({ operation: 'web_map', arguments: { url: 'https://example.com' } })` 调用相应 operation。
-6. 最终回答综合主搜索、补充来源和已经读取的网页正文，并保留来源链接。
+2. 调用 `docs_search` 时保持任务问题与库身份分离。例如 `{"query":"JWT authentication middleware API","library_name":"FastAPI"}`。同时提供 `library_id` 和 `library_name` 时，合法 `library_id` 优先并跳过 resolve。
+3. `provider: auto` 没有 `library_id`/`library_name` 时只使用 Exa；`provider: context7` 或 `all` 缺少库身份会在凭据、缓存和网络前失败。普通 `web_search` 的文档增强也只使用 Exa，不猜测 Context7 库。
+4. 当搜索产生来源时，结果会包含可见来源、`source_ref` 和追加的 `search_sources` manifest，同时自动激活 `sources`。
+5. 在下一 step 需要更多来源时，调用 `search_call({ operation: 'search_sources', arguments: { source_ref, offset: 0, limit: 20, format: 'compact' } })` 分页读取，而不是直接调用 `search_sources`。
+6. 对重要结论，选择权威链接并直接调用 `web_extract` 获取网页正文。
+7. 如果任务需要站点内发现、研究计划、精细 Context7 查询或连接检查，先调用例如 `search_tools({ capabilities: ['site_map'] })` 取得 manifest；`progressive` 模式从下一 step、`all` 模式立即通过 `search_call({ operation: 'web_map', arguments: { url: 'https://example.com' } })` 调用相应 operation。
+8. 最终回答综合主搜索、补充来源和已经读取的网页正文，并保留来源链接。
 
 `source_ref` 只是完整来源列表的引用，不等同于网页正文；重要事实仍应通过 `web_extract` 读取原页面后再下结论。
 
@@ -135,7 +137,7 @@ dsh web
 
 | 服务 | 用途 | 默认密钥名称 |
 | --- | --- | --- |
-| Context7 | 查找库和框架文档 | `CONTEXT7_API_KEY` |
+| Context7 | 使用显式 `library_name` 或 `library_id` 查找库和框架文档 | `CONTEXT7_API_KEY` |
 | Exa | 补充文档和网页结果 | `EXA_API_KEY` |
 | Tavily | 补充搜索、读取网页和发现站点页面 | `TAVILY_API_KEY` |
 | Firecrawl | 补充搜索和读取网页 | `FIRECRAWL_API_KEY` |

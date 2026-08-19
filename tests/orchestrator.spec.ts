@@ -144,7 +144,7 @@ interface FakeSourceProvider extends BoundedSourceProvider {
 }
 
 function fakeSourceProvider(
-  provider: Extract<SourceProvider, 'context7' | 'exa' | 'tavily' | 'firecrawl'>,
+  provider: Extract<SourceProvider, 'exa' | 'tavily' | 'firecrawl'>,
   capability: Extract<ProviderCapability, 'docs_search' | 'web_search'>,
   options: {
     readonly configured?: boolean | BoundedSourceProvider['configured']
@@ -174,7 +174,6 @@ function fakeSourceProvider(
 interface FixtureOptions {
   readonly config?: SearchEnhanceConfig
   readonly main?: MainSearchProvider['searchResolved']
-  readonly context7?: FakeSourceProvider
   readonly exa?: FakeSourceProvider
   readonly tavily?: FakeSourceProvider
   readonly firecrawl?: FakeSourceProvider
@@ -183,7 +182,6 @@ interface FixtureOptions {
 function fixture(options: FixtureOptions = {}) {
   const config = options.config ?? resolveConfig()
   const main = vi.fn<MainSearchProvider['searchResolved']>(options.main ?? (async () => mainResult()))
-  const context7 = options.context7 ?? fakeSourceProvider('context7', 'docs_search')
   const exa = options.exa ?? fakeSourceProvider('exa', 'docs_search')
   const tavily = options.tavily ?? fakeSourceProvider('tavily', 'web_search')
   const firecrawl = options.firecrawl ?? fakeSourceProvider('firecrawl', 'web_search')
@@ -191,13 +189,11 @@ function fixture(options: FixtureOptions = {}) {
   const getConfig = vi.fn(() => config)
   return {
     config,
-    context7,
     exa,
     firecrawl,
     getConfig,
     main,
     orchestrator: new SearchOrchestrator({
-      context7,
       exa,
       firecrawl,
       getConfig,
@@ -236,30 +232,25 @@ describe('documentation intent and discovery budget policy', () => {
     const result = await test.orchestrator.search(input('compare statistical methods'))
 
     expect(result.canonical.state).toBe('complete')
-    expect(test.context7.configured).not.toHaveBeenCalled()
-    expect(test.context7.search).not.toHaveBeenCalled()
     expect(test.exa.configured).not.toHaveBeenCalled()
     expect(test.exa.search).not.toHaveBeenCalled()
   })
 
   it('does not probe docs when fallback is disabled', async () => {
     const config = resolveConfig({ fallbackMode: 'off', profile: 'coding_docs' })
-    const context7 = fakeSourceProvider('context7', 'docs_search', { configured: true })
     const exa = fakeSourceProvider('exa', 'docs_search', { configured: true })
-    const test = fixture({ config, context7, exa })
+    const test = fixture({ config, exa })
 
     await test.orchestrator.search(input('React API'))
 
-    expect(context7.configured).not.toHaveBeenCalled()
     expect(exa.configured).not.toHaveBeenCalled()
-    expect(context7.search).not.toHaveBeenCalled()
     expect(exa.search).not.toHaveBeenCalled()
   })
 
   it('keeps Provider collection and persistence independent from zero visible sources', async () => {
-    const context7 = fakeSourceProvider('context7', 'docs_search', {
+    const exa = fakeSourceProvider('exa', 'docs_search', {
       configured: true,
-      search: complete([source('https://docs.test/hidden', 'context7')]),
+      search: complete([source('https://docs.test/hidden', 'exa')]),
     })
     const test = fixture({
       config: resolveConfig({
@@ -267,7 +258,7 @@ describe('documentation intent and discovery budget policy', () => {
         profile: 'coding_docs',
         providerMaxSources: 7,
       }),
-      context7,
+      exa,
       main: async () => mainResult('answer', [
         source('https://main.test/hidden-a', 'search-api'),
         source('https://main.test/hidden-b', 'search-api'),
@@ -276,7 +267,7 @@ describe('documentation intent and discovery budget policy', () => {
 
     const result = await test.orchestrator.search(input('React API'))
 
-    expect(context7.search).toHaveBeenCalledWith(expect.objectContaining({ limit: 7 }))
+    expect(exa.search).toHaveBeenCalledWith(expect.objectContaining({ limit: 7 }))
     expect(result.canonical).toMatchObject({
       returnedSources: 0,
       sources: [],
@@ -314,26 +305,21 @@ Sources:
     ])
   })
 
-  it('runs Context7 first in merge order and supplements with configured Exa', async () => {
-    const context7 = fakeSourceProvider('context7', 'docs_search', {
-      configured: true,
-      search: complete([source('https://docs.test/context7', 'context7')]),
-    })
+  it('uses only configured Exa for web_search documentation enhancement', async () => {
     const exa = fakeSourceProvider('exa', 'docs_search', {
       configured: true,
       search: complete([source('https://docs.test/exa', 'exa')]),
     })
     const test = fixture({
       config: resolveConfig({ profile: 'coding_docs' }),
-      context7,
       exa,
     })
 
     const result = await test.orchestrator.search(input('React API'))
 
-    expect(result.canonical.sources.map(item => item.provider)).toEqual(['search-api', 'context7', 'exa'])
-    expect(result.persistence.sources.map(item => item.provider)).toEqual(['search-api', 'context7', 'exa'])
-    expect(context7.search).toHaveBeenCalledTimes(1)
+    expect(result.canonical.sources.map(item => item.provider)).toEqual(['search-api', 'exa'])
+    expect(result.persistence.sources.map(item => item.provider)).toEqual(['search-api', 'exa'])
+    expect(result.diagnostics.attempts.some(item => item.provider === 'context7')).toBe(false)
     expect(exa.search).toHaveBeenCalledTimes(1)
   })
 
@@ -426,11 +412,9 @@ describe('orchestrator settlement, partial success, and diagnostics', () => {
   })
 
   it('resolves Config once and starts every decided path with the same snapshot', async () => {
-    const context7 = fakeSourceProvider('context7', 'docs_search', { configured: true })
     const exa = fakeSourceProvider('exa', 'docs_search', { configured: true })
     const test = fixture({
       config: resolveConfig({ profile: 'coding_docs' }),
-      context7,
       exa,
     })
 
@@ -438,20 +422,12 @@ describe('orchestrator settlement, partial success, and diagnostics', () => {
 
     expect(test.getConfig).toHaveBeenCalledTimes(1)
     expect(test.main.mock.calls[0]?.[0].config).toBe(test.config)
-    expect(context7.search.mock.calls[0]?.[0].config).toBe(test.config)
     expect(exa.search.mock.calls[0]?.[0].config).toBe(test.config)
     expect(test.main.mock.calls[0]?.[0].strategy.profile).toBe('coding_docs')
   })
 
   it('keeps main success complete when optional Providers are absent', async () => {
-    const context7 = fakeSourceProvider('context7', 'docs_search', {
-      configured: true,
-      search: complete(),
-    })
-    const test = fixture({
-      config: resolveConfig({ profile: 'coding_docs' }),
-      context7,
-    })
+    const test = fixture({ config: resolveConfig({ profile: 'coding_docs' }) })
 
     const result = await test.orchestrator.search(input('React API'))
 
@@ -461,16 +437,15 @@ describe('orchestrator settlement, partial success, and diagnostics', () => {
       skipReason: 'not_configured',
     })
   })
-
   it('keeps the main answer and records a safe warning when a started Provider fails', async () => {
     const secretError = new Error('header Authorization: Bearer should-not-leak')
-    const context7 = fakeSourceProvider('context7', 'docs_search', {
+    const exa = fakeSourceProvider('exa', 'docs_search', {
       configured: true,
       search: async () => { throw secretError },
     })
     const test = fixture({
       config: resolveConfig({ profile: 'coding_docs' }),
-      context7,
+      exa,
     })
 
     const result = await test.orchestrator.search(input('React API'))
@@ -481,29 +456,29 @@ describe('orchestrator settlement, partial success, and diagnostics', () => {
       capability: 'docs_search',
       code: 'provider_failed',
       errorKind: 'unknown',
-      provider: 'context7',
+      provider: 'exa',
     })
-    expect(result.diagnostics.attempts.find(item => item.provider === 'context7')).toMatchObject({
+    expect(result.diagnostics.attempts.find(item => item.provider === 'exa')).toMatchObject({
       errorKind: 'unknown',
       outcome: 'failed',
     })
     expect(JSON.stringify(result)).not.toContain('should-not-leak')
   })
 
-  it('projects fixed cache diagnostics from a completed documentation Provider', async () => {
-    const context7 = fakeSourceProvider('context7', 'docs_search', {
+  it('projects fixed warnings from a completed documentation Provider', async () => {
+    const exa = fakeSourceProvider('exa', 'docs_search', {
       configured: true,
       search: {
-        ...complete([source('https://docs.test/cached', 'context7')]),
+        ...complete([source('https://docs.test/cached', 'exa')]),
         warnings: [
-          { code: 'cache_stale', errorKind: 'timeout', provider: 'context7-cache' },
-          { code: 'cache_evicted', provider: 'context7-cache' },
+          { code: 'cache_stale', errorKind: 'timeout', provider: 'exa' },
+          { code: 'cache_evicted', provider: 'exa' },
         ],
       },
     })
     const test = fixture({
       config: resolveConfig({ profile: 'coding_docs' }),
-      context7,
+      exa,
     })
 
     const result = await test.orchestrator.search(input('React API'))
@@ -513,12 +488,12 @@ describe('orchestrator settlement, partial success, and diagnostics', () => {
         capability: 'docs_search',
         code: 'cache_stale',
         errorKind: 'timeout',
-        provider: 'context7-cache',
+        provider: 'exa',
       },
       {
         capability: 'docs_search',
         code: 'cache_evicted',
-        provider: 'context7-cache',
+        provider: 'exa',
       },
     ])
   })
@@ -533,15 +508,8 @@ describe('orchestrator settlement, partial success, and diagnostics', () => {
       configured: true,
       search: complete([source('https://docs.test/exa', 'exa')]),
     })
-    const context7 = fakeSourceProvider('context7', 'docs_search', {
-      configured: true,
-      search: async () => {
-        throw new ProviderError({ capability: 'docs_search', kind: 'http', provider: 'context7' })
-      },
-    })
     const test = fixture({
       config: resolveConfig({ profile: 'coding_docs' }),
-      context7,
       exa,
       main: async () => { throw mainError },
     })
@@ -559,7 +527,6 @@ describe('orchestrator settlement, partial success, and diagnostics', () => {
     })
     expect(result.canonical.warnings.map(item => item.code)).toEqual([
       'main_search_failed',
-      'provider_failed',
     ])
   })
 
@@ -603,12 +570,6 @@ describe('orchestrator settlement, partial success, and diagnostics', () => {
       kind: 'network',
       provider: 'search-api',
     })
-    const context7 = fakeSourceProvider('context7', 'docs_search', {
-      configured: true,
-      search: async () => {
-        throw new ProviderError({ capability: 'docs_search', kind: 'network', provider: 'context7' })
-      },
-    })
     const exa = fakeSourceProvider('exa', 'docs_search', {
       configured: true,
       search: async () => {
@@ -617,13 +578,11 @@ describe('orchestrator settlement, partial success, and diagnostics', () => {
     })
     const test = fixture({
       config: resolveConfig({ profile: 'coding_docs' }),
-      context7,
       exa,
       main: async () => { throw mainError },
     })
 
     await expect(test.orchestrator.search(input('React API'))).rejects.toBe(mainError)
-    expect(context7.search).toHaveBeenCalledTimes(1)
     expect(exa.search).toHaveBeenCalledTimes(1)
   })
 
@@ -651,7 +610,7 @@ describe('orchestrator settlement, partial success, and diagnostics', () => {
     const pendingProvider = new Promise<SourceProviderSearchOutcome>((resolve) => {
       release = () => resolve(complete())
     })
-    const context7 = fakeSourceProvider('context7', 'docs_search', {
+    const exa = fakeSourceProvider('exa', 'docs_search', {
       configured: true,
       search: async () => {
         markStarted()
@@ -660,7 +619,7 @@ describe('orchestrator settlement, partial success, and diagnostics', () => {
     })
     const test = fixture({
       config: resolveConfig({ profile: 'coding_docs' }),
-      context7,
+      exa,
     })
     let settled = false
 
@@ -691,13 +650,13 @@ describe('orchestrator settlement, partial success, and diagnostics', () => {
         reject(signal.reason)
       }, { once: true })
     })
-    const context7 = fakeSourceProvider('context7', 'docs_search', {
+    const exa = fakeSourceProvider('exa', 'docs_search', {
       configured: true,
       search: input => waitForAbort(input.signal),
     })
     const test = fixture({
       config: resolveConfig({ profile: 'coding_docs' }),
-      context7,
+      exa,
       main: input => waitForAbort(input.signal),
     })
 
@@ -730,23 +689,19 @@ describe('orchestrator settlement, partial success, and diagnostics', () => {
 })
 
 describe('source order, exact deduplication, and independent output limits', () => {
-  it('orders Search API, Context7/Exa, then Tavily/Firecrawl with exact URL dedupe only', async () => {
+  it('orders Search API, Exa, then Tavily/Firecrawl with exact URL dedupe only', async () => {
     const duplicate = 'https://same.test/path?x=1'
-    const context7 = fakeSourceProvider('context7', 'docs_search', {
-      configured: true,
-      search: complete([
-        source(duplicate, 'context7'),
-        source('https://context7.test/only', 'context7'),
-      ]),
-    })
     const exa = fakeSourceProvider('exa', 'docs_search', {
       configured: true,
-      search: complete([source('https://exa.test/only', 'exa')]),
+      search: complete([
+        source(duplicate, 'exa'),
+        source('https://exa.test/only', 'exa'),
+      ]),
     })
     const tavily = fakeSourceProvider('tavily', 'web_search', {
       configured: true,
       search: complete([
-        source('https://context7.test/only', 'tavily'),
+        source('https://exa.test/only', 'tavily'),
         source('https://same.test/path?x=2', 'tavily'),
       ]),
     })
@@ -760,7 +715,6 @@ describe('source order, exact deduplication, and independent output limits', () 
         extraDiscoverySources: 4,
         profile: 'coding_docs',
       }),
-      context7,
       exa,
       firecrawl,
       main: async () => mainResult('answer', [
@@ -775,7 +729,6 @@ describe('source order, exact deduplication, and independent output limits', () 
     expect(result.canonical.sources.map(item => item.url)).toEqual([
       'https://main.test/only',
       duplicate,
-      'https://context7.test/only',
       'https://exa.test/only',
       'https://same.test/path?x=2',
       'https://firecrawl.test/only',
@@ -786,10 +739,6 @@ describe('source order, exact deduplication, and independent output limits', () 
     const providerSources = (provider: SourceProvider): readonly CanonicalSource[] => (
       SDK_QUALITY_FIXTURE.sources.filter(item => item.provider === provider)
     )
-    const context7 = fakeSourceProvider('context7', 'docs_search', {
-      configured: true,
-      search: complete(providerSources('context7')),
-    })
     const exa = fakeSourceProvider('exa', 'docs_search', {
       configured: true,
       search: complete(providerSources('exa')),
@@ -808,7 +757,6 @@ describe('source order, exact deduplication, and independent output limits', () 
         extraDiscoverySources: 4,
         profile: 'coding_docs',
       }),
-      context7,
       exa,
       firecrawl,
       main: async () => mainResult('Version-specific answer', providerSources('search-api')),
@@ -821,7 +769,6 @@ describe('source order, exact deduplication, and independent output limits', () 
       'https://github.com/acme/sdk/releases/tag/v4.2.0',
       'https://github.com/acme/sdk/blob/v4.2.0/CHANGELOG.md',
       'https://community.example/acme/sdk/v4.2/notes',
-      'https://docs.acme.example/sdk/v3/api?lang=en',
       'https://community.example/acme/sdk/v3.8/migration',
     ]
 
@@ -829,7 +776,7 @@ describe('source order, exact deduplication, and independent output limits', () 
       answer: 'Version-specific answer',
       evidenceLevel: 'discovery',
       state: 'complete',
-      totalSources: 6,
+      totalSources: 5,
       warnings: [],
     })
     expect(result.canonical.sources.map(item => item.url)).toEqual(expectedUrls)
@@ -839,7 +786,6 @@ describe('source order, exact deduplication, and independent output limits', () 
     ))).toBe(true)
     expect(result.diagnostics.attempts.map(item => [item.provider, item.outcome])).toEqual([
       ['search-api', 'success'],
-      ['context7', 'success'],
       ['exa', 'success'],
       ['tavily', 'success'],
       ['firecrawl', 'success'],
@@ -954,6 +900,60 @@ describe('source order, exact deduplication, and independent output limits', () 
       expect(sources.slice(0, expectedCitedUrls.length).map(source => source.url))
         .toEqual(expectedCitedUrls)
     }
+  })
+
+  it('keeps a balanced-parenthesis citation complete through visibility, persistence, and paging', async () => {
+    const citedUrl = 'https://low-quality.example.test/wiki/Function_(mathematics)'
+    const cited = source(citedUrl, 'search-api', 'Cited source')
+    const highQuality = source(
+      'https://github.com/acme/sdk/releases/tag/v1.0.0',
+      'search-api',
+      'High quality release',
+    )
+    const answer = `Use [[1]](${citedUrl}) for the answer.`
+    const test = fixture({
+      config: resolveConfig({ budget: { maxVisibleSources: 2 }, extraDiscoverySources: 0 }),
+      main: async () => mainResult(answer, [highQuality, cited]),
+    })
+
+    const result = await test.orchestrator.search(input('release evidence'))
+    const expectedUrls = [citedUrl, highQuality.url]
+
+    expect(applySourceQuality('release evidence', [highQuality, cited])[0]?.url)
+      .toBe(highQuality.url)
+    expect(result.canonical.answer).toBe(answer)
+    expect(result.canonical.sources.map(source => source.url)).toEqual(expectedUrls)
+    expect(result.persistence.sources.map(source => source.url)).toEqual(expectedUrls)
+    expect(result.canonical.totalSources).toBe(2)
+
+    const sourceRef = createSourceRef(size => new Uint8Array(size).fill(8))
+    const stored = retainSourceRecord({
+      call: {
+        callId: 'balanced-citation-call',
+        mode: 'top-level',
+        name: 'web_search',
+        rootCallId: 'balanced-citation-call',
+      },
+      candidate: result.persistence,
+      ownerSessionId: 'balanced-citation-session',
+      sourceRef,
+    }, { maxBytes: 64 * 1024, maxSources: 10 })
+    const page = projectSearchSourcesOutput(paginateSourceRecord(
+      stored,
+      parseSourcePageRequest({
+        format: 'compact',
+        limit: 10,
+        offset: 0,
+        source_ref: sourceRef,
+      }, 10),
+      { maxPageBytes: 64 * 1024, maxSnippetCharacters: 200 },
+    ))
+    if (page.state !== 'found') throw new Error('expected balanced citation source page')
+
+    expect(stored.sources.map(source => source.url)).toEqual(expectedUrls)
+    expect(page.sources.map(source => source.url)).toEqual(expectedUrls)
+    expect(new Set(page.sources.map(source => source.url)).size).toBe(2)
+    expect(page).toMatchObject({ returned: 2, total: 2, truncated: false })
   })
 
   it('matches citation URL variants once and does not duplicate a trailing source record', async () => {

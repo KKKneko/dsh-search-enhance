@@ -14,6 +14,7 @@ import {
 import { SearchApiProvider } from '../lib/providers/search-api.js'
 
 const FIXED_QUERY = 'What is HTTP status code 418? Give one concise sourced sentence.'
+const CONTEXT7_LIBRARY_NAME = 'React'
 const CONTEXT7_QUERY = 'React useEffect cleanup official documentation'
 const RESULT_LIMIT = 1
 const PROVIDER_TIMEOUT_MS = 30_000
@@ -245,6 +246,7 @@ await runLane(
     const client = new Context7RemoteClient({ credentials })
     await assertPreAborted(signal => client.resolve({
       config,
+      libraryName: CONTEXT7_LIBRARY_NAME,
       limit: RESULT_LIMIT,
       query: CONTEXT7_QUERY,
       signal,
@@ -253,6 +255,7 @@ await runLane(
     let resolveDispatches = 0
     const resolved = await client.resolve({
       config,
+      libraryName: CONTEXT7_LIBRARY_NAME,
       limit: RESULT_LIMIT,
       query: CONTEXT7_QUERY,
       signal: new AbortController().signal,
@@ -260,7 +263,7 @@ await runLane(
     })
     assert.equal(resolveDispatches, 1)
     assert.ok(resolved.libraries.length > 0, 'Context7 resolve returned no library')
-    const selected = selectContext7Library(resolved.libraries, 'React', CONTEXT7_QUERY)
+    const selected = selectContext7Library(resolved.libraries, CONTEXT7_LIBRARY_NAME, CONTEXT7_QUERY)
     assert.ok(selected?.id, 'Context7 resolve returned no valid library id')
     const libraryUrl = context7LibraryUrl(
       config.providers.context7.baseUrl,

@@ -990,27 +990,30 @@
   "fixed_probe_requests": [
     {
       "method": "GET",
-      "path": "/context7/api/v2/search",
+      "path": "/context7/api/v2/libs/search",
       "query": {
-        "query": "react documentation"
+        "libraryName": "React",
+        "query": "documentation connectivity diagnostic"
       },
       "authorization": true,
       "api_key": false
     },
     {
       "method": "GET",
-      "path": "/context7/api/v2/search",
+      "path": "/context7/api/v2/libs/search",
       "query": {
-        "query": "react documentation"
+        "libraryName": "React",
+        "query": "documentation connectivity diagnostic"
       },
       "authorization": true,
       "api_key": false
     },
     {
       "method": "GET",
-      "path": "/context7/api/v2/search",
+      "path": "/context7/api/v2/libs/search",
       "query": {
-        "query": "react documentation"
+        "libraryName": "React",
+        "query": "documentation connectivity diagnostic"
       },
       "authorization": true,
       "api_key": false

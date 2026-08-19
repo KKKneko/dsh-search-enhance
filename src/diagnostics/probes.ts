@@ -12,7 +12,8 @@ import type {
 
 /** Fixed, non-user-controlled diagnostic targets. */
 export const DIAGNOSTIC_SEARCH_QUERY = 'search-enhance fixed connectivity diagnostic'
-export const DIAGNOSTIC_CONTEXT7_QUERY = 'react documentation'
+export const DIAGNOSTIC_CONTEXT7_LIBRARY_NAME = 'React'
+export const DIAGNOSTIC_CONTEXT7_QUERY = 'documentation connectivity diagnostic'
 export const DIAGNOSTIC_RESULT_LIMIT = 1
 
 const COMPLETE: Readonly<DiagnosticProbeResult> = Object.freeze({ state: 'complete' })
@@ -50,6 +51,7 @@ export class Context7ResolveDiagnosticProbe implements DiagnosticProbe {
     await this.context7.resolve({
       config: input.config,
       limit: DIAGNOSTIC_RESULT_LIMIT,
+      libraryName: DIAGNOSTIC_CONTEXT7_LIBRARY_NAME,
       onDispatch: input.onDispatch,
       query: DIAGNOSTIC_CONTEXT7_QUERY,
       signal: input.signal,

@@ -33,6 +33,7 @@ import {
   renderDocsSearchText,
   renderWebSearchText,
   renderSearchSourcesText,
+  sourceDisplayLabel,
 } from '../src/presentation/render.js'
 import type { SourcePageFound } from '../src/source-storage/index.js'
 import {
@@ -305,6 +306,7 @@ describe('docs_search execution and durable publication', () => {
             config,
             forceRefresh: true,
             libraryId: '/react/react',
+            libraryName: 'React',
             maxResults: 6,
             provider: 'context7',
             query: 'React useEffect API docs',
@@ -349,6 +351,7 @@ describe('docs_search execution and durable publication', () => {
     const args = {
       query: 'React useEffect API docs',
       provider: 'context7' as const,
+      library_name: 'React',
       library_id: '/react/react',
       force_refresh: true,
     }
@@ -503,6 +506,7 @@ describe('model-facing tool schemas', () => {
     expect(Object.keys(schema.properties)).toEqual([
       'query',
       'provider',
+      'library_name',
       'library_id',
       'max_results',
       'force_refresh',
@@ -512,6 +516,8 @@ describe('model-facing tool schemas', () => {
       enum: ['auto', 'context7', 'exa', 'all'],
       type: 'string',
     })
+    expect(schema.properties.library_name).toMatchObject({ type: 'string' })
+    expect(schema.properties.library_id).toMatchObject({ type: 'string' })
     expect(schema.properties.max_results).toMatchObject({
       default: 6,
       enum: Array.from({ length: 20 }, (_value, index) => index + 1),
@@ -774,6 +780,47 @@ describe('Native model text', () => {
     expect(text).toContain('Snippet: A useful discovery snippet.')
   })
 
+  it('uses one hostname display fallback without writing a canonical title', () => {
+    const url = 'https://www.cnsa.gov.cn/english/n6465652/n6465653/content.html'
+    const web: WebSearchOutput = {
+      ...resultWithLimit(64 * 1024),
+      sources: [{ url }],
+    }
+    const docs: DocsSearchOutput = {
+      ...projectDocsSearchOutput(docsResult(), resolvedConfig()),
+      sources: [{ url }],
+      returned_sources: 1,
+      total_sources: 1,
+    }
+    const page: SearchSourcesOutput = {
+      state: 'found',
+      source_ref: sourceRef,
+      offset: 0,
+      limit: 1,
+      format: 'compact',
+      total: 1,
+      returned: 1,
+      sources: [{ url, category: 'official' }],
+      has_more: false,
+      total_before_retention: 1,
+      truncated: false,
+      page_byte_limited: false,
+    }
+
+    expect(sourceDisplayLabel({ url })).toBe('www.cnsa.gov.cn')
+    for (const text of [
+      renderWebSearchText(web),
+      renderDocsSearchText(docs),
+      renderSearchSourcesText(page),
+    ]) {
+      expect(text).toContain('1. www.cnsa.gov.cn')
+      expect(text).not.toContain('Untitled source')
+    }
+    expect(web.sources[0]).toEqual({ url })
+    expect(docs.sources[0]).toEqual({ url })
+    expect(page.sources[0]).toEqual({ url, category: 'official' })
+  })
+
   it('renders fixed stale-cache and eviction warnings without arbitrary details', () => {
     const text = renderWebSearchText({
       ...resultWithLimit(64 * 1024),
@@ -911,6 +958,30 @@ describe('pure Web card projections', () => {
     })
     expect(JSON.stringify(liveMeta)).not.toMatch(/source_ref|provider|category|hidden/)
     expect(liveMeta).toMatchObject({ source_produced: true })
+  })
+
+  it('keeps titleless canonical sources titleless in replayable Web cards', () => {
+    const url = 'https://www.cnsa.gov.cn/english/content.html'
+    const webArgs = { query: 'titleless source' }
+    const webValue: WebSearchOutput = {
+      ...resultWithLimit(4096),
+      sources: [{ url }],
+    }
+    const webMeta = webSearchPresentationMeta(webArgs, webValue)
+    const webCard = presentWebSearchResult(webArgs, { content: [], isError: false, meta: webMeta })
+
+    const docsArgs = { query: 'titleless docs source' }
+    const docsValue: DocsSearchOutput = {
+      ...projectDocsSearchOutput(docsResult(), resolvedConfig()),
+      sources: [{ url }],
+      returned_sources: 1,
+      total_sources: 1,
+    }
+    const docsMeta = docsSearchPresentationMeta(docsArgs, docsValue)
+    const docsCard = presentDocsSearchResult(docsArgs, { content: [], isError: false, meta: docsMeta })
+
+    expect(webCard).toHaveProperty('sources', [{ url }])
+    expect(docsCard).toHaveProperty('sources', [{ url }])
   })
 
   it('builds replay-identical docs cards from visible snippets/sources/cache metadata', () => {

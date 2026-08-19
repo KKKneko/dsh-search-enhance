@@ -237,7 +237,7 @@ try {
   const schemaByName = name => registeredSchemas.find(schema => schema.name === name)
   assert.deepEqual(
     Object.keys(schemaByName('docs_search').parameters.properties),
-    ['query', 'provider', 'library_id', 'max_results', 'force_refresh'],
+    ['query', 'provider', 'library_name', 'library_id', 'max_results', 'force_refresh'],
   )
   assert.deepEqual(
     Object.keys(schemaByName('web_extract').parameters.properties),

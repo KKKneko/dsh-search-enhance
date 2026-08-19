@@ -196,11 +196,15 @@ export const DOCS_SEARCH_PARAMETERS = {
   provider: {
     type: 'string',
     enum: DOCUMENTATION_SEARCH_PROVIDERS,
-    description: 'auto (default), Context7, Exa, or both documentation discovery routes.',
+    description: 'auto (default), Context7, Exa, or both. Without a Context7 library identity, auto is Exa-only.',
+  },
+  library_name: {
+    type: 'string',
+    description: 'Optional Context7 package or product name, such as React or FastAPI. Required for Context7 resolve when library_id is absent; never sent to Exa.',
   },
   library_id: {
     type: 'string',
-    description: 'Optional exact Context7 /org/project or /org/project/version id; valid ids skip resolve.',
+    description: 'Optional exact Context7 /org/project or /org/project/version id; takes priority over library_name and strictly skips resolve.',
   },
   max_results: {
     type: 'integer',

@@ -8,7 +8,9 @@ import { describe, expect, it, vi } from 'vitest'
 import { Config, type Config as SearchEnhanceConfig } from '../src/config.js'
 import { ProviderError } from '../src/provider-runtime/index.js'
 import {
-  Context7Provider,
+  Context7RemoteClient,
+  context7LibrarySource,
+  selectContext7Library,
   ExaProvider,
   FirecrawlSearchProvider,
   TavilySearchProvider,
@@ -85,13 +87,13 @@ function providerInput(
 }
 
 describe('Context7 and Exa documentation Providers', () => {
-  it('resolves the official Context7 library, queries docs, and bounds snippets', async () => {
+  it('resolves an explicit Context7 library, queries docs, and bounds snippets', async () => {
     const calls: Array<{ init?: RequestInit; url: string }> = []
     const credentialFixture = credentials(['context-secret', 'context-secret'])
     const fetchMock = vi.fn(async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
       const url = String(input)
       calls.push({ ...(init === undefined ? {} : { init }), url })
-      if (url.startsWith('https://context7.test/api/v2/search?')) {
+      if (url.startsWith('https://context7.test/api/v2/libs/search?')) {
         return jsonResponse({
           results: [
             { id: '/uidotdev/usehooks', title: 'React Hooks', description: 'Hook collection', trustScore: 9 },
@@ -107,38 +109,43 @@ describe('Context7 and Exa documentation Providers', () => {
       }
       throw new Error(`Unexpected route: ${url}`)
     }) as typeof fetch
-    const provider = new Context7Provider({
+    const client = new Context7RemoteClient({
       credentials: credentialFixture,
       fetch: fetchMock,
       random: () => 0.5,
       sleep: async () => undefined,
     })
+    const request = providerInput(resolveConfig())
 
-    const outcome = await provider.search(providerInput(resolveConfig()))
+    const resolved = await client.resolve({ ...request, libraryName: 'React' })
+    const selected = selectContext7Library(resolved.libraries, 'React', request.query)
+    expect(selected?.id).toBe('/reactjs/react.dev')
+    if (selected?.id === undefined) throw new Error('expected a selected Context7 library')
+    const docs = await client.docs({ ...request, libraryId: selected.id })
+    const source = context7LibrarySource(selected, 'https://context7.test', 4096)
 
-    expect(outcome.state).toBe('complete')
-    if (outcome.state !== 'complete') throw new Error('expected complete Context7 result')
-    expect(outcome.attempts).toBe(2)
-    expect(outcome.result).toMatchObject({
-      returnedSnippets: 2,
-      returnedSources: 1,
+    expect(resolved.attempts).toBe(1)
+    expect(docs.attempts).toBe(1)
+    expect(docs).toMatchObject({
       totalSnippets: 2,
-      totalSources: 1,
       truncated: false,
     })
-    expect(outcome.result.sources[0]).toMatchObject({
+    expect(docs.snippets).toHaveLength(2)
+    expect(source).toMatchObject({
       provider: 'context7',
       title: 'React',
       url: 'https://context7.test/reactjs/react.dev',
     })
-    expect(outcome.result.snippets[0]).toMatchObject({
+    expect(docs.snippets[0]).toMatchObject({
       content: 'return () => unsubscribe();',
-      libraryId: '/reactjs/react.dev',
       title: 'Cleanup',
     })
     expect(credentialFixture.resolve).toHaveBeenCalledTimes(2)
     expect(calls).toHaveLength(2)
-    expect(calls[0]?.url).toContain('query=React+useEffect+API+docs')
+    const resolveUrl = new URL(calls[0]?.url ?? '')
+    expect(resolveUrl.pathname).toBe('/api/v2/libs/search')
+    expect(resolveUrl.searchParams.get('query')).toBe('React useEffect API docs')
+    expect(resolveUrl.searchParams.get('libraryName')).toBe('React')
     expect(calls[1]?.url).toContain('libraryId=%2Freactjs%2Freact.dev')
     for (const call of calls) {
       expect(call.init?.redirect).toBe('manual')
@@ -152,19 +159,20 @@ describe('Context7 and Exa documentation Providers', () => {
     const fetchMock = vi.fn(async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
       const url = String(input)
       expect((init?.headers as Record<string, string>)).not.toHaveProperty('Authorization')
-      return url.includes('/api/v2/search')
+      return url.includes('/api/v2/libs/search')
         ? jsonResponse([{ id: '/plain/docs', title: 'Plain Docs' }])
         : new Response('Plain Context7 documentation body')
     }) as typeof fetch
-    const provider = new Context7Provider({ credentials: credentialFixture, fetch: fetchMock })
+    const client = new Context7RemoteClient({ credentials: credentialFixture, fetch: fetchMock })
+    const request = providerInput(resolveConfig(), 'Plain docs')
 
-    const outcome = await provider.search(providerInput(resolveConfig(), 'Plain docs'))
+    const resolved = await client.resolve({ ...request, libraryName: 'Plain Docs' })
+    const selected = selectContext7Library(resolved.libraries, 'Plain Docs', request.query)
+    expect(selected?.id).toBe('/plain/docs')
+    if (selected?.id === undefined) throw new Error('expected a selected keyless library')
+    const docs = await client.docs({ ...request, libraryId: selected.id })
 
-    expect(outcome.state).toBe('complete')
-    if (outcome.state !== 'complete') throw new Error('expected complete keyless result')
-    expect(outcome.result.snippets).toEqual([
-      { content: 'Plain Context7 documentation body', libraryId: '/plain/docs' },
-    ])
+    expect(docs.snippets).toEqual([{ content: 'Plain Context7 documentation body' }])
     expect(credentialFixture.resolve).toHaveBeenCalledTimes(2)
   })
 
@@ -178,15 +186,20 @@ describe('Context7 and Exa documentation Providers', () => {
     const authorization: string[] = []
     const fetchMock = vi.fn(async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
       authorization.push((init?.headers as Record<string, string>).Authorization ?? '')
-      return String(input).includes('/api/v2/search')
+      return String(input).includes('/api/v2/libs/search')
         ? jsonResponse({ results: [{ id: '/react/react', title: 'React' }] })
         : jsonResponse({ codeSnippets: [] })
     }) as typeof fetch
-    const provider = new Context7Provider({ credentials: credentialFixture, fetch: fetchMock })
+    const client = new Context7RemoteClient({ credentials: credentialFixture, fetch: fetchMock })
     const config = resolveConfig()
 
-    await provider.search(providerInput(config, 'first React API'))
-    await provider.search(providerInput(config, 'second React API'))
+    for (const query of ['first React API', 'second React API']) {
+      const request = providerInput(config, query)
+      const resolved = await client.resolve({ ...request, libraryName: 'React' })
+      const libraryId = resolved.libraries[0]?.id
+      if (libraryId === undefined) throw new Error('expected a resolved library')
+      await client.docs({ ...request, libraryId })
+    }
 
     expect(authorization).toEqual([
       'Bearer first-resolve-context',
@@ -195,6 +208,51 @@ describe('Context7 and Exa documentation Providers', () => {
       'Bearer second-docs-context',
     ])
     expect(credentialFixture.resolve).toHaveBeenCalledTimes(4)
+  })
+
+  it('keeps generic query phrases below explicit Context7 library identity', () => {
+    const libraries = [
+      {
+        id: '/alibaba/hooks',
+        title: 'Hooks',
+        description: 'Official hooks documentation and API reference.',
+        trustScore: 10,
+        benchmarkScore: 100,
+        totalSnippets: 50_000,
+      },
+      {
+        id: '/example/api-reference',
+        title: 'API Reference',
+        description: 'Official API reference documentation.',
+        trustScore: 10,
+        benchmarkScore: 100,
+        totalSnippets: 50_000,
+      },
+      {
+        id: '/reactjs/react.dev',
+        title: 'React',
+        description: 'Official React documentation with API references and tutorials.',
+        trustScore: 10,
+        benchmarkScore: 89.45,
+        totalSnippets: 6064,
+        stars: 11_311,
+      },
+      {
+        id: '/react/react',
+        title: 'React',
+        description: 'React source repository.',
+        trustScore: 8.3,
+        benchmarkScore: 78,
+        totalSnippets: 6600,
+        stars: 245_000,
+      },
+    ]
+
+    expect(selectContext7Library(
+      libraries,
+      'React',
+      'React useEffect API reference and hooks documentation',
+    )?.id).toBe('/reactjs/react.dev')
   })
 
   it('sends the migrated Exa neural-search protocol and parses discovery metadata', async () => {

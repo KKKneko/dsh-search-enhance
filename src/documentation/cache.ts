@@ -120,6 +120,7 @@ function digestIdentity(kind: 'resolve' | 'docs', identity: Readonly<Record<stri
 /** Cache identity includes every bounded input that can change a successful resolve value. */
 export function context7ResolveCacheKey(input: {
   readonly baseUrl: string
+  readonly libraryName: string
   readonly query: string
   readonly maxResults: number
   readonly maxLibraryTextCharacters: number
@@ -128,10 +129,13 @@ export function context7ResolveCacheKey(input: {
   positiveSafeInteger(input.maxResults, 'maxResults')
   positiveSafeInteger(input.maxLibraryTextCharacters, 'maxLibraryTextCharacters')
   positiveSafeInteger(input.maxEntryBytes, 'maxEntryBytes')
+  const libraryName = input.libraryName.trim()
   const query = input.query.trim()
+  if (libraryName.length === 0) throw new RangeError('Context7 library name must not be empty')
   if (query.length === 0) throw new RangeError('Context7 resolve query must not be empty')
   return `ctx7r_${digestIdentity('resolve', {
     baseUrl: normalizedBaseUrl(input.baseUrl),
+    libraryName,
     maxEntryBytes: input.maxEntryBytes,
     maxLibraryTextCharacters: input.maxLibraryTextCharacters,
     maxResults: input.maxResults,

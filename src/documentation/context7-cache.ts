@@ -78,6 +78,7 @@ export interface Context7CacheClock {
 }
 
 export interface Context7ResolveCachedInput {
+  readonly libraryName: string
   readonly query: string
   readonly maxResults: number
   readonly forceRefresh: boolean
@@ -288,6 +289,7 @@ export class Context7CachedOperations {
     throwIfAborted(input.signal)
     const cacheKey = context7ResolveCacheKey({
       baseUrl: input.config.providers.context7.baseUrl,
+      libraryName: input.libraryName,
       maxEntryBytes: input.config.cache.context7EntryMaxBytes,
       maxLibraryTextCharacters: input.config.cache.context7LibraryTextMaxCharacters,
       maxResults: input.maxResults,

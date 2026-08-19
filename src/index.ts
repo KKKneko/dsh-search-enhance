@@ -14,7 +14,6 @@ import {
 } from './config.js'
 import {
   Context7CachedOperations,
-  DocumentationContext7Provider,
   DocumentationSearchService,
   PersistentContext7Cache,
 } from './documentation/index.js'
@@ -129,7 +128,6 @@ export async function apply(ctx: Context, config: SearchEnhanceConfigValue): Pro
     ],
   })
   const orchestrator = new SearchOrchestrator({
-    context7: new DocumentationContext7Provider(documentation),
     exa,
     firecrawl,
     getConfig,

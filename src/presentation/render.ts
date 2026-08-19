@@ -20,6 +20,10 @@ function inline(value: string): string {
   return value.replace(/\s+/gu, ' ').trim()
 }
 
+export function sourceDisplayLabel(source: { readonly title?: string; readonly url: string }): string {
+  if (source.title !== undefined && source.title.trim().length > 0) return source.title
+  return new URL(source.url).hostname
+}
 function renderWithBoundedNotice(
   text: string,
   notice: string | undefined,
@@ -100,7 +104,7 @@ function sourceSection(value: WebSearchOutput): string | undefined {
   for (let index = 0; index < value.sources.length; index += 1) {
     const source = value.sources[index]
     if (source === undefined) continue
-    lines.push(`${index + 1}. ${inline(source.title ?? 'Untitled source')}`)
+    lines.push(`${index + 1}. ${inline(sourceDisplayLabel(source))}`)
     lines.push(`   URL: ${source.url}`)
     if (source.publishedAt !== undefined) {
       lines.push(`   Date: ${inline(source.publishedAt)}`)
@@ -223,7 +227,7 @@ function docsSourceSection(value: DocsSearchOutput): string | undefined {
   for (let index = 0; index < value.sources.length; index += 1) {
     const source = value.sources[index]
     if (source === undefined) continue
-    lines.push(`${index + 1}. ${inline(source.title ?? 'Untitled source')}`)
+    lines.push(`${index + 1}. ${inline(sourceDisplayLabel(source))}`)
     lines.push(`   URL: ${source.url}`)
     if (source.publishedAt !== undefined) lines.push(`   Date: ${inline(source.publishedAt)}`)
     if (source.snippet !== undefined) lines.push(`   Snippet: ${inline(source.snippet)}`)
@@ -286,7 +290,7 @@ function renderPageSources(page: SearchSourcesFound): string | undefined {
   for (let index = 0; index < page.sources.length; index += 1) {
     const source = page.sources[index]
     if (source === undefined) continue
-    lines.push(`${page.offset + index + 1}. ${inline(source.title ?? 'Untitled source')}`)
+    lines.push(`${page.offset + index + 1}. ${inline(sourceDisplayLabel(source))}`)
     lines.push(`   URL: ${source.url}`)
     lines.push(`   Category: ${source.category}`)
     if (source.date !== undefined) lines.push(`   Date: ${inline(source.date)}`)

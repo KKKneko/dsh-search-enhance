@@ -12,6 +12,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { Config, type Config as SearchEnhanceConfig } from '../src/config.js'
 import {
   Context7ResolveDiagnosticProbe,
+  DIAGNOSTIC_CONTEXT7_LIBRARY_NAME,
   DIAGNOSTIC_CONTEXT7_QUERY,
   DIAGNOSTIC_RESULT_LIMIT,
   DIAGNOSTIC_SEARCH_QUERY,
@@ -457,9 +458,10 @@ describe('fixed public Provider diagnostic adapters', () => {
 
   it('uses only fixed bounded Context7 and source-search queries', async () => {
     const resolve = vi.fn(async (input: unknown) => {
-      const value = input as { query: string; limit: number; onDispatch: () => void }
+      const value = input as { libraryName: string; query: string; limit: number; onDispatch: () => void }
       value.onDispatch()
       expect(value.query).toBe(DIAGNOSTIC_CONTEXT7_QUERY)
+      expect(value.libraryName).toBe(DIAGNOSTIC_CONTEXT7_LIBRARY_NAME)
       expect(value.limit).toBe(DIAGNOSTIC_RESULT_LIMIT)
       return { attempts: 1, libraries: [], responseBytes: 2, totalDelayMs: 0, totalLibraries: 0, truncated: false }
     })

@@ -124,7 +124,7 @@ function jsonResponse(value: unknown): Response {
 }
 
 function defaultResponse(url: string): Response {
-  if (url.startsWith('https://context7.test/api/v2/search?')) {
+  if (url.startsWith('https://context7.test/api/v2/libs/search?')) {
     return jsonResponse({
       results: [
         {
@@ -384,6 +384,10 @@ describe('context7_resolve_library_id', () => {
       expect.objectContaining({ provider: 'context7-resolve', outcome: 'success', count: 1 }),
     ])
     expect(test.fetchMock).toHaveBeenCalledTimes(2)
+    const resolveUrl = new URL(String(test.fetchMock.mock.calls[0]?.[0]))
+    expect(resolveUrl.pathname).toBe('/api/v2/libs/search')
+    expect(resolveUrl.searchParams.get('libraryName')).toBe('React')
+    expect(resolveUrl.searchParams.get('query')).toBe('official React hooks')
     expect(serialized([miss.value, miss.content, miss.meta])).not.toMatch(
       /context7-secret|must-not-project|authorization|endpoint/i,
     )

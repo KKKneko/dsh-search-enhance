@@ -17,6 +17,35 @@ const loaderConfig = join(dshHome, 'cordis.yml')
 const selfLink = join(packageRoot, 'node_modules', 'dsh-search-enhance')
 const context7Secret = 'docs-context7-secret-value'
 const exaSecret = 'docs-exa-secret-value'
+const candidateWindowQuery = 'React useEffect cleanup candidate-window documentation'
+const candidateWindowMaxResults = 2
+const candidateWindowTargetId = '/reactjs/react.dev'
+const candidateWindowLibraries = [
+  {
+    benchmarkScore: 99,
+    description: 'A collection of React hooks for browser behavior.',
+    id: '/streamich/react-use',
+    title: 'React Use',
+    totalSnippets: 9000,
+    trustScore: 10,
+  },
+  ...Array.from({ length: 8 }, (_value, index) => ({
+    benchmarkScore: 95,
+    description: 'Unrelated documentation candidate.',
+    id: `/examples/library-${index}`,
+    title: `Library ${index}`,
+    totalSnippets: 8000,
+    trustScore: 10,
+  })),
+  {
+    benchmarkScore: 90,
+    description: 'Official React documentation.',
+    id: candidateWindowTargetId,
+    title: 'React',
+    totalSnippets: 7000,
+    trustScore: 10,
+  },
+]
 const globalDefinitions = [
   'docs_search',
   'web_extract',
@@ -83,10 +112,17 @@ function routeRequestSnapshot(requests, origin) {
 
 function queryForRequest(rawUrl, body) {
   const url = new URL(rawUrl, 'http://fixture.invalid')
-  if (url.pathname.endsWith('/api/v2/search')) return url.searchParams.get('query') ?? ''
+  if (url.pathname.endsWith('/api/v2/libs/search')) return url.searchParams.get('query') ?? ''
   if (url.pathname.endsWith('/api/v2/context')) return url.searchParams.get('query') ?? ''
   if (url.pathname.endsWith('/search')) return body?.query ?? ''
   return ''
+}
+
+function libraryNameForRequest(rawUrl) {
+  const url = new URL(rawUrl, 'http://fixture.invalid')
+  return url.pathname.endsWith('/api/v2/libs/search')
+    ? url.searchParams.get('libraryName') ?? ''
+    : ''
 }
 
 async function followup(agent, text) {
@@ -134,21 +170,28 @@ const server = createServer(async (request, response) => {
     httpRequests.push(item)
     const parsed = new URL(request.url ?? '/', origin)
     const query = queryForRequest(request.url ?? '/', body)
+    const libraryName = libraryNameForRequest(request.url ?? '/')
 
-    if (parsed.pathname === '/context7/api/v2/search' && request.method === 'GET') {
+    if (parsed.pathname === '/context7/api/v2/libs/search' && request.method === 'GET') {
+      if (libraryName.length === 0) {
+        json(response, 400, { error: 'missing explicit libraryName' })
+        return
+      }
       if (context7Offline || query.includes('partial-route')) {
         json(response, 503, { error: 'deterministic Context7 resolve outage' })
         return
       }
       json(response, 200, {
-        results: [{
-          benchmarkScore: 91,
-          description: 'Official Acme SDK documentation',
-          id: '/acme/sdk',
-          title: 'Acme SDK',
-          totalSnippets: 500,
-          trustScore: 10,
-        }],
+        results: query === candidateWindowQuery
+          ? candidateWindowLibraries
+          : [{
+              benchmarkScore: 91,
+              description: 'Official Acme SDK documentation',
+              id: '/acme/sdk',
+              title: 'Acme SDK',
+              totalSnippets: 500,
+              trustScore: 10,
+            }],
       })
       return
     }
@@ -158,10 +201,15 @@ const server = createServer(async (request, response) => {
         return
       }
       json(response, 200, {
-        codeSnippets: [
-          { content: 'Initialize the SDK with createClient and dispose it during cleanup.', title: 'Lifecycle' },
-          { content: 'Use the v4 migration helper before replacing legacy adapters.', title: 'Migration' },
-        ],
+        codeSnippets: query === candidateWindowQuery
+          ? Array.from({ length: 4 }, (_value, index) => ({
+              content: `React useEffect cleanup snippet ${index + 1}.`,
+              title: `React snippet ${index + 1}`,
+            }))
+          : [
+              { content: 'Initialize the SDK with createClient and dispose it during cleanup.', title: 'Lifecycle' },
+              { content: 'Use the v4 migration helper before replacing legacy adapters.', title: 'Migration' },
+            ],
       })
       return
     }
@@ -471,7 +519,7 @@ try {
   assert.equal(replayCard?.card, 'web')
 
   let directCounter = 0
-  async function executeDocs(argumentsValue) {
+  async function executeDocs(argumentsValue, expectedError = false) {
     directCounter += 1
     const result = await ctx.tools.execute({
       callId: CallId(`direct-docs-${directCounter}`),
@@ -480,7 +528,7 @@ try {
       agent: nativeAgent,
       signal: new AbortController().signal,
     })
-    assert.equal(result.isError, false, `docs_search failed: ${JSON.stringify(result.content)}`)
+    assert.equal(result.isError, expectedError, `docs_search error state: ${JSON.stringify(result.content)}`)
     return result
   }
   async function executeSources(argumentsValue) {
@@ -537,24 +585,83 @@ try {
   )))
   assert.equal(knownMiss.value.doc_ref, knownHit.value.doc_ref)
   assert.equal(knownMiss.value.doc_ref, knownRefresh.value.doc_ref)
+  const candidateWindowTargetIndex = candidateWindowLibraries.findIndex(
+    library => library.id === candidateWindowTargetId,
+  )
+  assert.ok(candidateWindowLibraries.length >= 10)
+  assert.ok(candidateWindowTargetIndex >= candidateWindowMaxResults)
+  const candidateWindow = await executeDocs({
+    query: candidateWindowQuery,
+    library_name: 'React',
+    provider: 'context7',
+    max_results: candidateWindowMaxResults,
+  })
+  const candidateWindowObserved = observed.at(-1)
+  assert.equal(candidateWindowObserved?.name, 'docs_search')
+  assert.equal(candidateWindow.value.selected_library?.id, candidateWindowTargetId)
+  assert.equal('candidates' in candidateWindow.value, false)
+  assert.ok(candidateWindow.value.snippets.length <= candidateWindowMaxResults)
+  assert.ok(candidateWindow.value.returned_snippets <= candidateWindowMaxResults)
+  assert.equal(candidateWindow.value.returned_snippets, candidateWindow.value.snippets.length)
+  assert.equal(candidateWindow.value.truncated, true)
 
   const allRoute = await executeDocs({
     query: 'all provider route',
+    library_name: 'Acme SDK',
     provider: 'all',
     max_results: 2,
   })
   const autoRoute = await executeDocs({
     query: 'auto provider route',
+    library_name: 'Acme SDK',
     provider: 'auto',
     max_results: 2,
   })
   const partialRoute = await executeDocs({
     query: 'partial-route documentation',
+    library_name: 'Acme SDK',
     provider: 'all',
     max_results: 2,
   })
   const partialObserved = observed.at(-1)
   assert.equal(partialObserved?.name, 'docs_search')
+  const autoDiscoveryStart = httpRequests.length
+  const autoWithoutIdentity = await executeDocs({
+    query: 'auto Exa-only discovery route',
+    provider: 'auto',
+    max_results: 2,
+  })
+  const autoDiscoveryRequests = httpRequests.slice(autoDiscoveryStart)
+  assert.deepEqual(autoWithoutIdentity.value.providers, [
+    { provider: 'context7', state: 'skipped' },
+    { provider: 'exa', state: 'complete' },
+  ])
+  assert.equal(autoDiscoveryRequests.filter(item => item.url?.startsWith('/context7/')).length, 0)
+  assert.equal(autoDiscoveryRequests.filter(item => item.url === '/exa/search').length, 1)
+
+  const missingIdentityStart = httpRequests.length
+  const context7WithoutIdentity = await executeDocs({
+    query: 'missing Context7 identity route',
+    provider: 'context7',
+    max_results: 2,
+  }, true)
+  const allWithoutIdentity = await executeDocs({
+    query: 'missing all identity route',
+    provider: 'all',
+    max_results: 2,
+  }, true)
+  assert.equal(httpRequests.length, missingIdentityStart)
+  assert.equal(context7WithoutIdentity.error?.message, 'context7-library-name-or-id-required: request was rejected before dispatch')
+  assert.deepEqual(context7WithoutIdentity.content, [{
+    type: 'text',
+    text: 'Error: context7-library-name-or-id-required: request was rejected before dispatch',
+  }])
+  assert.equal(allWithoutIdentity.error?.message, 'context7-library-name-or-id-required: request was rejected before dispatch')
+  assert.deepEqual(allWithoutIdentity.content, [{
+    type: 'text',
+    text: 'Error: context7-library-name-or-id-required: request was rejected before dispatch',
+  }])
+
   assert.deepEqual(allRoute.value.providers, [
     { provider: 'context7', state: 'complete' },
     { provider: 'exa', state: 'complete' },
@@ -572,6 +679,7 @@ try {
 
   const restartArgs = {
     query: 'restart durable cache route',
+    library_name: 'Acme SDK',
     provider: 'context7',
     max_results: 2,
   }
@@ -633,6 +741,7 @@ try {
   assert.equal(ctx.storageDomain.get(documentationModule.CONTEXT7_CACHE_DOMAIN_NAME), undefined)
   await assert.rejects(
     oldDocumentation.search({
+      libraryName: 'Acme SDK',
       maxResults: 1,
       provider: 'context7',
       query: 'old service is closed',
@@ -692,8 +801,14 @@ try {
   assert.equal(requests.length, 4)
   const nativeSchema = requests[0].tools
   assert.deepEqual(nativeSchema.map(schema => schema.name), modelTools)
+  const docsSchema = nativeSchema.find(schema => schema.name === 'docs_search')
+  assert.equal(docsSchema?.parameters.properties.library_name.type, 'string')
+  assert.equal(docsSchema?.parameters.required.includes('library_name'), false)
   assert.deepEqual(requests[2].tools.map(schema => schema.name), ['run_code'])
   assert.match(requests[2].system, /docs_search:/)
+  assert.match(requests[2].system, /library_name\?: string/)
+  assert.match(requests[2].system, /library_name: "FastAPI"/)
+  assert.match(requests[2].system, /uses Exa instead of guessing a Context7 library/)
   assert.match(requests[2].system, /search_call:/)
   assert.match(requests[2].system, /search_tools:/)
   assert.match(requests[2].system, /web_extract:/)
@@ -717,7 +832,7 @@ try {
   assert.ok(context7Requests.every(item => item.authorization === `Bearer ${context7Secret}`))
   assert.ok(exaRequests.every(item => item.exaKey === exaSecret))
   const knownResolveRequests = context7Requests.filter(item => (
-    item.url?.includes('/api/v2/search')
+    item.url?.includes('/api/v2/libs/search')
     && queryForRequest(item.url, item.body) === knownArgs.query
   ))
   const knownDocsRequests = context7Requests.filter(item => (
@@ -726,6 +841,21 @@ try {
   ))
   assert.equal(knownResolveRequests.length, 0)
   assert.equal(knownDocsRequests.length, 2, 'known-id miss/hit/refresh dispatched the wrong number of docs requests')
+  const candidateResolveRequests = context7Requests.filter(item => (
+    item.url?.includes('/api/v2/libs/search')
+    && queryForRequest(item.url, item.body) === candidateWindowQuery
+  ))
+  const candidateDocsRequests = context7Requests.filter(item => (
+    item.url?.includes('/api/v2/context')
+    && queryForRequest(item.url, item.body) === candidateWindowQuery
+  ))
+  assert.equal(candidateResolveRequests.length, 1)
+  assert.equal(libraryNameForRequest(candidateResolveRequests[0].url), 'React')
+  assert.equal(queryForRequest(candidateResolveRequests[0].url), candidateWindowQuery)
+  assert.equal(candidateDocsRequests.length, 1)
+  const candidateDocsLibraryId = new URL(candidateDocsRequests[0].url, origin)
+    .searchParams.get('libraryId')
+  assert.equal(candidateDocsLibraryId, candidateWindowTargetId)
 
   const granularResolve = await executeGranular('context7_resolve_library_id', {
     library_name: 'Acme SDK',
@@ -754,8 +884,10 @@ try {
     cached: granularCached,
   }
   assert.equal(granularResolve.result.value.selected_library.id, '/acme/sdk')
+  assert.ok(granularResolve.result.value.candidates.length <= candidateWindowMaxResults)
+  assert.ok(granularResolve.result.value.returned_candidates <= candidateWindowMaxResults)
   assert.equal(granularQuery.result.value.doc_ref, granularCached.result.value.doc_ref)
-  assert.equal(granularGet.result.value.cache.resolve.state, 'hit')
+  assert.equal(granularGet.result.value.cache.resolve.state, 'miss')
   assert.ok(Object.values(granularResults).every(item => item.card?.card === 'generic'))
 
   const persistedText = `${await readFile(sourceStorageFile, 'utf8')}\n${await readFile(cacheStorageFile, 'utf8')}`
@@ -802,6 +934,34 @@ try {
       code: codeDocs.result.value,
       code_page: codePage.result.value,
     },
+    candidate_window: {
+      fixture: {
+        candidate_count: candidateWindowLibraries.length,
+        target_index: candidateWindowTargetIndex,
+        target_library_id: candidateWindowTargetId,
+        user_max_results: candidateWindowMaxResults,
+      },
+      high_level_result: candidateWindow.value,
+      high_level_card: candidateWindowObserved?.card,
+      public_bounds: {
+        high_level_candidates: Array.isArray(candidateWindow.value.candidates)
+          ? candidateWindow.value.candidates.length
+          : 0,
+        high_level_snippets: candidateWindow.value.snippets.length,
+        granular_candidates: granularResolve.result.value.candidates.length,
+      },
+      requests: {
+        resolve: candidateResolveRequests.length,
+        library_name: libraryNameForRequest(candidateResolveRequests[0].url),
+        query: queryForRequest(candidateResolveRequests[0].url),
+        docs: candidateDocsRequests.length,
+        docs_library_id: candidateDocsLibraryId,
+      },
+      exact_library_id: {
+        resolve_requests: knownResolveRequests.length,
+        cache_reason: knownMiss.value.cache.resolve.reason,
+      },
+    },
     cache_states: {
       known_miss: knownMiss.value,
       known_hit: knownHit.value,
@@ -813,6 +973,17 @@ try {
     routes: {
       all: allRoute.value,
       auto: autoRoute.value,
+      auto_without_identity: autoWithoutIdentity.value,
+      context7_without_identity: {
+        is_error: context7WithoutIdentity.isError,
+        message: context7WithoutIdentity.error?.message,
+        content: context7WithoutIdentity.content,
+      },
+      all_without_identity: {
+        is_error: allWithoutIdentity.isError,
+        message: allWithoutIdentity.error?.message,
+        content: allWithoutIdentity.content,
+      },
       partial: partialRoute.value,
     },
     granular_context7: stableContext7Snapshot(granularResults),

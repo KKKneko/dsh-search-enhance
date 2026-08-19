@@ -27,6 +27,14 @@ const context7Secret = 'headless-context7-secret-value'
 const exaSecret = 'headless-exa-secret-value'
 const tavilySecret = 'headless-tavily-secret-value'
 const firecrawlSecret = 'headless-firecrawl-secret-value'
+const citationPriorityQuery = 'native full SDK v4 fixture'
+const citedSourcePath = '/pages/community-guide(2024)'
+const citedSourceTitle = 'Acme SDK v4 community guide'
+const citedSourceSnippet = 'Structured metadata enriches the exact balanced citation'
+const citedSourceDate = '2024-06-18'
+const deduplicatedSourcePath = '/pages/sdk-v3'
+const uncitedQualitySourceUrl = 'https://github.com/acme/sdk/releases/tag/v4'
+const titlelessSourceUrl = 'https://www.cnsa.gov.cn/english/chang-e-4'
 const secrets = [searchSecret, context7Secret, exaSecret, tavilySecret, firecrawlSecret]
 const credentialNames = ['SEARCH_API_KEY', 'TAVILY_API_KEY', 'CONTEXT7_API_KEY', 'EXA_API_KEY', 'FIRECRAWL_API_KEY']
 const sourceProducedBlockType = 'search-enhance/source-produced'
@@ -189,18 +197,18 @@ function snapshotHttpRequests(requests) {
 
 function responseScript() {
   const firstCode = [
-    "const search = await tools.web_search({ query: 'code first-step fixture', profile: 'auto', depth: 'compact' });",
+    `const search = await tools.web_search({ query: ${JSON.stringify(`code first-step ${citationPriorityQuery}`)}, profile: 'auto', depth: 'compact' });`,
     "let early = 'not-attempted';",
     "try { await tools.search_call({ operation: 'search_sources', arguments: { source_ref: search.source_ref, offset: 0, limit: 1, format: 'full' } }); early = 'unexpected-success'; } catch { early = 'inactive'; }",
     "return { search, search_call_binding: typeof tools.search_call, early };",
   ].join('\n')
   const nextCode = [
-    "const search = await tools.web_search({ query: 'code next-SDK fixture', profile: 'auto', depth: 'compact' });",
+    `const search = await tools.web_search({ query: ${JSON.stringify(`code next-SDK ${citationPriorityQuery}`)}, profile: 'auto', depth: 'compact' });`,
     "const page = await tools.search_call({ operation: 'search_sources', arguments: { source_ref: search.source_ref, offset: 0, limit: 1, format: 'full' } });",
     "return { search, page, search_call_binding: typeof tools.search_call };",
   ].join('\n')
   return [
-    { kind: 'tool', id: 'native-full-call', name: 'web_search', arguments: { query: 'native full SDK v4 fixture', profile: 'auto', depth: 'compact' } },
+    { kind: 'tool', id: 'native-full-call', name: 'web_search', arguments: { query: citationPriorityQuery, profile: 'auto', depth: 'compact' } },
     { kind: 'text', text: 'Native full fixture complete.' },
     { kind: 'tool', id: 'native-partial-call', name: 'web_search', arguments: { query: 'native partial fixture', profile: 'auto', depth: 'compact' } },
     { kind: 'text', text: 'Native partial fixture complete.' },
@@ -257,19 +265,31 @@ const server = createServer(async (request, response) => {
         json(response, 200, { choices: [{ message: { content: '' } }] })
         return
       }
-      const content = query.includes('native full SDK v4 fixture')
-        ? `Fixture answer for ${query}.\n\nsources(${JSON.stringify([
-            {
-              url: `${origin}/pages/sdk-v3/?utm_source=fixture`,
-              title: 'Acme SDK v3 community guide',
-              publishedAt: '2023-01-02',
-            },
-            {
-              url: `${origin}/pages/sdk-v3`,
-              title: 'Acme SDK v3 community guide',
-              publishedAt: '2023-01-02',
-            },
-          ])})`
+      const content = query.includes(citationPriorityQuery)
+        ? [
+            `Fixture answer for ${query}.`,
+            `Use [[1]](${origin}${citedSourcePath}) for the bounded answer.`,
+            '',
+            `sources(${JSON.stringify([
+              {
+                url: `${origin}${citedSourcePath}`,
+                title: citedSourceTitle,
+                snippet: citedSourceSnippet,
+                publishedAt: citedSourceDate,
+              },
+              {
+                url: `${origin}${deduplicatedSourcePath}/?utm_source=fixture`,
+                title: 'Acme SDK v3 community guide',
+                publishedAt: '2023-01-02',
+              },
+              {
+                url: `${origin}${deduplicatedSourcePath}`,
+                title: 'Acme SDK v3 community guide',
+                publishedAt: '2023-01-02',
+              },
+              { url: titlelessSourceUrl },
+            ])})`,
+          ].join('\n')
         : `Fixture answer for ${query}.\n\nSources:\n- [Primary fixture](${origin}/pages/primary)`
       json(response, 200, {
         choices: [{ message: { content } }],
@@ -285,9 +305,9 @@ const server = createServer(async (request, response) => {
       json(response, 200, {
         results: query.includes('empty')
           ? []
-          : query.includes('native full SDK v4 fixture')
+          : query.includes(citationPriorityQuery)
             ? [{
-                url: 'https://github.com/acme/sdk/releases/tag/v4',
+                url: uncitedQualitySourceUrl,
                 title: 'Acme SDK v4 release',
                 content: 'Current release discovery for the v4 fixture',
               }]
@@ -308,7 +328,7 @@ const server = createServer(async (request, response) => {
       })
       return
     }
-    if (request.url?.startsWith('/context7/api/v2/search?') && request.method === 'GET') {
+    if (request.url?.startsWith('/context7/api/v2/libs/search?') && request.method === 'GET') {
       json(response, 200, {
         results: [{
           id: '/acme/sdk',
@@ -502,6 +522,9 @@ try {
   assert.ok(pluginEntry?.fiber, 'Loader did not create the search-enhance fiber')
   await pluginEntry.fiber.await()
   assert.deepEqual(ctx.tools.schemas().map(schema => schema.name).sort(), allGlobalToolNames)
+  const registeredDocsSchema = ctx.tools.schemas().find(schema => schema.name === 'docs_search')
+  assert.equal(registeredDocsSchema?.parameters.properties.library_name.type, 'string')
+  assert.equal(registeredDocsSchema?.parameters.required.includes('library_name'), false)
   const officialDefinitions = Object.fromEntries(
     officialToolNames.map(name => [name, ctx.tools.get(name)]),
   )
@@ -616,9 +639,44 @@ try {
   const fullSourceRef = fullResult.result.value.source_ref
   assert.equal(typeof fullSourceRef, 'string')
   assert.deepEqual(sorted(pluginNamesFor(nativeFull)), expectedCoreTools)
+  const citedSourceUrl = `${origin}${citedSourcePath}`
+  const deduplicatedSourceUrl = `${origin}${deduplicatedSourcePath}`
+  const citationPriorityUrls = fullResult.result.value.sources.map(source => source.url)
+  assert.equal(
+    fullResult.result.value.answer?.includes(`[[1]](${citedSourceUrl})`),
+    true,
+    'the assembled web_search result lost the Search API citation',
+  )
+  assert.deepEqual(citationPriorityUrls, [
+    citedSourceUrl,
+    uncitedQualitySourceUrl,
+    titlelessSourceUrl,
+    deduplicatedSourceUrl,
+  ])
+  const citedSources = fullResult.result.value.sources.filter(source => source.url === citedSourceUrl)
+  assert.equal(citedSources.length, 1)
+  assert.deepEqual(citedSources[0], {
+    url: citedSourceUrl,
+    title: citedSourceTitle,
+    snippet: citedSourceSnippet,
+    publishedAt: citedSourceDate,
+  })
+  assert.deepEqual(
+    fullResult.result.value.sources.find(source => source.url === titlelessSourceUrl),
+    { url: titlelessSourceUrl },
+  )
+  assert.equal(citationPriorityUrls.includes(citedSourceUrl.slice(0, -1)), false)
+  assert.equal(citedSources[0].title === '[1]', false)
+  assert.equal(citationPriorityUrls.some(url => url.includes('](')), false)
+  assert.equal(citationPriorityUrls.some(url => url.includes('utm_source')), false)
   const fullModelText = fullResult.result.content[0]?.type === 'text'
     ? fullResult.result.content[0].text
     : ''
+  assert.match(fullModelText, new RegExp(citedSourceTitle))
+  assert.match(fullModelText, /3\. www\.cnsa\.gov\.cn/)
+  assert.doesNotMatch(fullModelText, /Untitled source/)
+  assert.match(fullModelText, new RegExp(citedSourceUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+  assert.doesNotMatch(fullModelText, /\n1\. \[1\]\n/)
   assert.match(fullModelText, /Source reference: src_[A-Za-z0-9_-]{32}/)
   assert.match(fullModelText, /"operation":"search_sources"/)
   assert.doesNotMatch(fullModelText, /"output_schema"/)
@@ -925,12 +983,15 @@ try {
   assert.equal(partialResult.result.isError, false)
   assert.equal(emptyResult.result.isError, false)
   assert.equal(fullResult.result.value.state, 'complete')
-  assert.deepEqual(fullResult.result.value.sources.map(source => source.url), [
-    'https://github.com/acme/sdk/releases/tag/v4',
-    `${origin}/pages/sdk-v3`,
-  ])
-  assert.equal(fullResult.result.value.total_sources, 2)
+  assert.equal(fullResult.result.value.total_sources, 4)
   assert.equal(pageResult.result.value.state, 'found')
+  assert.deepEqual(pageResult.result.value.sources, [{
+    url: citedSourceUrl,
+    title: citedSourceTitle,
+    date: citedSourceDate,
+    category: 'unknown',
+    snippet: citedSourceSnippet,
+  }])
   assert.deepEqual(notFoundResult.result.value, {
     state: 'not_found',
     code: 'SOURCE_REF_NOT_FOUND',
@@ -977,6 +1038,15 @@ try {
   const liveCard = observedCards.find(item => item.callId === 'native-full-call')?.card
   assert.deepEqual(replayCard, liveCard)
   assert.equal(replayCard?.card, 'web')
+  assert.deepEqual(replayCard.sources[0], citedSources[0])
+  assert.deepEqual(fullResultEvent.data.meta.sources[0], citedSources[0])
+  assert.deepEqual(replayCard.sources.find(source => source.url === titlelessSourceUrl), {
+    url: titlelessSourceUrl,
+  })
+  assert.deepEqual(fullResultEvent.data.meta.sources.find(source => source.url === titlelessSourceUrl), {
+    url: titlelessSourceUrl,
+  })
+  assert.equal(fullResultEvent.data.meta.sources.some(source => source.title === '[1]'), false)
 
   const searchToolsCallEvent = progressiveAgent.session.events.find(
     event => event.type === 'tool/call' && String(event.data.callId) === 'native-repeat-activation',
@@ -1028,6 +1098,18 @@ try {
   assert.ok(codePage && !codePage.result.isError)
   assert.equal(codePage.result.value.state, 'found')
   assert.equal(codePage.result.value.source_ref, codeEnhances[1].result.value.source_ref)
+  for (const codeEnhance of codeEnhances) {
+    assert.equal(codeEnhance.result.value.answer.includes(`[[1]](${citedSourceUrl})`), true)
+    assert.deepEqual(codeEnhance.result.value.sources.map(source => source.url), citationPriorityUrls)
+    assert.deepEqual(codeEnhance.result.value.sources[0], citedSources[0])
+  }
+  assert.deepEqual(codePage.result.value.sources, [{
+    url: citedSourceUrl,
+    title: citedSourceTitle,
+    date: citedSourceDate,
+    category: 'unknown',
+    snippet: citedSourceSnippet,
+  }])
   assert.equal(codeEnhances[0].result.meta, undefined)
   assert.equal(codeEnhances[1].result.meta, undefined)
   assert.equal(codePage.result.meta, undefined)
@@ -1303,6 +1385,9 @@ try {
   assert.match(codeRequest.system, /profile\?: "auto"/)
   assert.match(codeRequest.system, /depth\?: "compact"/)
   assert.match(codeRequest.system, /docs_search:/)
+  assert.match(codeRequest.system, /library_name\?: string/)
+  assert.match(codeRequest.system, /library_name: "FastAPI"/)
+  assert.match(codeRequest.system, /uses Exa instead of guessing a Context7 library/)
   assert.match(codeRequest.system, /search_call:/)
   assert.match(codeRequest.system, /search_tools:/)
   assert.match(codeRequest.system, /web_extract:/)
@@ -1326,7 +1411,25 @@ try {
     .sort((left, right) => left.query.localeCompare(right.query))
   assert.equal(storedRecords.length, 6)
   assert.ok(storedRecords.some(record => record.call.mode === 'nested-code'))
-
+  const citationRecords = storedRecords.filter(record => record.query.includes(citationPriorityQuery))
+  assert.equal(citationRecords.length, 3)
+  for (const record of citationRecords) {
+    const matches = record.sources.filter(source => source.url === citedSourceUrl)
+    assert.equal(matches.length, 1)
+    assert.deepEqual(matches[0], {
+      url: citedSourceUrl,
+      title: citedSourceTitle,
+      snippet: citedSourceSnippet,
+      publishedAt: citedSourceDate,
+      provider: 'search-api',
+    })
+    assert.deepEqual(record.sources.find(source => source.url === titlelessSourceUrl), {
+      url: titlelessSourceUrl,
+      provider: 'search-api',
+    })
+    assert.equal(record.sources.some(source => source.url.includes('utm_source')), false)
+    assert.equal(record.sources.some(source => source.url === citedSourceUrl.slice(0, -1)), false)
+  }
   const snapshot = normalize({
     native_schema: nativeSchema,
     progressive_disclosure: {
@@ -1387,6 +1490,18 @@ try {
     native_not_found_transcript: relevantTranscript(nativeFull.session, origin, 'native-not-found-call'),
     native_partial_transcript: relevantTranscript(nativePartial.session, origin, 'native-partial-call'),
     native_empty_transcript: relevantTranscript(nativeEmpty.session, origin, 'native-empty-call'),
+    citation_priority: {
+      answer: fullResult.result.value.answer,
+      cited_url: citedSourceUrl,
+      cited_source: citedSources[0],
+      truncated_urls: citationPriorityUrls.filter(url => url === citedSourceUrl.slice(0, -1)),
+      deduplicated_url: deduplicatedSourceUrl,
+      uncited_quality_url: uncitedQualitySourceUrl,
+      titleless_url: titlelessSourceUrl,
+      ordered_urls: citationPriorityUrls,
+      malformed_urls: citationPriorityUrls.filter(url => url.includes('](')),
+      tracking_urls: citationPriorityUrls.filter(url => url.includes('utm_source')),
+    },
     native_outputs: {
       complete: fullResult.result.value,
       partial: partialResult.result.value,
