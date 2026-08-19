@@ -2,6 +2,11 @@
   "name": "dsh-search-enhance",
   "version": "0.1.5",
   "description": "Bounded search, documentation, extraction, progressively disclosed site mapping/research planning, and read-only diagnostics for DeepSeek Harness",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KKKneko/dsh-search-enhance.git"
+  },
+  "homepage": "https://github.com/KKKneko/dsh-search-enhance#readme",
   "type": "module",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
@@ -119,6 +124,7 @@
     "@deepseek-ai/dsh-storage-domain": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-system-prompt": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-tools": "^0.1.0-rc.6",
+    "@deepseek-ai/schemastery": "^3.18.1",
     "react": "^18.2.0"
   },
   "peerDependenciesMeta": {
@@ -131,7 +137,6 @@
     "react": { "optional": true }
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "^3.18.1",
     "defuddle": "0.18.1",
     "linkedom": "0.18.12",
     "wreq-js": "2.3.1",
@@ -171,6 +176,7 @@
     "@deepseek-ai/dsh-storage-json": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-system-prompt": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-tools": "^0.1.0-rc.6",
+    "@deepseek-ai/schemastery": "^3.18.1",
     "@testing-library/react": "16.3.2",
     "@types/node": "^24.0.0",
     "@types/react": "18.3.28",
